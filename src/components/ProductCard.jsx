@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingBag, Star } from "lucide-react";
-import { formatPrice } from "../../data/product";
+import { formatPrice } from "../data/product";
 
 export default function ProductCard({ product }) {
   return (

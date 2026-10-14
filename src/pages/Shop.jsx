@@ -10,7 +10,7 @@ import {
   Headphones,
 } from "lucide-react";
 import { products } from "../data/product";
-import ProductCard from "../components/product/ProductCard";
+import ProductCard from "../components/ProductCard";
 
 const PAGE_SIZE = 12;
 

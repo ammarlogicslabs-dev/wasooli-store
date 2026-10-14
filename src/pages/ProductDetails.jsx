@@ -14,7 +14,7 @@ import {
   Truck,
 } from "lucide-react";
 import { products, formatPrice } from "../data/product";
-import ProductCard from "../components/product/ProductCard";
+import ProductCard from "../components/ProductCard";
 
 const STORE_NAME = "Wasooli Store";
 
