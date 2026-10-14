@@ -164,12 +164,12 @@ export default function Login() {
         </div>
       </aside>
 
-      {/* Form panel */}
-      <section className="flex min-h-screen items-start justify-center px-4 pt-24 pb-10 sm:px-6 sm:pt-28 lg:min-h-0 lg:items-center lg:pt-10">
+  
+      <section className="flex min-h-screen items-start justify-center px-4 pt-8 pb-10 sm:px-6 sm:pt-28 lg:min-h-0 lg:items-center lg:pt-10">
         <div className="w-full max-w-md">
           {/* Mobile brand */}
           <div className="mb-7 flex flex-col items-center lg:hidden">
-            <Link to="/login" className="flex flex-col items-center gap-3">
+            <Link className="flex flex-col items-center gap-3">
               <span className="grid size-20 place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md ring-2 ring-brand-100">
                 <img
                   src="/wasooli.png"
@@ -177,7 +177,7 @@ export default function Login() {
                   className="h-full w-full object-cover"
                 />
               </span>
-              <span className="text-base font-bold tracking-tight text-slate-900">
+              <span className="text-xl font-bold tracking-tight text-brand-700">
                 {STORE_NAME}
               </span>
             </Link>

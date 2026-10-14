@@ -397,7 +397,7 @@ export default function Shop() {
                   <button
                     type="button"
                     onClick={() => setFiltersOpen(true)}
-                    className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-700 shadow-xs transition hover:border-brand-500 sm:flex-none sm:px-4 sm:py-3 lg:hidden"
+                    className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 shadow-xs transition hover:border-brand-500 sm:flex-none sm:gap-1.5 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm lg:hidden"
                   >
                     <SlidersHorizontal size={15} className="text-brand-600" />
                     <span>Filters</span>
@@ -413,7 +413,8 @@ export default function Shop() {
                       value={sort}
                       onChange={(event) => setSort(event.target.value)}
                       aria-label="Sort products"
-                      className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3.5 pr-8 text-xs sm:text-sm font-medium text-slate-700 shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:py-3 sm:pl-4 sm:pr-10"
+                      className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-10 sm:text-sm"
+
                     >
                       {SORT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>

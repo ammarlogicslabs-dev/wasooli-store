@@ -12,7 +12,7 @@ const DEMO_USER = {
 const ACCEPTED_IDENTIFIERS = [
   DEMO_USER.email,
   DEMO_USER.name,
-  "wassoli123@gmail.com",
+  "wasooli123@gmail.com",
 ].map((value) => value.toLowerCase());
 
 function getSavedUser() {
@@ -28,9 +28,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(getSavedUser);
 
   function login(identifier, password) {
-    const validCredentials =
-      ACCEPTED_IDENTIFIERS.includes(identifier.trim().toLowerCase()) &&
-      password === DEMO_USER.password;
+    const validCredentials = ACCEPTED_IDENTIFIERS.includes(identifier.trim().toLowerCase()) && password === DEMO_USER.password;
 
     if (!validCredentials) {
       return {
