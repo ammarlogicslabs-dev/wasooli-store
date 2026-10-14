@@ -137,7 +137,7 @@ export default function ProductDetail() {
     <main className="min-h-screen bg-white pb-24 lg:pb-0">
       {/* Breadcrumb */}
       <div className="border-b border-slate-100 bg-slate-50">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-1.5 px-4 py-3 text-xs text-slate-500 sm:px-6 sm:text-sm lg:px-8">
+        <div className="mx-auto flex max-w-8xl flex-wrap items-center gap-1.5 px-4 py-3 text-xs text-slate-500 sm:px-6 sm:text-sm lg:px-8">
           <Link to="/" className="hover:text-brand-600">
             Home
           </Link>
@@ -154,7 +154,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-8xl px-4 pt-5 sm:px-6 lg:px-8">
         <Link
           to="/shop"
           className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-brand-600"
@@ -164,7 +164,7 @@ export default function ProductDetail() {
         </Link>
       </div>
 
-      <section className="mx-auto grid max-w-7xl 2xl:max-w-[1536px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
+      <section className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
         {/* Gallery */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
@@ -480,7 +480,7 @@ export default function ProductDetail() {
       {/* Related products */}
       {relatedProducts.length > 0 && (
         <section className="bg-slate-50">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-8xl px-4 py-14 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-600">
@@ -510,7 +510,7 @@ export default function ProductDetail() {
 
       {/* Mobile sticky buy bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
+        <div className="mx-auto flex max-w-8xl items-center gap-3">
           <div className="min-w-0">
             <p className="truncate text-xs text-slate-500">{product.title}</p>
             <p className="text-lg font-bold text-slate-900">

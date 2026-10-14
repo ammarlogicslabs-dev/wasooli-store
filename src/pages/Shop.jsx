@@ -50,6 +50,7 @@ export default function Shop() {
     };
   }, []);
 
+  const [minPriceLimit, setMinPriceLimit] = useState(minPrice);
   const [priceLimit, setPriceLimit] = useState(maxPrice);
 
   const categories = useMemo(
@@ -67,6 +68,8 @@ export default function Shop() {
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const min = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
+    const max = priceLimit === "" ? maxPrice : Number(priceLimit);
 
     let result = products.filter((product) => {
       const matchesSearch =
@@ -76,7 +79,8 @@ export default function Shop() {
       const matchesCategory =
         category === "All" || product.category === category;
 
-      const matchesPrice = Number(product.price) <= priceLimit;
+      const price = Number(product.price);
+      const matchesPrice = price >= min && price <= max;
 
       return matchesSearch && matchesCategory && matchesPrice;
     });
@@ -92,7 +96,7 @@ export default function Shop() {
     }
 
     return result;
-  }, [search, category, sort, priceLimit]);
+  }, [search, category, sort, minPriceLimit, priceLimit, minPrice, maxPrice]);
 
   useEffect(() => {
     document.title = "Shop | Wasooli Store";
@@ -100,7 +104,7 @@ export default function Shop() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, category, sort, priceLimit]);
+  }, [search, category, sort, minPriceLimit, priceLimit]);
   useEffect(() => {
     document.body.style.overflow = filtersOpen ? "hidden" : "";
     return () => {
@@ -111,7 +115,9 @@ export default function Shop() {
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
 
-  const priceActive = priceLimit < maxPrice;
+  const priceActive =
+    (minPriceLimit !== "" && Number(minPriceLimit) > minPrice) ||
+    (priceLimit !== "" && Number(priceLimit) < maxPrice);
   const activeFilters = [
     category !== "All" && {
       key: "category",
@@ -120,8 +126,16 @@ export default function Shop() {
     },
     priceActive && {
       key: "price",
-      label: `Up to ${formatPrice(priceLimit)}`,
-      clear: () => setPriceLimit(maxPrice),
+      label:
+        minPriceLimit > minPrice && priceLimit < maxPrice
+          ? `${formatPrice(minPriceLimit)} – ${formatPrice(priceLimit)}`
+          : minPriceLimit > minPrice
+          ? `From ${formatPrice(minPriceLimit)}`
+          : `Up to ${formatPrice(priceLimit)}`,
+      clear: () => {
+        setMinPriceLimit(minPrice);
+        setPriceLimit(maxPrice);
+      },
     },
     search.trim() && {
       key: "search",
@@ -133,6 +147,7 @@ export default function Shop() {
   const clearAll = () => {
     setSearch("");
     setCategory("All");
+    setMinPriceLimit(minPrice);
     setPriceLimit(maxPrice);
   };
 
@@ -153,19 +168,17 @@ export default function Shop() {
                     setCategory(item);
                     if (filtersOpen) setFiltersOpen(false);
                   }}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${
-                    active
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${active
                       ? "bg-brand-50 font-semibold text-brand-700"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   <span className="truncate pr-2">{item}</span>
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${
-                      active
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${active
                         ? "bg-brand-500 text-white"
                         : "bg-slate-100 text-slate-500"
-                    }`}
+                      }`}
                   >
                     {categoryCounts[item] || 0}
                   </span>
@@ -178,39 +191,69 @@ export default function Shop() {
 
       <div>
         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
-          Max Price
+          Price Range
         </h3>
         <div className="mt-3 sm:mt-4 px-1">
           <input
             type="range"
             min={minPrice}
             max={maxPrice}
-            value={priceLimit}
+            value={priceLimit === "" ? maxPrice : priceLimit}
             onChange={(event) => setPriceLimit(Number(event.target.value))}
             aria-label="Maximum price"
             className="w-full cursor-pointer accent-brand-500"
           />
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-            <span>{formatPrice(minPrice)}</span>
-            <span className="rounded-md bg-brand-50 px-2 py-1 font-semibold text-brand-700">
-              {formatPrice(priceLimit)}
-            </span>
+          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
+            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+              <span className="text-[11px] font-medium text-slate-400">Rs</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={minPriceLimit}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setMinPriceLimit(val === "" ? "" : Number(val));
+                }}
+                onBlur={() => {
+                  if (minPriceLimit === "" || Number(minPriceLimit) < minPrice) {
+                    setMinPriceLimit(minPrice);
+                  }
+                }}
+                placeholder={minPrice.toString()}
+                aria-label="Minimum price"
+                className="w-full text-xs font-semibold text-slate-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            <span className="text-slate-400 font-medium">to</span>
+
+            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+              <span className="text-[11px] font-medium text-slate-400">Rs</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={priceLimit}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setPriceLimit(val === "" ? "" : Number(val));
+                }}
+                onBlur={() => {
+                  if (priceLimit === "" || Number(priceLimit) > maxPrice) {
+                    setPriceLimit(maxPrice);
+                  } else if (Number(priceLimit) < Number(minPriceLimit || minPrice)) {
+                    setPriceLimit(minPriceLimit || minPrice);
+                  }
+                }}
+                placeholder={maxPrice.toString()}
+                aria-label="Maximum price"
+                className="w-full text-xs font-semibold text-brand-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {activeFilters.length > 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            clearAll();
-            if (filtersOpen) setFiltersOpen(false);
-          }}
-          className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
-        >
-          Reset all filters
-        </button>
-      )}
+
     </div>
   );
 
@@ -219,9 +262,9 @@ export default function Shop() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl 2xl:max-w-[1536px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+        <div className="relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
           <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
-            <span className="hover:text-brand-600">Home</span>  
+            <span className="hover:text-brand-600">Home</span>
             <span className="mx-2">/</span>
             <span className="font-medium text-slate-900">Shop</span>
           </nav>
@@ -243,7 +286,7 @@ export default function Shop() {
 
       {/* Trust bar */}
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl 2xl:max-w-[1536px] grid-cols-2 gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:grid-cols-4 lg:px-8">
+        <div className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] grid-cols-2 gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:grid-cols-4 lg:px-8">
           {TRUST.map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex items-center gap-2.5 sm:gap-3">
               <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
@@ -263,7 +306,7 @@ export default function Shop() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <section className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[270px_1fr] xl:gap-10">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
@@ -344,11 +387,10 @@ export default function Shop() {
                     key={item}
                     type="button"
                     onClick={() => setCategory(item)}
-                    className={`shrink-0 whitespace-nowrap cursor-pointer rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition ${
-                      category === item
+                    className={`shrink-0 whitespace-nowrap cursor-pointer rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition ${category === item
                         ? "bg-brand-500 text-white shadow-xs"
                         : "border border-slate-200 bg-white text-slate-600 hover:border-brand-500 hover:text-brand-600"
-                    }`}
+                      }`}
                   >
                     {item}
                   </button>
@@ -408,10 +450,9 @@ export default function Shop() {
                     <div
                       className="h-full rounded-full bg-brand-500 transition-all"
                       style={{
-                        width: `${
-                          (visibleProducts.length / filteredProducts.length) *
+                        width: `${(visibleProducts.length / filteredProducts.length) *
                           100
-                        }%`,
+                          }%`,
                       }}
                     />
                   </div>
@@ -459,21 +500,18 @@ export default function Shop() {
 
       {/* Mobile filter drawer */}
       <div
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
-          filtersOpen ? "visible" : "invisible pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${filtersOpen ? "visible" : "invisible pointer-events-none"
+          }`}
         aria-hidden={!filtersOpen}
       >
         <div
           onClick={() => setFiltersOpen(false)}
-          className={`absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 ${
-            filtersOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 ${filtersOpen ? "opacity-100" : "opacity-0"
+            }`}
         />
         <aside
-          className={`absolute inset-y-0 left-0 flex w-[85vw] max-w-xs sm:max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
-            filtersOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`absolute inset-y-0 left-0 flex w-[85vw] max-w-xs sm:max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${filtersOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div>
