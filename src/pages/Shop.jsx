@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Search,
   SlidersHorizontal,
@@ -9,8 +10,9 @@ import {
   RotateCcw,
   Headphones,
 } from "lucide-react";
-import { products } from "../data/product";
+import { formatPrice, products } from "../data/product";
 import ProductCard from "../components/ProductCard";
+import StoreHeader from "../components/StoreHeader";
 
 const PAGE_SIZE = 12;
 
@@ -28,12 +30,147 @@ const TRUST = [
   { icon: Headphones, title: "24/7 Support", text: "We're here to help" },
 ];
 
-const formatPrice = (value) =>
-  new Intl.NumberFormat("en-PK", {
-    style: "currency",
-    currency: "PKR",
-    maximumFractionDigits: 0,
-  }).format(value);
+function FilterPanel({
+  categories,
+  category,
+  categoryCounts,
+  minPrice,
+  maxPrice,
+  minPriceLimit,
+  priceLimit,
+  setCategory,
+  setMinPriceLimit,
+  setPriceLimit,
+  onCategorySelect,
+}) {
+  function clampMin() {
+    const currentMax = Number(priceLimit === "" ? maxPrice : priceLimit);
+    let next =
+      minPriceLimit === "" ? minPrice : Number(minPriceLimit);
+
+    if (!Number.isFinite(next) || next < minPrice) next = minPrice;
+    if (next > maxPrice) next = maxPrice;
+    if (next > currentMax) {
+      setPriceLimit(next);
+    }
+    setMinPriceLimit(next);
+  }
+
+  function clampMax() {
+    const currentMin = Number(minPriceLimit === "" ? minPrice : minPriceLimit);
+    let next = priceLimit === "" ? maxPrice : Number(priceLimit);
+
+    if (!Number.isFinite(next) || next > maxPrice) next = maxPrice;
+    if (next < minPrice) next = minPrice;
+    if (next < currentMin) next = currentMin;
+    setPriceLimit(next);
+  }
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
+          Categories
+        </h3>
+        <ul className="mt-3 sm:mt-4 space-y-1">
+          {categories.map((item) => {
+            const active = category === item;
+            return (
+              <li key={item}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategory(item);
+                    onCategorySelect?.();
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${
+                    active
+                      ? "bg-brand-50 font-semibold text-brand-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="truncate pr-2">{item}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${
+                      active
+                        ? "bg-brand-500 text-white"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {categoryCounts[item] || 0}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
+          Price Range
+        </h3>
+        <div className="mt-3 sm:mt-4 px-1">
+          <input
+            type="range"
+            min={minPrice}
+            max={maxPrice}
+            value={priceLimit === "" ? maxPrice : priceLimit}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              const currentMin = Number(
+                minPriceLimit === "" ? minPrice : minPriceLimit
+              );
+              if (next < currentMin) {
+                setMinPriceLimit(next);
+              }
+              setPriceLimit(next);
+            }}
+            aria-label="Maximum price"
+            className="w-full cursor-pointer accent-brand-500"
+          />
+          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
+            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+              <span className="text-[11px] font-medium text-slate-400">Rs</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={minPriceLimit}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setMinPriceLimit(val === "" ? "" : Number(val));
+                }}
+                onBlur={clampMin}
+                placeholder={minPrice.toString()}
+                aria-label="Minimum price"
+                className="w-full text-xs font-semibold text-slate-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            <span className="text-slate-400 font-medium">to</span>
+
+            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+              <span className="text-[11px] font-medium text-slate-400">Rs</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={priceLimit}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setPriceLimit(val === "" ? "" : Number(val));
+                }}
+                onBlur={clampMax}
+                placeholder={maxPrice.toString()}
+                aria-label="Maximum price"
+                className="w-full text-xs font-semibold text-brand-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Shop() {
   const [search, setSearch] = useState("");
@@ -68,8 +205,10 @@ export default function Shop() {
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const min = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
-    const max = priceLimit === "" ? maxPrice : Number(priceLimit);
+    const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
+    const rawMax = priceLimit === "" ? maxPrice : Number(priceLimit);
+    const min = Math.min(rawMin, rawMax);
+    const max = Math.max(rawMin, rawMax);
 
     let result = products.filter((product) => {
       const matchesSearch =
@@ -151,120 +290,30 @@ export default function Shop() {
     setPriceLimit(maxPrice);
   };
 
-  const FilterPanel = (
-    <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
-          Categories
-        </h3>
-        <ul className="mt-3 sm:mt-4 space-y-1">
-          {categories.map((item) => {
-            const active = category === item;
-            return (
-              <li key={item}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategory(item);
-                    if (filtersOpen) setFiltersOpen(false);
-                  }}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${active
-                      ? "bg-brand-50 font-semibold text-brand-700"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                >
-                  <span className="truncate pr-2">{item}</span>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${active
-                        ? "bg-brand-500 text-white"
-                        : "bg-slate-100 text-slate-500"
-                      }`}
-                  >
-                    {categoryCounts[item] || 0}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      <div>
-        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
-          Price Range
-        </h3>
-        <div className="mt-3 sm:mt-4 px-1">
-          <input
-            type="range"
-            min={minPrice}
-            max={maxPrice}
-            value={priceLimit === "" ? maxPrice : priceLimit}
-            onChange={(event) => setPriceLimit(Number(event.target.value))}
-            aria-label="Maximum price"
-            className="w-full cursor-pointer accent-brand-500"
-          />
-          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
-            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
-              <span className="text-[11px] font-medium text-slate-400">Rs</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={minPriceLimit}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
-                  setMinPriceLimit(val === "" ? "" : Number(val));
-                }}
-                onBlur={() => {
-                  if (minPriceLimit === "" || Number(minPriceLimit) < minPrice) {
-                    setMinPriceLimit(minPrice);
-                  }
-                }}
-                placeholder={minPrice.toString()}
-                aria-label="Minimum price"
-                className="w-full text-xs font-semibold text-slate-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </div>
-
-            <span className="text-slate-400 font-medium">to</span>
-
-            <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
-              <span className="text-[11px] font-medium text-slate-400">Rs</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={priceLimit}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
-                  setPriceLimit(val === "" ? "" : Number(val));
-                }}
-                onBlur={() => {
-                  if (priceLimit === "" || Number(priceLimit) > maxPrice) {
-                    setPriceLimit(maxPrice);
-                  } else if (Number(priceLimit) < Number(minPriceLimit || minPrice)) {
-                    setPriceLimit(minPriceLimit || minPrice);
-                  }
-                }}
-                placeholder={maxPrice.toString()}
-                aria-label="Maximum price"
-                className="w-full text-xs font-semibold text-brand-700 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-    </div>
-  );
+  const filterProps = {
+    categories,
+    category,
+    categoryCounts,
+    minPrice,
+    maxPrice,
+    minPriceLimit,
+    priceLimit,
+    setCategory,
+    setMinPriceLimit,
+    setPriceLimit,
+  };
 
   return (
     <main className="min-h-screen bg-slate-50">
+      <StoreHeader />
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
         <div className="relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
           <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
-            <span className="hover:text-brand-600">Home</span>
+            <Link to="/shop" className="hover:text-brand-600">
+              Home
+            </Link>
             <span className="mx-2">/</span>
             <span className="font-medium text-slate-900">Shop</span>
           </nav>
@@ -311,13 +360,13 @@ export default function Shop() {
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              {FilterPanel}
+              <FilterPanel {...filterProps} />
             </div>
           </aside>
 
           <div className="min-w-0">
             {/* Toolbar */}
-            <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <div className="sticky top-16 z-20 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
                 <div className="relative flex-1">
                   <Search
@@ -527,7 +576,12 @@ export default function Shop() {
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-5 py-6">{FilterPanel}</div>
+          <div className="flex-1 overflow-y-auto px-5 py-6">
+            <FilterPanel
+              {...filterProps}
+              onCategorySelect={() => setFiltersOpen(false)}
+            />
+          </div>
           <div className="border-t border-slate-200 p-4">
             <button
               type="button"

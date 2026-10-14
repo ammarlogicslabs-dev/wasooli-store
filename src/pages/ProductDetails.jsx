@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { products, formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
+import StoreHeader from "../components/StoreHeader";
+import { useCart } from "../cart/CartContext";
 
 const STORE_NAME = "Wasooli Store";
 
@@ -36,24 +38,33 @@ function Stars({ rating }) {
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const { addItem, isWished, toggleWishlist } = useCart();
+  const addedTimer = useRef(null);
 
   const product = products.find((item) => item.slug === slug);
 
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
-  const [wished, setWished] = useState(false);
   const [tab, setTab] = useState("description");
+  const wished = product ? isWished(product.id) : false;
 
   // Reset page state when navigating between products
   useEffect(() => {
     setQuantity(1);
     setActiveImage(0);
     setAdded(false);
-    setWished(false);
     setTab("description");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
+
+  useEffect(() => {
+    return () => {
+      if (addedTimer.current) {
+        window.clearTimeout(addedTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     document.title = product
@@ -63,7 +74,9 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <main className="grid min-h-[70vh] place-items-center bg-slate-50 px-4">
+      <div className="min-h-screen bg-slate-50">
+        <StoreHeader />
+        <main className="grid min-h-[70vh] place-items-center px-4">
         <div className="text-center">
           <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand-50 text-brand-600">
             <ShoppingBag size={28} />
@@ -84,7 +97,8 @@ export default function ProductDetail() {
             Browse Products
           </Link>
         </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -122,9 +136,12 @@ export default function ProductDetail() {
   function handleAddToCart() {
     if (outOfStock) return;
 
-    // Temporary UI feedback; cart functionality comes next.
+    addItem(product, quantity);
     setAdded(true);
-    window.setTimeout(() => setAdded(false), 1800);
+    if (addedTimer.current) {
+      window.clearTimeout(addedTimer.current);
+    }
+    addedTimer.current = window.setTimeout(() => setAdded(false), 1800);
   }
 
   const cartLabel = outOfStock
@@ -135,10 +152,11 @@ export default function ProductDetail() {
 
   return (
     <main className="min-h-screen bg-white pb-24 lg:pb-0">
+      <StoreHeader />
       {/* Breadcrumb */}
       <div className="border-b border-slate-100 bg-slate-50">
         <div className="mx-auto flex max-w-8xl flex-wrap items-center gap-1.5 px-4 py-3 text-xs text-slate-500 sm:px-6 sm:text-sm lg:px-8">
-          <Link to="/" className="hover:text-brand-600">
+          <Link to="/shop" className="hover:text-brand-600">
             Home
           </Link>
           <ChevronRight size={14} className="text-slate-300" />
@@ -183,7 +201,7 @@ export default function ProductDetail() {
 
             <button
               type="button"
-              onClick={() => setWished((value) => !value)}
+              onClick={() => toggleWishlist(product.id)}
               aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
               aria-pressed={wished}
               className="absolute right-4 top-4 z-10 grid size-10 cursor-pointer place-items-center rounded-full bg-white/90 text-slate-600 shadow-sm backdrop-blur transition hover:text-red-500"

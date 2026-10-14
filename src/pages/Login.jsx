@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import {
   AlertCircle,
   ArrowRight,
@@ -46,20 +47,41 @@ function validate({ identifier, password }) {
 }
 
 export default function Login() {
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/shop";
+  const loginTimer = useRef(null);
+
   const [form, setForm] = useState({ identifier: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     document.title = `Login | ${STORE_NAME}`;
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, from, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (loginTimer.current) {
+        window.clearTimeout(loginTimer.current);
+      }
+    };
   }, []);
 
   const errors = validate(form);
 
   function handleChange(event) {
     const { name, value } = event.target;
+    setAuthError("");
     setForm((current) => ({ ...current, [name]: value }));
   }
 
@@ -72,16 +94,21 @@ export default function Login() {
     event.preventDefault();
     setTouched({ identifier: true, password: true });
 
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0 || loading) return;
 
     setLoading(true);
+    setAuthError("");
 
-    // Temporary UI feedback; real authentication comes next.
-    window.setTimeout(() => {
+    loginTimer.current = window.setTimeout(() => {
+      const result = login(form.identifier, form.password);
       setLoading(false);
-      setSuccess(true);
-      window.setTimeout(() => setSuccess(false), 2500);
-    }, 1200);
+
+      if (result.success) {
+        navigate(from, { replace: true });
+      } else {
+        setAuthError(result.message);
+      }
+    }, 800);
   }
 
   const showError = (name) => touched[name] && errors[name];
@@ -142,7 +169,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile brand */}
           <div className="mb-7 flex flex-col items-center lg:hidden">
-            <Link className="flex flex-col items-center gap-3">
+            <Link to="/login" className="flex flex-col items-center gap-3">
               <span className="grid size-20 place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md ring-2 ring-brand-100">
                 <img
                   src="/wasooli.png"
@@ -169,13 +196,13 @@ export default function Login() {
               Sign in with your username or email to continue shopping.
             </p>
 
-            {success && (
+            {authError && (
               <div
-                role="status"
-                className="mt-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
+                role="alert"
+                className="mt-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 sm:text-sm"
               >
-                <ShieldCheck size={18} />
-                Form is valid. Authentication will be connected next.
+                <AlertCircle size={16} className="shrink-0" />
+                {authError}
               </div>
             )}
 

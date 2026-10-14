@@ -374,9 +374,9 @@ export const products = [
 ];
 
 export function formatPrice(price) {
-    return new Intl.NumberFormat('ur-PK', {
-        style: 'currency',
-        currency: 'PKR',
+    return new Intl.NumberFormat("en-PK", {
+        style: "currency",
+        currency: "PKR",
         maximumFractionDigits: 0,
     }).format(price);
 }
