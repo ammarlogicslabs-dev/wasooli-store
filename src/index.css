@@ -55,3 +55,11 @@ img {
     display: block;
     max-width: 100%;
 }
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

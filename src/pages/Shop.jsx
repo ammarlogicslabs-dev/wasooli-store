@@ -137,28 +137,31 @@ export default function Shop() {
   };
 
   const FilterPanel = (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
           Categories
         </h3>
-        <ul className="mt-4 space-y-1">
+        <ul className="mt-3 sm:mt-4 space-y-1">
           {categories.map((item) => {
             const active = category === item;
             return (
               <li key={item}>
                 <button
                   type="button"
-                  onClick={() => setCategory(item)}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
+                  onClick={() => {
+                    setCategory(item);
+                    if (filtersOpen) setFiltersOpen(false);
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${
                     active
                       ? "bg-brand-50 font-semibold text-brand-700"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
-                  <span>{item}</span>
+                  <span className="truncate pr-2">{item}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${
                       active
                         ? "bg-brand-500 text-white"
                         : "bg-slate-100 text-slate-500"
@@ -177,7 +180,7 @@ export default function Shop() {
         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
           Max Price
         </h3>
-        <div className="mt-4 px-1">
+        <div className="mt-3 sm:mt-4 px-1">
           <input
             type="range"
             min={minPrice}
@@ -199,8 +202,11 @@ export default function Shop() {
       {activeFilters.length > 0 && (
         <button
           type="button"
-          onClick={clearAll}
-          className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+          onClick={() => {
+            clearAll();
+            if (filtersOpen) setFiltersOpen(false);
+          }}
+          className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
         >
           Reset all filters
         </button>
@@ -213,22 +219,22 @@ export default function Shop() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="relative mx-auto max-w-8xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="relative mx-auto max-w-7xl 2xl:max-w-[1536px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
           <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
-            <span className="hover:text-brand-600">Home</span>
+            <span className="hover:text-brand-600">Home</span>  
             <span className="mx-2">/</span>
             <span className="font-medium text-slate-900">Shop</span>
           </nav>
 
-          <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-brand-600">
+          <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-brand-600">
             Welcome to Wasooli Store
           </p>
 
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+          <h1 className="mt-2 sm:mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
             Explore Products<span className="text-brand-500">.</span>
           </h1>
 
-          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+          <p className="mt-3 sm:mt-4 max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-slate-600">
             Discover products selected by Wasooli Store for your everyday style
             and needs.
           </p>
@@ -237,14 +243,15 @@ export default function Shop() {
 
       {/* Trust bar */}
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-8xl grid-cols-2 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <div className="mx-auto grid max-w-7xl 2xl:max-w-[1536px] grid-cols-2 gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:grid-cols-4 lg:px-8">
           {TRUST.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <Icon size={18} />
+            <div key={title} className="flex items-center gap-2.5 sm:gap-3">
+              <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                <Icon size={16} className="sm:hidden" />
+                <Icon size={18} className="hidden sm:block" />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">
+                <p className="truncate text-xs sm:text-sm font-semibold text-slate-900">
                   {title}
                 </p>
                 <p className="hidden truncate text-xs text-slate-500 sm:block">
@@ -256,23 +263,23 @@ export default function Shop() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8">
+      <section className="mx-auto max-w-7xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[270px_1fr] xl:gap-10">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               {FilterPanel}
             </div>
           </aside>
 
-          <div>
+          <div className="min-w-0">
             {/* Toolbar */}
-            <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-slate-50/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
                 <div className="relative flex-1">
                   <Search
-                    size={19}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 sm:left-4"
                   />
                   <input
                     type="search"
@@ -280,18 +287,28 @@ export default function Shop() {
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search products..."
                     aria-label="Search products"
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:py-3 sm:pl-11 sm:pr-4"
                   />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600"
+                      aria-label="Clear search"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setFiltersOpen(true)}
-                    className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-brand-500 lg:hidden"
+                    className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-700 shadow-xs transition hover:border-brand-500 sm:flex-none sm:px-4 sm:py-3 lg:hidden"
                   >
-                    <SlidersHorizontal size={16} className="text-brand-600" />
-                    Filters
+                    <SlidersHorizontal size={15} className="text-brand-600" />
+                    <span>Filters</span>
                     {activeFilters.length > 0 && (
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1.5 text-xs font-semibold text-white">
                         {activeFilters.length}
@@ -299,12 +316,12 @@ export default function Shop() {
                     )}
                   </button>
 
-                  <label className="relative flex flex-1 items-center sm:flex-none">
+                  <label className="relative flex flex-1 items-center sm:flex-none sm:w-48">
                     <select
                       value={sort}
                       onChange={(event) => setSort(event.target.value)}
                       aria-label="Sort products"
-                      className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                      className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3.5 pr-8 text-xs sm:text-sm font-medium text-slate-700 shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:py-3 sm:pl-4 sm:pr-10"
                     >
                       {SORT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -321,15 +338,15 @@ export default function Shop() {
               </div>
 
               {/* Mobile category chips */}
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
+              <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {categories.map((item) => (
                   <button
                     key={item}
                     type="button"
                     onClick={() => setCategory(item)}
-                    className={`whitespace-nowrap cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                    className={`shrink-0 whitespace-nowrap cursor-pointer rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition ${
                       category === item
-                        ? "bg-brand-500 text-white shadow-sm"
+                        ? "bg-brand-500 text-white shadow-xs"
                         : "border border-slate-200 bg-white text-slate-600 hover:border-brand-500 hover:text-brand-600"
                     }`}
                   >
@@ -340,8 +357,8 @@ export default function Shop() {
             </div>
 
             {/* Results summary + active filters */}
-            <div className="mb-5 mt-5 flex flex-wrap items-center gap-2">
-              <p className="mr-2 text-sm text-slate-500">
+            <div className="mb-4 mt-3 sm:mb-5 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <p className="mr-2 text-xs sm:text-sm text-slate-500">
                 Showing{" "}
                 <span className="font-semibold text-slate-900">
                   {visibleProducts.length}
@@ -358,11 +375,11 @@ export default function Shop() {
                   key={filter.key}
                   type="button"
                   onClick={filter.clear}
-                  className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-3 pr-2 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
+                  className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-0.5 pl-2.5 pr-1.5 text-[11px] sm:text-xs font-medium text-brand-700 transition hover:bg-brand-100 sm:py-1 sm:pl-3 sm:pr-2"
                   aria-label={`Remove filter ${filter.label}`}
                 >
-                  {filter.label}
-                  <X size={14} className="opacity-70 group-hover:opacity-100" />
+                  <span>{filter.label}</span>
+                  <X size={13} className="opacity-70 group-hover:opacity-100" />
                 </button>
               ))}
 
@@ -370,7 +387,7 @@ export default function Shop() {
                 <button
                   type="button"
                   onClick={clearAll}
-                  className="cursor-pointer text-xs font-semibold text-slate-500 underline-offset-2 hover:text-brand-600 hover:underline"
+                  className="cursor-pointer text-[11px] sm:text-xs font-semibold text-slate-500 underline-offset-2 hover:text-brand-600 hover:underline"
                 >
                   Clear all
                 </button>
@@ -380,14 +397,14 @@ export default function Shop() {
             {/* Grid */}
             {visibleProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-3 gap-4 sm:gap-6 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4">
+                <div className="grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
                   {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
 
-                <div className="mt-10 flex flex-col items-center gap-3">
-                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-slate-200">
+                <div className="mt-8 sm:mt-12 flex flex-col items-center gap-3">
+                  <div className="h-1.5 w-40 sm:w-56 overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-full rounded-full bg-brand-500 transition-all"
                       style={{
@@ -408,7 +425,7 @@ export default function Shop() {
                       onClick={() =>
                         setVisibleCount((count) => count + PAGE_SIZE)
                       }
-                      className="cursor-pointer rounded-xl border border-brand-500 bg-white px-8 py-3 text-sm font-semibold text-brand-600 shadow-sm transition hover:bg-brand-500 hover:text-white"
+                      className="w-full max-w-xs sm:w-auto cursor-pointer rounded-xl border border-brand-500 bg-white px-8 py-3 text-sm font-semibold text-brand-600 shadow-xs transition hover:bg-brand-500 hover:text-white"
                     >
                       Load more products
                     </button>
@@ -416,20 +433,21 @@ export default function Shop() {
                 </div>
               </>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
-                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                  <Search size={24} />
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-12 sm:px-6 sm:py-16 text-center">
+                <span className="mx-auto flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                  <Search size={22} className="sm:hidden" />
+                  <Search size={24} className="hidden sm:block" />
                 </span>
-                <h2 className="mt-4 text-lg font-semibold text-slate-900">
+                <h2 className="mt-4 text-base sm:text-lg font-semibold text-slate-900">
                   No products found
                 </h2>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
                   Try a different search, category, or price range.
                 </p>
                 <button
                   type="button"
                   onClick={clearAll}
-                  className="mt-5 cursor-pointer rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
+                  className="mt-5 w-full max-w-xs sm:w-auto cursor-pointer rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
                 >
                   Clear filters
                 </button>
@@ -441,29 +459,32 @@ export default function Shop() {
 
       {/* Mobile filter drawer */}
       <div
-        className={`fixed inset-0 z-50 lg:hidden ${
-          filtersOpen ? "" : "pointer-events-none"
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
+          filtersOpen ? "visible" : "invisible pointer-events-none"
         }`}
         aria-hidden={!filtersOpen}
       >
         <div
           onClick={() => setFiltersOpen(false)}
-          className={`absolute inset-0 cursor-pointer bg-slate-900/50 transition-opacity ${
+          className={`absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 ${
             filtersOpen ? "opacity-100" : "opacity-0"
           }`}
         />
         <aside
-          className={`absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col bg-white shadow-xl transition-transform duration-300 ${
+          className={`absolute inset-y-0 left-0 flex w-[85vw] max-w-xs sm:max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
             filtersOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 className="text-base font-semibold text-slate-900">Filters</h2>
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">Filters</h2>
+              <p className="text-xs text-slate-500">{filteredProducts.length} products available</p>
+            </div>
             <button
               type="button"
               onClick={() => setFiltersOpen(false)}
               aria-label="Close filters"
-              className="cursor-pointer rounded-full p-1.5 text-slate-500 hover:bg-slate-100"
+              className="cursor-pointer rounded-full p-2 text-slate-500 hover:bg-slate-100"
             >
               <X size={20} />
             </button>
@@ -473,7 +494,7 @@ export default function Shop() {
             <button
               type="button"
               onClick={() => setFiltersOpen(false)}
-              className="w-full cursor-pointer rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
+              className="w-full cursor-pointer rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 active:scale-[0.99]"
             >
               Show {filteredProducts.length} products
             </button>

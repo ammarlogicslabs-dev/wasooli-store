@@ -164,7 +164,7 @@ export default function ProductDetail() {
         </Link>
       </div>
 
-      <section className="mx-auto grid max-w-8xl gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
+      <section className="mx-auto grid max-w-7xl 2xl:max-w-[1536px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
         {/* Gallery */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
@@ -499,7 +499,7 @@ export default function ProductDetail() {
               </Link>
             </div>
 
-            <div className="mt-7 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            <div className="mt-7 grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               {relatedProducts.map((item) => (
                 <ProductCard key={item.id} product={item} />
               ))}
