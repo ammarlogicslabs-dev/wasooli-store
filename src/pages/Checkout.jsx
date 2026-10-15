@@ -55,13 +55,13 @@ const DELIVERY_OPTIONS = [
   {
     id: "standard",
     title: "Standard delivery",
-    text: "3–5 working days",
+    text: "3-5 working days",
     fee: 200,
   },
   {
     id: "express",
     title: "Express delivery",
-    text: "1–2 working days",
+    text: "1-2 working days",
     fee: 300,
   },
 ];
@@ -221,7 +221,7 @@ function FieldError({ id, message }) {
   );
 }
 
-export default function Checkout() {
+  export default function Checkout() {
   const { user } = useAuth();
   const { items, clearCart } = useCart();
   const [form, setForm] = useState(() => {
@@ -761,24 +761,26 @@ export default function Checkout() {
                   </p>
                   <dl className="mt-3 space-y-2 text-sm">
                     {[
-                      ["Bank", BANK_ACCOUNT.bank, "bank"],
-                      ["Account title", BANK_ACCOUNT.title, "title"],
-                      ["Account number", BANK_ACCOUNT.accountNumber, "account"],
-                      ["IBAN", BANK_ACCOUNT.iban, "iban"],
-                    ].map(([label, value, field]) => (
+                      ["Bank", BANK_ACCOUNT.bank, "bank", false],
+                      ["Account title", BANK_ACCOUNT.title, "title", false],
+                      ["Account number", BANK_ACCOUNT.accountNumber, "account", true],
+                      ["IBAN", BANK_ACCOUNT.iban, "iban", true],
+                    ].map(([label, value, field, canCopy]) => (
                       <div key={field} className="flex items-center justify-between gap-3">
                         <div>
                           <dt className="text-xs text-slate-500">{label}</dt>
                           <dd className="font-medium text-slate-900">{value}</dd>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => copyBankDetail(field, value)}
-                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-white"
-                        >
-                          <Copy size={13} />
-                          {copiedField === field ? "Copied" : "Copy"}
-                        </button>
+                        {canCopy && (
+                          <button
+                            type="button"
+                            onClick={() => copyBankDetail(field, value)}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-white"
+                          >
+                            <Copy size={13} />
+                            {copiedField === field ? "Copied" : "Copy"}
+                          </button>
+                        )}
                       </div>
                     ))}
                   </dl>

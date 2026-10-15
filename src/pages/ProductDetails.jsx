@@ -204,11 +204,22 @@ export default function ProductDetail() {
               />
             </button>
 
-            <img
-              src={images[activeImage]}
-              alt={product.title}
-              className="aspect-4/4.5 w-full cursor-zoom-in object-cover transition duration-500 group-hover:scale-110 sm:aspect-square"
-            />
+            <div className="aspect-4/4.5 w-full overflow-hidden sm:aspect-square">
+              <div
+                className="flex h-full transition-transform duration-300 ease-out motion-reduce:transition-none"
+                style={{ transform: `translateX(-${activeImage * 100}%)` }}
+              >
+                {images.map((image, index) => (
+                  <div key={image} className="h-full w-full shrink-0 overflow-hidden">
+                    <img
+                      src={image}
+                      alt={index === 0 ? product.title : `${product.title} view ${index + 1}`}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {images.length > 1 && (
@@ -388,7 +399,7 @@ export default function ProductDetail() {
               {
                 icon: Truck,
                 title: "Fast Delivery",
-                text: "Ships in 1–2 working days",
+                text: "Ships in 1-2 working days",
               },
               {
                 icon: RotateCcw,
@@ -420,7 +431,7 @@ export default function ProductDetail() {
               {
                 id: "shipping",
                 title: "Shipping and Returns",
-                body: "We offer fast and reliable shipping on every order. Orders are packed within 1–2 working days. Standard delivery usually arrives in 3–5 working days, and express delivery in 1–2 working days. You choose the option at checkout.",
+                body: "We offer fast and reliable shipping on every order. Orders are packed within 1-2 working days. Standard delivery usually arrives in 3-5 working days, and express delivery in 1-2 working days. You choose the option at checkout.",
               },
               {
                 id: "returns",

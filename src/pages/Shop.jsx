@@ -292,7 +292,7 @@ export default function Shop() {
       key: "price",
       label:
         minPriceLimit > minPrice && priceLimit < maxPrice
-          ? `${formatPrice(minPriceLimit)} – ${formatPrice(priceLimit)}`
+          ? `${formatPrice(minPriceLimit)} - ${formatPrice(priceLimit)}`
           : minPriceLimit > minPrice
           ? `From ${formatPrice(minPriceLimit)}`
           : `Up to ${formatPrice(priceLimit)}`,

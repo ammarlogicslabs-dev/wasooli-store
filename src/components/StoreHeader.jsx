@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Heart, LogOut, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
@@ -156,6 +156,8 @@ export default function StoreHeader() {
   } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
+  const logoutToastId = useRef(null);
+  const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
 
@@ -209,46 +211,66 @@ export default function StoreHeader() {
     };
   }, [drawerOpen]);
 
-  function handleLogout() {
+  function dismissLogoutPrompt() {
+    if (logoutToastId.current == null) return;
+    toast.dismiss(logoutToastId.current);
+  }
 
-    toast(({ closeToast }) => (
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Are you sure?</h3>
-        <p className="text-gray-600 mb-4">You will be logged out of your account.</p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              closeToast();
-              closeCart();
-              closeWishlist();
-              logout();
-              navigate('/login');
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Yes, Logout!
-          </button>
-          <button
-            onClick={closeToast}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-          >
-            Cancel
-          </button>
+  function handleLogout() {
+    if (logoutToastId.current != null) return;
+
+    setLogoutPromptOpen(true);
+    logoutToastId.current = toast(
+      ({ closeToast }) => (
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Are you sure?</h3>
+          <p className="text-gray-600 mb-4">You will be logged out of your account.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                closeToast();
+                closeCart();
+                closeWishlist();
+                logout();
+                navigate("/login");
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Yes, Logout!
+            </button>
+            <button
+              onClick={closeToast}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
-    ), {
-      position: "top-right",
-      autoClose: false,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    })
+      ),
+      {
+        position: "top-right",
+        autoClose: false,
+        hideProgressBar: true,
+        closeOnClick: false,
+        draggable: false,
+        onClose: () => {
+          logoutToastId.current = null;
+          setLogoutPromptOpen(false);
+        },
+      }
+    );
   }
 
   return (
     <>
+      {logoutPromptOpen && (
+        <button
+          type="button"
+          aria-label="Close logout confirmation"
+          onClick={dismissLogoutPrompt}
+          className="fixed inset-0 z-[9998] cursor-default bg-slate-900/50"
+        />
+      )}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link to="/shop" className="flex min-w-0 items-center gap-2.5">
@@ -362,7 +384,7 @@ export default function StoreHeader() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4">
             {items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <span className="grid size-14 place-items-center rounded-full bg-brand-50 text-brand-600">
@@ -467,7 +489,7 @@ export default function StoreHeader() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4">
             {wishlistItems.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <span className="grid size-14 place-items-center rounded-full bg-brand-50 text-brand-600">

@@ -1,19 +1,55 @@
-# React + Vite
+# Wasooli Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React storefront for networking cables. Shop, product details, cart, wishlist, and checkout run in the browser with a demo login.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Vite and React
+- React Router
+- Tailwind CSS
+- Framer Motion, Lucide, and React Toastify
 
-## React Compiler
+## Run locally
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+```bash
+npm install
+npm run dev
+```
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+The app opens at `http://localhost:5173`.
 
-## Expanding the ESLint configuration
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Demo login
+
+Shop, product, and checkout routes require a session. Sign in with either identifier and the password below.
+
+| Field | Value |
+| --- | --- |
+| Username or email | `Wasooli` or `wasooli123@gmail.com` |
+| Password | `wasooli123` |
+
+The session is stored in `localStorage` under `wasooli_user`. Cart and wishlist use `wasooli_cart` and `wasooli_wishlist`.
+
+## Routes
+
+| Path | Page |
+| --- | --- |
+| `/` | Shop when signed in, otherwise login |
+| `/login` | Sign in |
+| `/shop` | Product catalog |
+| `/products/:slug` | Product details |
+| `/checkout` | Delivery, payment, and order confirmation |
+
+## What you can do
+
+- Search, filter by category and price, and sort the catalog
+- Open a product for description, features, specifications, and shipping notes
+- Add items from the product card or the product page; the cart drawer opens from the bag button
+- Save items to the wishlist and open them from the header
+- Check out with standard or express delivery, cash on delivery, or bank transfer
