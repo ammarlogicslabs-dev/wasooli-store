@@ -10,7 +10,6 @@ import {
   Lock,
   RotateCcw,
   ShieldCheck,
-  ShoppingBag,
   Truck,
   User,
 } from "lucide-react";

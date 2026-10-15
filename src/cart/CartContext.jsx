@@ -18,13 +18,23 @@ export function CartProvider({ children }) {
   );
 
   const addItem = useCallback((product, quantity = 1) => {
-    const nextQty = Math.max(1, Number(quantity) || 1);
+    const requested = Math.max(1, Number(quantity) || 1);
+    const stock = Number.isFinite(product.stock) ? product.stock : null;
+
     setItems((current) => {
       const existing = current.find((item) => item.id === product.id);
+      const currentQty = existing?.quantity ?? 0;
+      const nextQty =
+        stock === null
+          ? currentQty + requested
+          : Math.min(stock, currentQty + requested);
+
+      if (nextQty <= 0) return current;
+
       const next = existing
         ? current.map((item) =>
             item.id === product.id
-              ? { ...item, quantity: item.quantity + nextQty }
+              ? { ...item, quantity: nextQty, stock }
               : item
           )
         : [
@@ -35,9 +45,25 @@ export function CartProvider({ children }) {
               title: product.title,
               image: product.image,
               price: product.price,
+              stock,
               quantity: nextQty,
             },
           ];
+
+      localStorage.setItem("wasooli_cart", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const updateQuantity = useCallback((id, quantity) => {
+    setItems((current) => {
+      const next = current.flatMap((item) => {
+        if (item.id !== id) return [item];
+        const stock = Number.isFinite(item.stock) ? item.stock : null;
+        const nextQty = Math.max(1, Number(quantity) || 1);
+        const capped = stock === null ? nextQty : Math.min(stock, nextQty);
+        return [{ ...item, quantity: capped }];
+      });
       localStorage.setItem("wasooli_cart", JSON.stringify(next));
       return next;
     });
@@ -51,6 +77,11 @@ export function CartProvider({ children }) {
     });
   }, []);
 
+  const clearCart = useCallback(() => {
+    setItems([]);
+    localStorage.setItem("wasooli_cart", "[]");
+  }, []);
+
   const toggleWishlist = useCallback((id) => {
     setWishlist((current) => {
       const next = current.includes(id)
@@ -61,10 +92,7 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  const isWished = useCallback(
-    (id) => wishlist.includes(id),
-    [wishlist]
-  );
+  const isWished = useCallback((id) => wishlist.includes(id), [wishlist]);
 
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
 
@@ -73,12 +101,24 @@ export function CartProvider({ children }) {
       items,
       cartCount,
       addItem,
+      updateQuantity,
       removeItem,
+      clearCart,
       wishlist,
       isWished,
       toggleWishlist,
     }),
-    [items, cartCount, addItem, removeItem, wishlist, isWished, toggleWishlist]
+    [
+      items,
+      cartCount,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+      wishlist,
+      isWished,
+      toggleWishlist,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetails";
+import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./auth/AuthContext";
@@ -28,6 +29,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProductDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute>
+            <Checkout />
           </ProtectedRoute>
         }
       />

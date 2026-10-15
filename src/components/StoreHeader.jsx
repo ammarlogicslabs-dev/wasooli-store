@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, ShoppingBag, Trash2, X } from "lucide-react";
+import { LogOut, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
 
 const STORE_NAME = "Wasooli Store";
 
-function CartItem({ item, onNavigate, onRemove }) {
+function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
   const productPath = `/products/${item.slug}`;
+  const maxQuantity = Number.isFinite(item.stock) ? item.stock : Infinity;
 
   return (
     <li className="flex gap-3">
@@ -29,11 +30,40 @@ function CartItem({ item, onNavigate, onRemove }) {
           {item.title}
         </Link>
         <p className="mt-1 text-xs text-slate-500">
-          Qty {item.quantity} &times; {formatPrice(item.price)}
+          {formatPrice(item.price)} each
         </p>
-        <p className="mt-0.5 text-sm font-semibold text-slate-900">
-          {formatPrice(item.price * item.quantity)}
-        </p>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex h-8 items-center rounded-lg border border-slate-200 bg-white">
+            <button
+              type="button"
+              disabled={item.quantity <= 1}
+              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+              aria-label={`Decrease quantity of ${item.title}`}
+              className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <Minus size={14} />
+            </button>
+            <span
+              className="min-w-6 text-center text-sm font-semibold text-slate-900"
+              aria-live="polite"
+            >
+              {item.quantity}
+            </span>
+            <button
+              type="button"
+              disabled={item.quantity >= maxQuantity}
+              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+              aria-label={`Increase quantity of ${item.title}`}
+              className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          <p className="text-sm font-semibold text-slate-900">
+            {formatPrice(item.price * item.quantity)}
+          </p>
+        </div>
       </div>
 
       <button
@@ -50,7 +80,7 @@ function CartItem({ item, onNavigate, onRemove }) {
 
 export default function StoreHeader() {
   const { user, logout } = useAuth();
-  const { items, cartCount, removeItem } = useCart();
+  const { items, cartCount, removeItem, updateQuantity } = useCart();
   const navigate = useNavigate();
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -207,6 +237,7 @@ export default function StoreHeader() {
                     item={item}
                     onNavigate={closeCart}
                     onRemove={removeItem}
+                    onQuantityChange={updateQuantity}
                   />
                 ))}
               </ul>
@@ -222,15 +253,24 @@ export default function StoreHeader() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Delivery details are shown at checkout.
+                Delivery details are collected at checkout.
               </p>
-              <Link
-                to="/shop"
-                onClick={closeCart}
-                className="mt-4 flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
-              >
-                Continue shopping
-              </Link>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Link
+                  to="/shop"
+                  onClick={closeCart}
+                  className="flex h-11 items-center justify-center rounded-xl border border-slate-200 px-2 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600 sm:text-sm"
+                >
+                  Continue shopping
+                </Link>
+                <Link
+                  to="/checkout"
+                  onClick={closeCart}
+                  className="flex h-11 items-center justify-center rounded-xl bg-brand-500 px-2 text-center text-xs font-semibold text-white transition hover:bg-brand-600 sm:text-sm"
+                >
+                  Checkout
+                </Link>
+              </div>
             </div>
           )}
         </aside>
