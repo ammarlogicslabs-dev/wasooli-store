@@ -273,13 +273,19 @@ function FieldError({ id, message }) {
 
   function handleChange(event) {
     const { name, value } = event.target;
-    setForm((current) => {
-      const next = { ...current, [name]: value };
-      if (name === "province" && value !== current.province) {
-        next.city = "";
-      }
-      return next;
-    });
+
+
+    if(name === "phone" && !/^\d{0,11}$/.test(value)) {
+      return;
+    }  
+      setForm((current) => {
+        const next = { ...current, [name]: value };
+        if (name === "province" && value !== current.province) {
+          next.city = "";
+        }
+        return next;
+      });
+    
   }
 
   function handleBlur(event) {
