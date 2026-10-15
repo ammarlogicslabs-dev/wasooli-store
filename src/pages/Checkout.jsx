@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
   Banknote,
   Building2,
-  Check,
   ChevronRight,
   Copy,
   MapPin,
@@ -128,6 +128,93 @@ function validate(form) {
     errors.transactionRef = "Enter the bank transaction reference.";
   }
   return errors;
+}
+
+const SUCCESS_BITS = [
+  { x: -52, y: -10, color: "#12b76a", delay: 0.18 },
+  { x: 50, y: -16, color: "#2c9aff", delay: 0.22 },
+  { x: -28, y: -42, color: "#f5b942", delay: 0.16 },
+  { x: 32, y: -44, color: "#12b76a", delay: 0.26 },
+  { x: -54, y: 18, color: "#7c5cfc", delay: 0.2 },
+  { x: 56, y: 14, color: "#f04438", delay: 0.24 },
+  { x: -14, y: 46, color: "#2c9aff", delay: 0.28 },
+  { x: 16, y: 48, color: "#12b76a", delay: 0.2 },
+  { x: 4, y: -52, color: "#f5b942", delay: 0.3 },
+  { x: -6, y: 6, color: "#12b76a", delay: 0.14 },
+];
+
+function riseMotion(delay, reduce) {
+  if (reduce) return {};
+  return {
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, delay, ease: "easeOut" },
+  };
+}
+
+function OrderSuccessMark() {
+  const reduce = useReducedMotion();
+
+  return (
+    <div className="relative mx-auto size-[6.5rem]" aria-hidden="true">
+      {[0.15, 0.4].map((delay) => (
+        <motion.span
+          key={delay}
+          className="absolute inset-[1.15rem] rounded-full border-[3px] border-[#12b76a]"
+          initial={reduce ? false : { scale: 0.8, opacity: 0.65 }}
+          animate={{ scale: reduce ? 1 : 1.9, opacity: reduce ? 0 : 0 }}
+          transition={{ duration: reduce ? 0 : 0.95, delay, ease: "easeOut" }}
+        />
+      ))}
+      {SUCCESS_BITS.map((bit) => (
+        <motion.span
+          key={`${bit.x}-${bit.y}`}
+          className="absolute top-1/2 left-1/2 size-2 rounded-full"
+          style={{ background: bit.color, margin: "-4px" }}
+          initial={reduce ? false : { x: 0, y: 0, scale: 1, opacity: 1 }}
+          animate={{
+            x: bit.x,
+            y: bit.y,
+            scale: 0.25,
+            opacity: 0,
+          }}
+          transition={{
+            duration: reduce ? 0 : 0.75,
+            delay: reduce ? 0 : bit.delay,
+            ease: "easeOut",
+          }}
+        />
+      ))}
+      <motion.span
+        className="absolute inset-[1.15rem] grid place-items-center rounded-full bg-[#12b76a] shadow-[0_12px_30px_rgb(18_183_106/0.35)]"
+        initial={reduce ? false : { scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={
+          reduce
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 280, damping: 16 }
+        }
+      >
+        <svg viewBox="0 0 52 52" className="size-12" aria-hidden="true">
+          <motion.path
+            d="M14 27.5l8 8 16.5-17"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={reduce ? false : { pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{
+              duration: reduce ? 0 : 0.4,
+              delay: reduce ? 0 : 0.35,
+              ease: "easeOut",
+            }}
+          />
+        </svg>
+      </motion.span>
+    </div>
+  );
 }
 
 function FieldError({ id, message }) {
@@ -280,37 +367,65 @@ export default function Checkout() {
         : "border-slate-200 focus:border-brand-500 focus:ring-brand-100"
     }`;
 
+  const reduceMotion = useReducedMotion();
+
   if (order) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="flex h-dvh flex-col overflow-hidden bg-slate-50">
         <StoreHeader />
-        <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <div className="rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm sm:px-10">
-            <span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-              <Check size={30} />
-            </span>
-            <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-brand-600">
-              Order placed
-            </p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-              Thank you, {order.delivery.fullName.split(" ")[0]}.
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Order <span className="font-semibold text-slate-900">{order.id}</span>{" "}
-              is confirmed.{" "}
-              {order.payment.method === "bank"
-                ? `Bank transfer reference ${order.payment.reference} is saved. The order ships after the payment is confirmed.`
-                : `Pay ${formatPrice(order.total)} in cash when it arrives.`}
-            </p>
+        <main className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center px-4 py-3 sm:px-6">
+          <div className="grid w-full items-center gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 text-center shadow-sm sm:px-6 sm:py-5 lg:grid-cols-2 lg:gap-8 lg:px-8 lg:text-left">
+            <div>
+              <OrderSuccessMark />
+              <motion.p
+                className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600 sm:text-xs"
+                {...riseMotion(0.45, reduceMotion)}
+              >
+                Order confirmed
+              </motion.p>
+              <motion.h1
+                className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl"
+                {...riseMotion(0.55, reduceMotion)}
+              >
+                Thank you, {order.delivery.fullName.split(" ")[0]}.
+              </motion.h1>
+              <motion.p
+                className="mt-1 text-2xl font-bold text-slate-900"
+                {...riseMotion(0.65, reduceMotion)}
+              >
+                {formatPrice(order.total)}
+              </motion.p>
+              <motion.p
+                className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500 sm:text-sm lg:mx-0"
+                {...riseMotion(0.75, reduceMotion)}
+              >
+                Order <span className="font-semibold text-slate-900">{order.id}</span>{" "}
+                is confirmed.{" "}
+                {order.payment.method === "bank"
+                  ? `Bank transfer reference ${order.payment.reference} is saved. The order ships after the payment is confirmed.`
+                  : "Pay this amount in cash when it arrives."}
+              </motion.p>
+              <motion.div className="mt-3" {...riseMotion(1.05, reduceMotion)}>
+                <Link
+                  to="/shop"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Continue shopping
+                </Link>
+              </motion.div>
+            </div>
 
-            <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            <motion.div
+              className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-left sm:p-4"
+              {...riseMotion(0.9, reduceMotion)}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500">
                 Delivering to
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
+              <p className="mt-1.5 text-sm font-semibold text-slate-900">
                 {order.delivery.fullName}
               </p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <p className="mt-1 text-sm leading-5 text-slate-600">
                 {order.delivery.address}
                 {order.delivery.landmark ? `, ${order.delivery.landmark}` : ""}
                 <br />
@@ -318,20 +433,13 @@ export default function Checkout() {
                 <br />
                 {order.delivery.phone}
               </p>
-              <p className="mt-3 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-slate-600">
                 {order.delivery.method.title} · {order.delivery.method.text}
               </p>
-              <p className="mt-1 text-sm font-medium text-slate-900">
+              <p className="mt-0.5 text-sm font-medium text-slate-900">
                 Payment: {order.payment.label}
               </p>
-            </div>
-
-            <Link
-              to="/shop"
-              className="mt-8 inline-flex h-11 items-center justify-center rounded-xl bg-brand-500 px-6 text-sm font-semibold text-white transition hover:bg-brand-600"
-            >
-              Continue shopping
-            </Link>
+            </motion.div>
           </div>
         </main>
       </div>

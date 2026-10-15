@@ -184,7 +184,7 @@ export default function ProductDetail() {
 
       <section className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
         {/* Gallery */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        <div className="lg:top-24 lg:self-start">
           <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
             <div className="absolute left-4 top-4 z-10 flex flex-col items-start gap-2">
               {product.badge && (
@@ -372,7 +372,7 @@ export default function ProductDetail() {
                 type="button"
                 disabled={outOfStock}
                 onClick={handleAddToCart}
-                className={`flex min-h-13 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 ${
+                className={`inline-flex h-13 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 ${
                   added
                     ? "bg-emerald-500 hover:bg-emerald-600"
                     : "bg-brand-500 hover:bg-brand-600"
@@ -529,9 +529,9 @@ export default function ProductDetail() {
       {/* Mobile sticky buy bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-8xl items-center gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-xs text-slate-500">{product.title}</p>
-            <p className="text-lg font-bold text-slate-900">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-slate-500">{product.title}</p>
+            <p className="text-lg font-bold leading-none text-slate-900">
               {formatPrice(product.price)}
             </p>
           </div>
@@ -540,7 +540,7 @@ export default function ProductDetail() {
             type="button"
             disabled={outOfStock}
             onClick={handleAddToCart}
-            className={`ml-auto flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
+            className={`inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
               added
                 ? "bg-emerald-500"
                 : "bg-brand-500 hover:bg-brand-600"

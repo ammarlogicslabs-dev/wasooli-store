@@ -66,6 +66,13 @@ function FilterPanel({
     setPriceLimit(next);
   }
 
+  const sliderMin = Number(minPriceLimit === "" ? minPrice : minPriceLimit);
+  const sliderMax = Number(priceLimit === "" ? maxPrice : priceLimit);
+  const priceSpan = Math.max(maxPrice - minPrice, 1);
+  const minPercent = ((Math.min(sliderMin, sliderMax) - minPrice) / priceSpan) * 100;
+  const maxPercent = ((Math.max(sliderMax, sliderMin) - minPrice) / priceSpan) * 100;
+  const minOnTop = sliderMin > maxPrice - priceSpan * 0.1;
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <div>
@@ -111,24 +118,42 @@ function FilterPanel({
           Price Range
         </h3>
         <div className="mt-3 sm:mt-4 px-1">
-          <input
-            type="range"
-            min={minPrice}
-            max={maxPrice}
-            value={priceLimit === "" ? maxPrice : priceLimit}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              const currentMin = Number(
-                minPriceLimit === "" ? minPrice : minPriceLimit
-              );
-              if (next < currentMin) {
-                setMinPriceLimit(next);
-              }
-              setPriceLimit(next);
-            }}
-            aria-label="Maximum price"
-            className="w-full cursor-pointer accent-brand-500"
-          />
+          <div className="relative h-5">
+            <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-slate-200" />
+            <div
+              className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-brand-500"
+              style={{
+                left: `${minPercent}%`,
+                width: `${Math.max(maxPercent - minPercent, 0)}%`,
+              }}
+            />
+            <input
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              value={Math.min(sliderMin, sliderMax)}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setMinPriceLimit(Math.min(next, sliderMax));
+              }}
+              aria-label="Minimum price"
+              className="dual-range"
+              style={{ zIndex: minOnTop ? 5 : 3 }}
+            />
+            <input
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              value={Math.max(sliderMax, sliderMin)}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setPriceLimit(Math.max(next, sliderMin));
+              }}
+              aria-label="Maximum price"
+              className="dual-range"
+              style={{ zIndex: 4 }}
+            />
+          </div>
           <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
             <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
               <span className="text-[11px] font-medium text-slate-400">Rs</span>
@@ -309,7 +334,7 @@ export default function Shop() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+        <div className="relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
           <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
             <Link to="/shop" className="hover:text-brand-600">
               Home
@@ -359,7 +384,7 @@ export default function Shop() {
         <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[270px_1fr] xl:gap-10">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <FilterPanel {...filterProps} />
             </div>
           </aside>
@@ -393,11 +418,11 @@ export default function Shop() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setFiltersOpen(true)}
-                    className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 shadow-xs transition hover:border-brand-500 sm:flex-none sm:gap-1.5 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm lg:hidden"
+                    className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs transition hover:border-brand-500 sm:h-auto sm:px-4 sm:py-3 sm:text-sm lg:hidden"
                   >
                     <SlidersHorizontal size={15} className="text-brand-600" />
                     <span>Filters</span>
@@ -408,13 +433,12 @@ export default function Shop() {
                     )}
                   </button>
 
-                  <label className="relative flex flex-1 items-center sm:flex-none sm:w-48">
+                  <label className="relative flex h-10 min-w-0 flex-1 items-center sm:h-auto sm:w-52 sm:flex-none">
                     <select
                       value={sort}
                       onChange={(event) => setSort(event.target.value)}
                       aria-label="Sort products"
-                      className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-10 sm:text-sm"
-
+                      className="h-full w-full min-w-0 cursor-pointer appearance-none truncate rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 shadow-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 sm:py-3 sm:pl-4 sm:pr-10 sm:text-sm"
                     >
                       {SORT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -424,7 +448,7 @@ export default function Shop() {
                     </select>
                     <ChevronDown
                       size={16}
-                      className="pointer-events-none absolute right-3 text-slate-400"
+                      className="pointer-events-none absolute right-2.5 text-slate-400 sm:right-3"
                     />
                   </label>
                 </div>
@@ -461,20 +485,6 @@ export default function Shop() {
                 </span>{" "}
                 products
               </p>
-
-              {activeFilters.map((filter) => (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={filter.clear}
-                  className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-0.5 pl-2.5 pr-1.5 text-[11px] sm:text-xs font-medium text-brand-700 transition hover:bg-brand-100 sm:py-1 sm:pl-3 sm:pr-2"
-                  aria-label={`Remove filter ${filter.label}`}
-                >
-                  <span>{filter.label}</span>
-                  <X size={13} className="opacity-70 group-hover:opacity-100" />
-                </button>
-              ))}
-
               {activeFilters.length > 1 && (
                 <button
                   type="button"
