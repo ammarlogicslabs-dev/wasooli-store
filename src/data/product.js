@@ -327,7 +327,7 @@ export const products = [
             { label: "Length", value: "2 Meters" },
             { label: "Design", value: "Right Angle Space Saver" },
         ],
-        stock: 40,
+        stock: 2,
     },
     {
         id: 12,

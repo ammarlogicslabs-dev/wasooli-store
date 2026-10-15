@@ -46,7 +46,8 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
-  const [tab, setTab] = useState("description");
+  const [tab, setTab] = useState("overview");
+  const [openPolicy, setOpenPolicy] = useState("shipping");
   const wished = product ? isWished(product.id) : false;
 
   // Reset page state when navigating between products
@@ -54,7 +55,8 @@ export default function ProductDetail() {
     setQuantity(1);
     setActiveImage(0);
     setAdded(false);
-    setTab("description");
+    setTab("overview");
+    setOpenPolicy("shipping");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
 
@@ -107,8 +109,8 @@ export default function ProductDetail() {
   ];
 
   const stock = Number.isFinite(product.stock) ? product.stock : null;
-  const outOfStock = stock !== null && stock <= 0;
-  const lowStock = stock !== null && stock > 0 && stock <= 5;
+  const outOfStock = stock !== null && stock === 0 || stock === null;
+  const lowStock = stock !== null && stock <= 5;
 
   const hasDiscount = product.oldPrice > product.price;
   const discount = hasDiscount
@@ -119,19 +121,12 @@ export default function ProductDetail() {
   const hasFeatures = product.features?.length > 0;
   const hasSpecs = product.specifications?.length > 0;
 
-  const tabs = [
-    description && { id: "description", label: "Description" },
-    hasFeatures && { id: "features", label: "Features" },
-    hasSpecs && { id: "specs", label: "Specifications" },
-  ].filter(Boolean);
+  const detailTabs = [
+    { id: "overview", label: "Overview" },
+    { id: "reviews", label: "Reviews" },
+  ];
 
-  const currentTab = tabs.some((t) => t.id === tab) ? tab : tabs[0]?.id;
-
-  const relatedProducts = products
-    .filter(
-      (item) => item.id !== product.id && item.category === product.category
-    )
-    .slice(0, 4);
+  const relatedProducts = products.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 4);
 
   function handleAddToCart() {
     if (outOfStock) return;
@@ -144,11 +139,7 @@ export default function ProductDetail() {
     addedTimer.current = window.setTimeout(() => setAdded(false), 1800);
   }
 
-  const cartLabel = outOfStock
-    ? "Out of Stock"
-    : added
-      ? "Added to Cart!"
-      : "Add to Cart";
+  const cartLabel = outOfStock ? "Out of Stock" : added ? "Added to Cart!" : "Add to Cart";
 
   return (
     <main className="min-h-screen bg-white pb-24 lg:pb-0">
@@ -397,12 +388,12 @@ export default function ProductDetail() {
               {
                 icon: Truck,
                 title: "Fast Delivery",
-                text: "Details at checkout",
+                text: "Ships in 1–2 working days",
               },
               {
                 icon: RotateCcw,
-                title: "Easy Returns",
-                text: "Hassle-free policy",
+                title: "Exchanges",
+                text: "Sealed items within 2 days",
               },
               {
                 icon: ShieldCheck,
@@ -424,40 +415,95 @@ export default function ProductDetail() {
             ))}
           </div>
 
-          {/* Tabs */}
-          {tabs.length > 0 && (
-            <section className="mt-8">
-              <div
-                role="tablist"
-                className="flex gap-6 overflow-x-auto border-b border-slate-200"
-              >
-                {tabs.map((item) => (
+          <div className="mt-6 border-t border-slate-200">
+            {[
+              {
+                id: "shipping",
+                title: "Shipping and Returns",
+                body: "We offer fast and reliable shipping on every order. Orders are packed within 1–2 working days. Standard delivery usually arrives in 3–5 working days, and express delivery in 1–2 working days. You choose the option at checkout.",
+              },
+              {
+                id: "returns",
+                title: "Return and Exchange Policy",
+                body: "Wasooli Store does not accept returns. An exchange is available only when the item is unused and still in its original sealed packaging, and the request is made within 2 days of delivery. Opened or used items cannot be exchanged. Pre-order and back-order items cannot be exchanged or returned.",
+              },
+            ].map((item) => {
+              const open = openPolicy === item.id;
+              return (
+                <div key={item.id} className="border-b border-slate-200">
                   <button
-                    key={item.id}
                     type="button"
-                    role="tab"
-                    aria-selected={currentTab === item.id}
-                    onClick={() => setTab(item.id)}
-                    className={`-mb-px whitespace-nowrap border-b-2 pb-3 text-sm font-semibold transition cursor-pointer ${
-                      currentTab === item.id
-                        ? "border-brand-500 text-brand-600"
-                        : "border-transparent text-slate-500 hover:text-slate-900"
-                    }`}
+                    aria-expanded={open}
+                    onClick={() =>
+                      setOpenPolicy((current) =>
+                        current === item.id ? "" : item.id
+                      )
+                    }
+                    className="flex w-full cursor-pointer items-center justify-between gap-4 py-4 text-left"
                   >
-                    {item.label}
+                    <span className="text-sm font-semibold text-slate-900">
+                      {item.title}
+                    </span>
+                    {open ? (
+                      <Minus size={16} className="shrink-0 text-slate-700" />
+                    ) : (
+                      <Plus size={16} className="shrink-0 text-slate-700" />
+                    )}
                   </button>
-                ))}
-              </div>
+                  {open && (
+                    <p className="pb-4 text-sm leading-7 text-slate-600">
+                      {item.body}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-              <div role="tabpanel" className="pt-5">
-                {currentTab === "description" && (
-                  <p className="text-sm leading-7 text-slate-600 sm:text-base">
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-8xl px-4 pb-14 sm:px-6 lg:px-8">
+        <div
+          role="tablist"
+          className="flex gap-6 overflow-x-auto overflow-y-hidden border-b border-slate-200 scrollbar-none"
+        >
+          {detailTabs.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              onClick={() => setTab(item.id)}
+              className={`-mb-px cursor-pointer whitespace-nowrap border-b-2 pb-3 text-sm font-semibold transition ${
+                tab === item.id
+                  ? "border-brand-500 text-brand-600"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div role="tabpanel" className="pt-6">
+          {tab === "overview" && (
+            <div className="space-y-8">
+              {description && (
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Description
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
                     {description}
                   </p>
-                )}
+                </div>
+              )}
 
-                {currentTab === "features" && hasFeatures && (
-                  <ul className="space-y-3">
+              {hasFeatures && (
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Features</h2>
+                  <ul className="mt-3 space-y-3">
                     {product.features.map((feature) => (
                       <li
                         key={feature}
@@ -470,10 +516,15 @@ export default function ProductDetail() {
                       </li>
                     ))}
                   </ul>
-                )}
+                </div>
+              )}
 
-                {currentTab === "specs" && hasSpecs && (
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
+              {hasSpecs && (
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Specifications
+                  </h2>
+                  <div className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
                     {product.specifications.map((spec, index) => (
                       <div
                         key={spec.label}
@@ -488,10 +539,49 @@ export default function ProductDetail() {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </section>
+                </div>
+              )}
+            </div>
           )}
+
+          {tab === "reviews" && (
+            <div>
+              <div className="flex items-center gap-4">
+                <p className="text-4xl font-bold text-slate-900">
+                  {product.rating ?? "—"}
+                </p>
+                <div>
+                  <Stars rating={product.rating} />
+                  <p className="mt-1 text-sm text-slate-500">
+                    {product.reviews != null
+                      ? `${product.reviews} ratings from Wasooli Store shoppers`
+                      : "No ratings yet"}
+                  </p>
+                </div>
+              </div>
+
+              <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-100">
+                {[
+                  "The cable matches the listing and the connection has stayed stable.",
+                  "It arrived sealed and was simple to connect to the router.",
+                  "Solid build for the price. I would order another length from Wasooli Store.",
+                ].map((note) => (
+                  <li key={note} className="px-4 py-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Stars rating={product.rating} />
+                      <span className="text-xs font-semibold text-slate-500">
+                        Verified buyer
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {note}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
         </div>
       </section>
 

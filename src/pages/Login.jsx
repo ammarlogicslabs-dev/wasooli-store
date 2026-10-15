@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useAuth } from "../auth/AuthContext";
 import {
   AlertCircle,
@@ -103,6 +104,7 @@ export default function Login() {
       setLoading(false);
 
       if (result.success) {
+        toast.success("Logged in successfully");
         navigate(from, { replace: true });
       } else {
         setAuthError(result.message);
@@ -212,7 +214,7 @@ export default function Login() {
                   htmlFor="identifier"
                   className="mb-1.5 block text-xs font-semibold text-slate-900 sm:text-sm"
                 >
-                  Username or email
+                  Username or Email
                 </label>
                 <div className="relative">
                   <User

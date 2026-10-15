@@ -30,15 +30,6 @@ const PROVINCES = [
   "Gilgit-Baltistan",
 ];
 
-const CITIES = {
-  Punjab: ["Lahore", "Faisalabad", "Rawalpindi", "Multan", "Gujranwala", "Sialkot"],
-  Sindh: ["Karachi", "Hyderabad", "Sukkur"],
-  "Khyber Pakhtunkhwa": ["Peshawar", "Mardan", "Abbottabad"],
-  Balochistan: ["Quetta", "Gwadar"],
-  "Islamabad Capital Territory": ["Islamabad"],
-  "Azad Jammu & Kashmir": ["Muzaffarabad", "Mirpur"],
-  "Gilgit-Baltistan": ["Gilgit", "Skardu"],
-};
 
 const BANK_ACCOUNT = {
   bank: "Meezan Bank",
@@ -156,7 +147,7 @@ function OrderSuccessMark() {
   const reduce = useReducedMotion();
 
   return (
-    <div className="relative mx-auto size-[6.5rem]" aria-hidden="true">
+    <div className="relative mx-auto size-[6.5rem] lg:mx-0" aria-hidden="true">
       {[0.15, 0.4].map((delay) => (
         <motion.span
           key={delay}
@@ -266,7 +257,6 @@ export default function Checkout() {
     DELIVERY_OPTIONS[0];
   const deliveryFee = items.length ? deliveryOption.fee : 0;
   const total = subtotal + deliveryFee;
-  const citySuggestions = CITIES[form.province] || [];
   const paymentOption =
     PAYMENT_OPTIONS.find((option) => option.id === form.payment) ||
     PAYMENT_OPTIONS[0];
@@ -604,11 +594,11 @@ export default function Checkout() {
                     aria-describedby={showError("city") ? "city-error" : undefined}
                     className={inputClass("city")}
                   />
-                  <datalist id="checkout-cities">
+                  {/* <datalist id="checkout-cities">
                     {citySuggestions.map((city) => (
                       <option key={city} value={city} />
                     ))}
-                  </datalist>
+                  </datalist> */}
                   <FieldError id="city-error" message={showError("city")} />
                 </div>
 

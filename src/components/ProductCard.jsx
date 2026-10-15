@@ -2,8 +2,17 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag, Star } from "lucide-react";
 import { formatPrice } from "../data/product";
+import { useCart } from "../cart/CartContext";
 
 export default function ProductCard({ product }) {
+  const { addItem, openCart } = useCart();
+  const outOfStock = Number.isFinite(product.stock) && product.stock <= 0;
+
+  function handleAddToCart() {
+    if (outOfStock) return;
+    addItem(product, 1);
+    openCart();
+  }
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl">
       <Link
@@ -66,13 +75,15 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          <Link
-            to={`/products/${product.slug}`}
-            aria-label={`View ${product.title}`}
-            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-xl bg-brand-50 text-brand-600 transition hover:bg-brand-500 hover:text-white min-[400px]:size-9"
+          <button
+            type="button"
+            disabled={outOfStock}
+            onClick={handleAddToCart}
+            aria-label={`Add ${product.title} to cart`}
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-xl bg-brand-50 text-brand-600 transition hover:bg-brand-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 min-[400px]:size-9"
           >
             <ShoppingBag size={15} />
-          </Link>
+          </button>
         </div>
       </div>
     </article>

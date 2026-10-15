@@ -1,7 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./auth/AuthContext";
+import "react-toastify/dist/ReactToastify.css";
 
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetails"));
@@ -23,6 +25,7 @@ function pageLoader() {
 
 export default function App() {
   return (
+    <>
     <Suspense fallback={pageLoader()}>
     <Routes>
       
@@ -34,5 +37,13 @@ export default function App() {
         <Route path="*" element={<Navigate to="/shop" replace />} />
     </Routes>
       </Suspense>
+      <ToastContainer
+        position="top-right"
+        autoClose={1500}
+        closeOnClick
+        pauseOnHover
+        theme="light"
+      />
+    </>
   );
 }

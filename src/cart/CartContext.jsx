@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 
 const CartContext = createContext(null);
 
@@ -11,11 +11,36 @@ function readStorage(key, fallback) {
   }
 }
 
+function readWishlist() {
+  const saved = readStorage("wasooli_wishlist", []);
+  if (!Array.isArray(saved)) return [];
+
+  return saved
+    .map((entry) => {
+      if (typeof entry === "number" || typeof entry === "string") {
+        return { id: Number(entry), addedAt: null };
+      }
+      if (entry && entry.id != null) {
+        return { id: Number(entry.id), addedAt: entry.addedAt ?? null };
+      }
+      return null;
+    })
+    .filter((entry) => entry && Number.isFinite(entry.id));
+}
+
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStorage("wasooli_cart", []));
-  const [wishlist, setWishlist] = useState(() =>
-    readStorage("wasooli_wishlist", [])
-  );
+  const [wishlist, setWishlist] = useState(readWishlist);
+  const cartListeners = useRef(new Set());
+
+  const openCart = useCallback(() => {
+    cartListeners.current.forEach((listener) => listener());
+  }, []);
+
+  const subscribeCartOpen = useCallback((listener) => {
+    cartListeners.current.add(listener);
+    return () => cartListeners.current.delete(listener);
+  }, []);
 
   const addItem = useCallback((product, quantity = 1) => {
     const requested = Math.max(1, Number(quantity) || 1);
@@ -83,16 +108,24 @@ export function CartProvider({ children }) {
   }, []);
 
   const toggleWishlist = useCallback((id) => {
+    const productId = Number(id);
     setWishlist((current) => {
-      const next = current.includes(id)
-        ? current.filter((itemId) => itemId !== id)
-        : [...current, id];
+      const exists = current.some((entry) => entry.id === productId);
+      const next = exists
+        ? current.filter((entry) => entry.id !== productId)
+        : [
+            ...current,
+            { id: productId, addedAt: new Date().toISOString() },
+          ];
       localStorage.setItem("wasooli_wishlist", JSON.stringify(next));
       return next;
     });
   }, []);
 
-  const isWished = useCallback((id) => wishlist.includes(id), [wishlist]);
+  const isWished = useCallback(
+    (id) => wishlist.some((entry) => entry.id === Number(id)),
+    [wishlist]
+  );
 
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
 
@@ -101,6 +134,8 @@ export function CartProvider({ children }) {
       items,
       cartCount,
       addItem,
+      openCart,
+      subscribeCartOpen,
       updateQuantity,
       removeItem,
       clearCart,
@@ -112,6 +147,8 @@ export function CartProvider({ children }) {
       items,
       cartCount,
       addItem,
+      openCart,
+      subscribeCartOpen,
       updateQuantity,
       removeItem,
       clearCart,
