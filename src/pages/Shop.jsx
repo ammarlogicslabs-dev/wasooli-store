@@ -516,13 +516,11 @@ export default function Shop() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
-            <Link to="/shop" className="hover:text-brand-600">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="font-medium text-slate-900">Shop</span>
+        <div className="page-offset relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10">
+          <nav aria-label="Breadcrumb" className="page-crumb">
+            <Link to="/shop">Home</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Shop</span>
           </nav>
 
           <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-brand-600">

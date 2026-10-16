@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
   Banknote,
   Building2,
-  ChevronRight,
   Copy,
   MapPin,
   Phone,
@@ -263,14 +262,28 @@ function FieldError({ id, message }) {
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [order, setOrder] = useState(null);
   const [copiedField, setCopiedField] = useState("");
+  const confirmButtonRef = useRef(null);
 
   useEffect(() => {
     document.title = order
       ? "Order placed | Wasooli Store"
       : "Checkout | Wasooli Store";
   }, [order]);
+
+  useEffect(() => {
+    if (!confirmOpen) return undefined;
+    confirmButtonRef.current?.focus();
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") setConfirmOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [confirmOpen]);
 
   const errors = validate(form);
   const showError = (name) =>
@@ -332,6 +345,12 @@ function FieldError({ id, message }) {
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  function placeOrder() {
+    if (placing || orderItems.length === 0) return;
+
     setPlacing(true);
     const placed = {
       id: `WS-${Date.now().toString().slice(-8)}`,
@@ -380,6 +399,7 @@ function FieldError({ id, message }) {
 
     setOrder(placed);
     if (!buyNowItem) clearCart();
+    setConfirmOpen(false);
     setPlacing(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -500,20 +520,13 @@ function FieldError({ id, message }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <StoreHeader />
-      <main className="mx-auto max-w-8xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 sm:text-sm"
-        >
-          <Link to="/shop" className="hover:text-brand-600">
-            Home
-          </Link>
-          <ChevronRight size={14} className="text-slate-300" />
-          <Link to="/shop" className="hover:text-brand-600">
-            Shop
-          </Link>
-          <ChevronRight size={14} className="text-slate-300" />
-          <span className="font-medium text-slate-900">Checkout</span>
+      <main className="page-offset mx-auto max-w-8xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-10">
+        <nav aria-label="Breadcrumb" className="page-crumb">
+          <Link to="/shop">Home</Link>
+          <span aria-hidden="true">/</span>
+          <Link to="/shop">Shop</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Checkout</span>
         </nav>
         <Link
           to="/shop"
@@ -911,6 +924,49 @@ function FieldError({ id, message }) {
           </aside>
         </div>
       </main>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Cancel order confirmation"
+            onClick={() => setConfirmOpen(false)}
+            className="absolute inset-0 cursor-default bg-slate-900/50"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-order-title"
+            className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-xl"
+          >
+            <h2 id="confirm-order-title" className="text-lg font-semibold text-slate-900">
+              Place this order?
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Total {formatPrice(total)}. Are you sure you want to place this order?
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                ref={confirmButtonRef}
+                type="button"
+                onClick={placeOrder}
+                disabled={placing}
+                className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-brand-500 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {placing ? "Placing order..." : "Yes"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                disabled={placing}
+                className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

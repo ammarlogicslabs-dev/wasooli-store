@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Check,
-  ChevronRight,
   Heart,
   Minus,
   Plus,
@@ -164,25 +163,24 @@ export default function ProductDetail() {
   const cartLabel = outOfStock ? "Out of Stock" : added ? "Added to Cart!" : "Add to Cart";
 
   return (
-    <main className="min-h-screen bg-white pb-24 lg:pb-0">
+    <main className="min-h-screen bg-white">
       <StoreHeader />
       {/* Breadcrumb */}
       <div className="border-b border-slate-100 bg-slate-50">
-        <div className="mx-auto flex max-w-8xl flex-wrap items-center gap-1.5 px-4 py-3 text-xs text-slate-500 sm:px-6 sm:text-sm lg:px-8">
-          <Link to="/shop" className="hover:text-brand-600">
-            Home
-          </Link>
-          <ChevronRight size={14} className="text-slate-300" />
-          <Link to="/shop" className="hover:text-brand-600">
-            Shop
-          </Link>
-          <ChevronRight size={14} className="text-slate-300" />
+        <nav
+          aria-label="Breadcrumb"
+          className="page-crumb page-offset mx-auto max-w-8xl px-4 pb-3 sm:px-6 lg:px-8"
+        >
+          <Link to="/dashbaord">Home</Link>
+          <span aria-hidden="true">/</span>
+          <Link to="/shop">Shop</Link>
+          <span aria-hidden="true">/</span>
           <span>{product.category}</span>
-          <ChevronRight size={14} className="text-slate-300" />
-          <span className="max-w-48 truncate font-medium text-slate-900 sm:max-w-none">
+          <span aria-hidden="true">/</span>
+          <span aria-current="page" className="max-w-48 truncate sm:max-w-none">
             {product.title}
           </span>
-        </div>
+        </nav>
       </div>
 
       <div className="mx-auto max-w-8xl px-4 pt-5 sm:px-6 lg:px-8">
@@ -354,8 +352,8 @@ export default function ProductDetail() {
             <p className="mb-2 text-sm font-semibold text-slate-900">
               Quantity
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <div className="flex h-13 w-fit shrink-0 items-center rounded-3xl border border-slate-200 bg-white">
+            <div className="product-buy-row flex items-center gap-1.5 sm:gap-3">
+              <div className="flex h-11 shrink-0 items-center rounded-3xl border border-slate-200 bg-white sm:h-13">
                 <button
                   type="button"
                   disabled={quantity <= 1}
@@ -363,13 +361,13 @@ export default function ProductDetail() {
                     setQuantity((current) => Math.max(1, current - 1))
                   }
                   aria-label="Decrease quantity"
-                  className="grid size-11 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
                 >
-                  <Minus size={17} />
+                  <Minus size={16} />
                 </button>
 
                 <span
-                  className="min-w-8 text-center font-semibold text-slate-900"
+                  className="min-w-5 text-center text-sm font-semibold text-slate-900 sm:min-w-8"
                   aria-live="polite"
                 >
                   {quantity}
@@ -386,37 +384,35 @@ export default function ProductDetail() {
                     )
                   }
                   aria-label="Increase quantity"
-                  className="grid size-11 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
                 >
-                  <Plus size={17} />
+                  <Plus size={16} />
                 </button>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  disabled={outOfStock}
-                  onClick={handleAddToCart}
-                  className={`inline-flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-3xl px-5 font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 sm:flex-none sm:px-6 ${
-                    added
-                      ? "bg-emerald-500 hover:bg-emerald-600"
-                      : "bg-brand-500 hover:bg-brand-600"
-                  }`}
-                >
-                  {added ? <Check size={19} /> : <ShoppingBag size={19} />}
-                  {cartLabel}
-                </button>
+              <button
+                type="button"
+                disabled={outOfStock}
+                onClick={handleAddToCart}
+                className={`inline-flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-3xl px-2 text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 sm:h-13 sm:flex-none sm:gap-2 sm:px-6 ${
+                  added
+                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    : "bg-brand-500 hover:bg-brand-600"
+                }`}
+              >
+                {added ? <Check size={16} className="shrink-0" /> : <ShoppingBag size={16} className="shrink-0" />}
+                {cartLabel}
+              </button>
 
-                <button
-                  type="button"
-                  disabled={outOfStock}
-                  onClick={handleBuyNow}
-                  className="inline-flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-3xl border border-slate-900 bg-white px-5 font-semibold text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 sm:flex-none sm:px-6"
-                >
-                  <Zap size={19} />
-                  Buy it now
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={outOfStock}
+                onClick={handleBuyNow}
+                className="inline-flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-3xl border border-slate-900 bg-white px-2 text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 sm:h-13 sm:flex-none sm:gap-2 sm:px-6"
+              >
+                <Zap size={16} className="shrink-0" />
+                Buy it now
+              </button>
             </div>
 
             <p className="mt-3 text-sm text-slate-500">
@@ -630,7 +626,7 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      {/* Related products */}
+    
       {relatedProducts.length > 0 && (
         <section className="bg-slate-50">
           <div className="mx-auto max-w-8xl px-4 py-14 sm:px-6 lg:px-8">
@@ -661,40 +657,6 @@ export default function ProductDetail() {
         </section>
       )}
 
-      {/* Mobile sticky buy bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-8xl items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-500">{product.title}</p>
-            <p className="text-lg font-bold leading-none text-slate-900">
-              {formatPrice(product.price)}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={handleAddToCart}
-            className={`inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
-              added
-                ? "bg-emerald-500"
-                : "bg-brand-500 hover:bg-brand-600"
-            }`}
-          >
-            {added ? <Check size={18} /> : <ShoppingBag size={18} />}
-            {cartLabel}
-          </button>
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={handleBuyNow}
-            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-900 bg-white px-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-          >
-            <Zap size={18} />
-            Buy it now
-          </button>
-        </div>
-      </div>
     </main>
   );
 }

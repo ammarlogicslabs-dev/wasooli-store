@@ -53,6 +53,42 @@ textarea {
     line-height: 18px;
 }
 
+.page-offset {
+    padding-top: 1.5rem;
+}
+
+.page-crumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #64748b;
+}
+
+.page-crumb a:hover {
+    color: #1676d2;
+}
+
+.page-crumb [aria-current="page"] {
+    color: #0f172a;
+}
+
+.product-buy-row button {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+@media (min-width: 640px) {
+    .product-buy-row button {
+        font-size: 16px;
+        line-height: 24px;
+    }
+}
+
 button,
 [role="button"],
 select,

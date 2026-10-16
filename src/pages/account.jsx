@@ -223,13 +223,11 @@ export default function Account() {
         />
       )}
 
-      <div className="mx-auto max-w-8xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <nav aria-label="Breadcrumb" className="text-xs text-slate-500 sm:text-sm">
-          <Link to="/shop" className="hover:text-brand-600">
-            Home
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="font-medium text-slate-900">Account</span>
+      <div className="page-offset mx-auto max-w-8xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-10">
+        <nav aria-label="Breadcrumb" className="page-crumb">
+          <Link to="/shop">Home</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Account</span>
         </nav>
 
         <Link
