@@ -321,7 +321,7 @@ export default function StoreHeader() {
           className="overflow-hidden"
           aria-hidden={headlineHidden}
         >
-          <div ref={headlineRef} className="bg-brand-700 text-white">
+          <div ref={headlineRef} className="bg-brand-500 text-white">
             <div className="mx-auto flex max-w-8xl flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
               <div
                 className="store-headline min-w-0 flex-1 overflow-hidden"

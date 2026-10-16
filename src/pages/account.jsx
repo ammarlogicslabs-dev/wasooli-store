@@ -21,6 +21,8 @@ import { formatPrice, products } from "../data/product";
 
 const ORDERS_KEY = "wasooli_orders";
 
+const HIDDEN_PASSWORDS = { current: true, next: false, confirm: false };
+
 function readOrders() {
   try {
     const saved = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
@@ -60,6 +62,7 @@ function PasswordField({ id, label, value, shown, onToggle, onChange, autoComple
           type="button"
           onClick={onToggle}
           aria-label={shown ? `Hide ${label}` : `Show ${label}`}
+          aria-pressed={shown}
           className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-slate-400 hover:text-slate-700"
         >
           {shown ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -99,8 +102,12 @@ export default function Account() {
     confirm: "",
   });
   const [passwordError, setPasswordError] = useState("");
-  const [visiblePassword, setVisiblePassword] = useState("");
+  // Each password field has its own show/hide state, so they work independently.
+  const [visiblePassword, setVisiblePassword] = useState(HIDDEN_PASSWORDS);
   const [section, setSection] = useState("password");
+
+  const toggleVisible = (field) =>
+    setVisiblePassword((current) => ({ ...current, [field]: !current[field] }));
 
   useEffect(() => {
     document.title = "My account | Wasooli Store";
@@ -188,7 +195,7 @@ export default function Account() {
 
     setPasswordForm({ current: "", next: "", confirm: "" });
     setPasswordError("");
-    setVisiblePassword("");
+    setVisiblePassword(HIDDEN_PASSWORDS);
     toast.success("Password updated.");
   }
 
@@ -304,11 +311,9 @@ export default function Account() {
                   id="current-password"
                   label="Current password"
                   value={passwordForm.current}
-                  shown={visiblePassword === "current"}
+                  shown={visiblePassword.current}
                   autoComplete="current-password"
-                  onToggle={() =>
-                    setVisiblePassword((current) => (current === "current" ? "" : "current"))
-                  }
+                  onToggle={() => toggleVisible("current")}
                   onChange={(event) => {
                     setPasswordError("");
                     setPasswordForm((current) => ({ ...current, current: event.target.value }));
@@ -318,11 +323,9 @@ export default function Account() {
                   id="new-password"
                   label="New password"
                   value={passwordForm.next}
-                  shown={visiblePassword === "next"}
+                  shown={visiblePassword.next}
                   autoComplete="new-password"
-                  onToggle={() =>
-                    setVisiblePassword((current) => (current === "next" ? "" : "next"))
-                  }
+                  onToggle={() => toggleVisible("next")}
                   onChange={(event) => {
                     setPasswordError("");
                     setPasswordForm((current) => ({ ...current, next: event.target.value }));
@@ -332,11 +335,9 @@ export default function Account() {
                   id="confirm-password"
                   label="Confirm new password"
                   value={passwordForm.confirm}
-                  shown={visiblePassword === "confirm"}
+                  shown={visiblePassword.confirm}
                   autoComplete="new-password"
-                  onToggle={() =>
-                    setVisiblePassword((current) => (current === "confirm" ? "" : "confirm"))
-                  }
+                  onToggle={() => toggleVisible("confirm")}
                   onChange={(event) => {
                     setPasswordError("");
                     setPasswordForm((current) => ({ ...current, confirm: event.target.value }));

@@ -33,38 +33,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
-          <Route
-            path="/shop"
-            element={
-              <ProtectedRoute>
-                <Shop />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products/:slug"
-            element={
-              <ProtectedRoute>
-                <ProductDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/account"
-            element={
-              <ProtectedRoute>
-                <Account />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+          <Route path="/products/:slug" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/shop" replace />} />
         </Routes>
       </Suspense>

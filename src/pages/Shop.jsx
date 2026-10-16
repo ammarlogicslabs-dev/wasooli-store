@@ -282,6 +282,7 @@ function FilterPanel({
 
 export default function Shop() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [category, setCategory] = useState("All");
   const [brand, setBrand] = useState("All");
   const [availability, setAvailability] = useState("All");
@@ -352,7 +353,7 @@ export default function Shop() {
   }, []);
 
   const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
     const rawMax = priceLimit === "" ? maxPrice : Number(priceLimit);
     const min = Math.min(rawMin, rawMax);
@@ -401,7 +402,7 @@ export default function Shop() {
 
     return result;
   }, [
-    search,
+    debouncedSearch,
     category,
     brand,
     availability,
@@ -414,12 +415,25 @@ export default function Shop() {
   ]);
 
   useEffect(() => {
+    const query = search.trim();
+    if (!query) {
+      setDebouncedSearch("");
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     document.title = "Shop | Wasooli Store";
   }, []);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, category, brand, availability, portType, sort, minPriceLimit, priceLimit]);
+  }, [debouncedSearch, category, brand, availability, portType, sort, minPriceLimit, priceLimit]);
   useEffect(() => {
     document.body.style.overflow = filtersOpen ? "hidden" : "";
     return () => {
@@ -518,7 +532,7 @@ export default function Shop() {
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
         <div className="page-offset relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10">
           <nav aria-label="Breadcrumb" className="page-crumb">
-            <Link to="/shop">Home</Link>
+            <Link to="/">Home</Link>
             <span aria-hidden="true">/</span>
             <span aria-current="page">Shop</span>
           </nav>
