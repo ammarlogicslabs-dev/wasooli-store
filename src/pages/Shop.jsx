@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   RotateCcw,
   Headphones,
+  BadgePercent,
   Trash2,
 } from "lucide-react";
 import { formatPrice, products } from "../data/product";
@@ -29,6 +30,7 @@ const TRUST = [
   { icon: RotateCcw, title: "Easy Returns", text: "Hassle-free policy" },
   { icon: ShieldCheck, title: "Secure Checkout", text: "Protected payments" },
   { icon: Headphones, title: "24/7 Support", text: "We're here to help" },
+  { icon: BadgePercent, title: "Best Price", text: "Lowest store prices" },
 ];
 
 function FilterGroup({ title, options, value, counts, onChange }) {
@@ -315,42 +317,67 @@ export default function Shop() {
     return counts;
   }, []);
 
+  const categoryProducts = useMemo(
+    () =>
+      category === "All"
+        ? products
+        : products.filter((product) => product.category === category),
+    [category]
+  );
+
   const brands = useMemo(
-    () => ["All", ...new Set(products.map((product) => product.brand))],
-    []
+    () => ["All", ...new Set(categoryProducts.map((product) => product.brand))],
+    [categoryProducts]
   );
 
   const brandCounts = useMemo(() => {
-    const counts = { All: products.length };
-    products.forEach((p) => {
+    const counts = { All: categoryProducts.length };
+    categoryProducts.forEach((p) => {
       counts[p.brand] = (counts[p.brand] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [categoryProducts]);
 
-  const availabilityOptions = ["All", "In stock", "Out of stock"];
+  const availabilityOptions = useMemo(() => {
+    const options = ["All"];
+    if (categoryProducts.some((product) => product.stock > 0)) {
+      options.push("In stock");
+    }
+    if (categoryProducts.some((product) => product.stock <= 0)) {
+      options.push("Out of stock");
+    }
+    return options;
+  }, [categoryProducts]);
 
   const availabilityCounts = useMemo(() => {
-    const inStock = products.filter((product) => product.stock > 0).length;
+    const inStock = categoryProducts.filter((product) => product.stock > 0).length;
     return {
-      All: products.length,
+      All: categoryProducts.length,
       "In stock": inStock,
-      "Out of stock": products.length - inStock,
+      "Out of stock": categoryProducts.length - inStock,
     };
-  }, []);
+  }, [categoryProducts]);
 
   const portTypes = useMemo(
-    () => ["All", ...new Set(products.map((product) => product.portType))],
-    []
+    () => ["All", ...new Set(categoryProducts.map((product) => product.portType))],
+    [categoryProducts]
   );
 
   const portTypeCounts = useMemo(() => {
-    const counts = { All: products.length };
-    products.forEach((p) => {
+    const counts = { All: categoryProducts.length };
+    categoryProducts.forEach((p) => {
       counts[p.portType] = (counts[p.portType] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [categoryProducts]);
+
+  useEffect(() => {
+    if (brand !== "All" && !brands.includes(brand)) setBrand("All");
+    if (availability !== "All" && !availabilityOptions.includes(availability)) {
+      setAvailability("All");
+    }
+    if (portType !== "All" && !portTypes.includes(portType)) setPortType("All");
+  }, [brand, brands, availability, availabilityOptions, portType, portTypes]);
 
   const filteredProducts = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
@@ -530,31 +557,41 @@ export default function Shop() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="page-offset relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10">
-          <nav aria-label="Breadcrumb" className="page-crumb">
-            <Link to="/">Home</Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">Shop</span>
-          </nav>
+        <div className="page-offset relative mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 pb-6 sm:px-6 sm:pb-8 lg:flex lg:items-center lg:justify-between lg:gap-10 lg:px-8 lg:pb-8">
+          <div className="min-w-0">
+            <nav aria-label="Breadcrumb" className="page-crumb">
+              <Link to="/">Home</Link>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Shop</span>
+            </nav>
 
-          <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-brand-600">
-            Welcome to Wasooli Store
-          </p>
+            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600 sm:mt-5">
+              Welcome to Wasooli Store
+            </p>
 
-          <h1 className="mt-2 sm:mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
-            Explore Products<span className="text-brand-500">.</span>
-          </h1>
+            <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:mt-2.5 sm:text-3xl lg:text-4xl">
+              Explore Products<span className="text-brand-500">.</span>
+            </h1>
 
-          <p className="mt-3 sm:mt-4 max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-slate-600">
-            Discover products selected by Wasooli Store for your everyday style
-            and needs.
-          </p>
+            <p className="mt-2 max-w-xl text-xs leading-5 text-slate-600 sm:mt-3 sm:text-sm">
+              Discover products selected by Wasooli Store for your everyday style
+              and needs.
+            </p>
+          </div>
+
+          {/* <div className="hidden shrink-0 lg:block">
+            <img
+              src="/wasooli-hero.jpg"
+              alt="Wasooli Store networking hardware"
+              className="h-36 w-[320px] rounded-2xl border border-brand-100/80 object-cover shadow-sm xl:h-40 xl:w-[380px]"
+            />
+          </div> */}
         </div>
       </section>
 
       {/* Trust bar */}
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] grid-cols-2 gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:grid-cols-4 lg:px-8">
+      <section className="hidden border-b border-slate-200 bg-white md:block">
+        <div className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-4 lg:grid-cols-5 lg:px-8">
           {TRUST.map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex items-center gap-2.5 sm:gap-3">
               <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
@@ -574,7 +611,7 @@ export default function Shop() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <section className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[270px_1fr] xl:gap-10">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
@@ -649,25 +686,11 @@ export default function Shop() {
               </div>
             </div>
 
-            {/* Results summary */}
-            {/* <div className="mb-4 mt-3 sm:mb-5 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2 lg:mt-0">
-              <p className="mr-2 text-xs sm:text-sm text-slate-500">
-                Showing{" "}
-                <span className="font-semibold text-slate-900">
-                  {visibleProducts.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-900">
-                  {filteredProducts.length}
-                </span>{" "}
-                products
-              </p>
-            </div> */}
 
             {/* Grid */}
             {visibleProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+                <div className="grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-5 gap-2 sm:gap-3">
                   {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

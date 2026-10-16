@@ -27,6 +27,7 @@
 
 html {
     overflow-anchor: none;
+    font-size: 14px;
 }
 
 body {
@@ -49,8 +50,8 @@ textarea {
 }
 
 .shop-filter-item {
-    font-size: 13px;
-    line-height: 18px;
+    font-size: 12px;
+    line-height: 16px;
 }
 
 .page-offset {
@@ -62,9 +63,9 @@ textarea {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 20px;
+    line-height: 16px;
     color: #64748b;
 }
 
@@ -77,15 +78,15 @@ textarea {
 }
 
 .product-buy-row button {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    line-height: 16px;
+    line-height: 14px;
 }
 
 @media (min-width: 640px) {
     .product-buy-row button {
-        font-size: 16px;
-        line-height: 24px;
+        font-size: 13px;
+        line-height: 18px;
     }
 }
 

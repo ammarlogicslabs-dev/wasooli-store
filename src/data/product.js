@@ -663,7 +663,7 @@ export const products = [
             { label: "Use", value: "Access points and IP cameras" },
             { label: "Power", value: "Included adapter" },
         ],
-        stock: 31,
+        stock: 3,
     },
     {
         id: 19,
@@ -737,7 +737,7 @@ export const products = [
             { label: "Use", value: "Fiber to Ethernet" },
             { label: "Power", value: "External adapter" },
         ],
-        stock: 12,
+        stock: 1,
     },
 ];
 

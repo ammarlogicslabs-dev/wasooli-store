@@ -536,7 +536,7 @@ function FieldError({ id, message }) {
           Back to shopping
         </Link>
 
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="mt-4 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
           Checkout<span className="text-brand-500">.</span>
         </h1>
         <p className="mt-2 text-sm text-slate-500">

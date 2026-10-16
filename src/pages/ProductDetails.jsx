@@ -270,11 +270,11 @@ export default function ProductDetail() {
 
         {/* Info */}
         <div className="py-2 lg:py-4">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 sm:text-sm">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600">
             {product.category}
           </p>
 
-          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="mt-2 text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl">
             {product.title}
           </h1>
 
@@ -312,13 +312,13 @@ export default function ProductDetail() {
           {/* Price card */}
           <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-5">
             <div className="flex flex-wrap items-end gap-3">
-              <span className="text-3xl font-bold text-slate-900 sm:text-4xl">
+              <span className="text-2xl font-bold text-slate-900">
                 {formatPrice(product.price)}
               </span>
 
               {hasDiscount && (
                 <>
-                  <span className="pb-1 text-lg text-slate-400 line-through">
+                  <span className="pb-0.5 text-sm text-slate-400 line-through">
                     {formatPrice(product.oldPrice)}
                   </span>
                   <span className="mb-1 rounded-lg bg-red-50 px-2.5 py-1 text-sm font-semibold text-red-600">
@@ -588,7 +588,7 @@ export default function ProductDetail() {
           {tab === "reviews" && (
             <div>
               <div className="flex items-center gap-4">
-                <p className="text-4xl font-bold text-slate-900">
+                <p className="text-2xl font-bold text-slate-900">
                   {product.rating ?? "—"}
                 </p>
                 <div>
@@ -635,7 +635,7 @@ export default function ProductDetail() {
                 <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-600">
                   More from {STORE_NAME}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+                <h2 className="mt-1.5 text-lg font-bold text-slate-900 sm:text-xl">
                   You may also like
                 </h2>
               </div>
@@ -648,7 +648,7 @@ export default function ProductDetail() {
               </Link>
             </div>
 
-            <div className="mt-7 grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            <div className="mt-7 grid grid-cols-1 min-[340px]:grid-cols-2 min-[540px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5">
               {relatedProducts.map((item) => (
                 <ProductCard key={item.id} product={item} />
               ))}

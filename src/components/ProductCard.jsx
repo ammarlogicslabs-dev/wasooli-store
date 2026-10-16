@@ -37,42 +37,31 @@ export default function ProductCard({ product }) {
         />
       </Link>
 
-      <div className="flex flex-1 flex-col justify-between p-2.5 min-[400px]:p-3 sm:p-3.5">
-        <div>
-          <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-brand-600 sm:text-[11px]">
-            {product.category}
-          </p>
+      <div className="flex flex-1 flex-col p-2.5">
+        <p className="truncate text-[11px] font-semibold uppercase leading-4 tracking-wide text-brand-600">
+          {product.category}
+        </p>
 
-          <Link to={`/products/${product.slug}`}>
-            <h2 className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-slate-900 transition hover:text-brand-600 sm:text-sm">
-              {product.title}
-            </h2>
-          </Link>
+        <Link to={`/products/${product.slug}`}>
+          <h2 className="mt-1 line-clamp-2 h-[28px] text-[13px] font-semibold leading-[14px] text-slate-900 transition hover:text-brand-600">
+            {product.title}
+          </h2>
+        </Link>
 
-          <div className="mt-1 flex items-center gap-1 text-[11px] sm:text-xs">
-            <Star
-              size={12}
-              fill="currentColor"
-              className="shrink-0 text-amber-400 sm:size-[13px]"
-            />
-            <span className="font-medium text-slate-600">{product.rating}</span>
-            <span className="text-slate-400">
-              ({product.reviews})
-            </span>
-          </div>
+        <div className="mt-1 flex h-4 items-center gap-1 text-[11px] leading-4">
+          <Star size={11} fill="currentColor" className="shrink-0 text-amber-400" />
+          <span className="font-medium text-slate-600">{product.rating}</span>
+          <span className="text-slate-400">({product.reviews})</span>
         </div>
 
-        <div className="mt-2.5 flex items-center justify-between gap-1.5 pt-1">
+        <div className="mt-auto flex items-end justify-between gap-1.5 pt-2">
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-slate-900 min-[400px]:text-sm sm:text-base">
+            <p className="truncate text-[13px] font-bold leading-4 text-slate-900">
               {formatPrice(product.price)}
             </p>
-
-            {product.oldPrice > product.price && (
-              <p className="truncate text-[10px] text-slate-400 line-through sm:text-[11px]">
-                {formatPrice(product.oldPrice)}
-              </p>
-            )}
+            <p className="h-4 truncate text-[10px] leading-4 text-slate-400 line-through">
+              {product.oldPrice > product.price ? formatPrice(product.oldPrice) : "\u00A0"}
+            </p>
           </div>
 
           <button
@@ -80,9 +69,9 @@ export default function ProductCard({ product }) {
             disabled={outOfStock}
             onClick={handleAddToCart}
             aria-label={`Add ${product.title} to cart`}
-            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-xl bg-brand-50 text-brand-600 transition hover:bg-brand-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 min-[400px]:size-9"
+            className="mb-0.5 grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg bg-brand-50 text-brand-600 transition hover:bg-brand-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ShoppingBag size={15} />
+            <ShoppingBag size={14} />
           </button>
         </div>
       </div>

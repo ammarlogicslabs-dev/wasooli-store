@@ -245,7 +245,7 @@ export default function Account() {
           Back to shopping
         </Link>
 
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-4 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
           My account<span className="text-brand-500">.</span>
         </h1>
 
