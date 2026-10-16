@@ -1,9 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { Link, useLocation } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, LogOut, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { useAuth } from "../auth/AuthContext";
+import { Heart, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, User, X } from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { formatPrice, products } from "../data/product";
 
@@ -19,8 +17,8 @@ const SCROLL_DELTA = 2; // ignore tiny scroll movements
 const NAV_HIDE_AFTER = 80; // extra px scrolled down (after headline hides) before the nav hides
 const MOTION_EASE = [0.22, 1, 0.36, 1];
 
-function formatWishlistDate(value) {
-  if (!value) return "Saved earlier";
+function formatWishlistDate(value, emptyLabel = "Saved earlier") {
+  if (!value) return emptyLabel;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Saved earlier";
   return new Intl.DateTimeFormat("en-PK", {
@@ -155,7 +153,6 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
 }
 
 export default function StoreHeader() {
-  const { user, logout } = useAuth();
   const {
     items,
     cartCount,
@@ -165,10 +162,7 @@ export default function StoreHeader() {
     toggleWishlist,
     subscribeCartOpen,
   } = useCart();
-  const navigate = useNavigate();
   const location = useLocation();
-  const logoutToastId = useRef(null);
-  const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const headlineRef = useRef(null);
@@ -308,66 +302,8 @@ export default function StoreHeader() {
     };
   }, [drawerOpen]);
 
-  function dismissLogoutPrompt() {
-    if (logoutToastId.current == null) return;
-    toast.dismiss(logoutToastId.current);
-  }
-
-  function handleLogout() {
-    if (logoutToastId.current != null) return;
-
-    setLogoutPromptOpen(true);
-    logoutToastId.current = toast(
-      ({ closeToast }) => (
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Are you sure?</h3>
-          <p className="text-gray-600 mb-4">You will be logged out of your account.</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                closeToast();
-                closeCart();
-                closeWishlist();
-                logout();
-                navigate("/login");
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Yes, Logout!
-            </button>
-            <button
-              onClick={closeToast}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        position: "top-right",
-        autoClose: false,
-        hideProgressBar: true,
-        closeOnClick: false,
-        draggable: false,
-        onClose: () => {
-          logoutToastId.current = null;
-          setLogoutPromptOpen(false);
-        },
-      }
-    );
-  }
-
   return (
     <>
-      {logoutPromptOpen && (
-        <button
-          type="button"
-          aria-label="Close logout confirmation"
-          onClick={dismissLogoutPrompt}
-          className="fixed inset-0 z-[9998] cursor-default bg-slate-900/50"
-        />
-      )}
       <motion.header
         initial={false}
         animate={{ y: navHidden ? "-100%" : "0%" }}
@@ -483,15 +419,18 @@ export default function StoreHeader() {
               )}
             </button>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              aria-label="Log out"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            <Link
+              to="/account"
+              aria-label="My account"
+              aria-current={location.pathname === "/account" ? "page" : undefined}
+              className={`grid size-10 place-items-center rounded-xl border transition ${
+                location.pathname === "/account"
+                  ? "border-brand-500 bg-brand-50 text-brand-600"
+                  : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
+              }`}
             >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">Log out</span>
-            </button>
+              <User size={18} />
+            </Link>
           </div>
         </div>
       </motion.header>

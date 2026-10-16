@@ -2,12 +2,22 @@ import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext(null);
 
+const PASSWORD_KEY = "wasooli_password";
+
 const DEMO_USER = {
   id: 1,
   name: "Wasooli",
   email: "wasooli123@gmail.com",
   password: "wasooli123",
 };
+
+function readPassword() {
+  try {
+    return localStorage.getItem(PASSWORD_KEY) || DEMO_USER.password;
+  } catch {
+    return DEMO_USER.password;
+  }
+}
 
 const ACCEPTED_IDENTIFIERS = [
   DEMO_USER.email,
@@ -28,7 +38,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(getSavedUser);
 
   function login(identifier, password) {
-    const validCredentials = ACCEPTED_IDENTIFIERS.includes(identifier.trim().toLowerCase()) && password === DEMO_USER.password;
+    const validCredentials = ACCEPTED_IDENTIFIERS.includes(identifier.trim().toLowerCase()) && password === readPassword();
 
     if (!validCredentials) {
       return {
@@ -54,6 +64,23 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("wasooli_user");
   }
 
+  function changePassword(currentPassword, nextPassword) {
+    if (currentPassword !== readPassword()) {
+      return { success: false, message: "Current password is incorrect." };
+    }
+
+    const next = String(nextPassword || "");
+    if (next.length < 6) {
+      return { success: false, message: "New password must be at least 6 characters." };
+    }
+    if (next === currentPassword) {
+      return { success: false, message: "Choose a different password." };
+    }
+
+    localStorage.setItem(PASSWORD_KEY, next);
+    return { success: true };
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -61,6 +88,7 @@ export function AuthProvider({ children }) {
         isAuthenticated: Boolean(user),
         login,
         logout,
+        changePassword,
       }}
     >
       {children}
