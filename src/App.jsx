@@ -4,6 +4,7 @@ import { ToastContainer } from "react-toastify";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./auth/AuthContext";
 import "react-toastify/dist/ReactToastify.css";
+import ScrollToTop from "./layout/ScrollToTop";
 
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetails"));
@@ -26,16 +27,37 @@ function pageLoader() {
 export default function App() {
   return (
     <>
-    <Suspense fallback={pageLoader()}>
-    <Routes>
-      
-      <Route path="/" element={<RootRedirect />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/shop" element={ <ProtectedRoute><Shop /></ProtectedRoute>}/>
-      <Route path="/products/:slug" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>}/>
-      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>}/>
-        <Route path="*" element={<Navigate to="/shop" replace />} />
-    </Routes>
+      <Suspense fallback={pageLoader()}>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/shop"
+            element={
+              <ProtectedRoute>
+                <Shop />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/products/:slug"
+            element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/shop" replace />} />
+        </Routes>
       </Suspense>
       <ToastContainer
         position="top-right"

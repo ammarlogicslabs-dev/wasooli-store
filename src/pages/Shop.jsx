@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   RotateCcw,
   Headphones,
+  Trash2,
 } from "lucide-react";
 import { formatPrice, products } from "../data/product";
 import ProductCard from "../components/ProductCard";
@@ -30,17 +31,104 @@ const TRUST = [
   { icon: Headphones, title: "24/7 Support", text: "We're here to help" },
 ];
 
+function FilterGroup({ title, options, value, counts, onChange }) {
+  return (
+    <div>
+      <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
+        {title}
+      </h3>
+      <ul className="mt-3 space-y-1 sm:mt-4">
+        {options.map((item) => {
+          const active = value === item;
+          return (
+            <li key={item}>
+              <button
+                type="button"
+                onClick={() => onChange(item)}
+                className={`shop-filter-item flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-1.5 transition ${
+                  active
+                    ? "bg-brand-50 font-semibold text-brand-700"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <span className="truncate pr-2">{item}</span>
+                <span
+                  className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px ${
+                    active
+                      ? "bg-brand-500 text-white"
+                      : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {counts[item] || 0}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function AppliedFilters({ filters, onClearAll }) {
+  if (filters.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-slate-800">Filter by</p>
+        <button
+          type="button"
+          onClick={onClearAll}
+          aria-label="Clear all filters"
+          className="cursor-pointer rounded-full p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {filters.map((filter) => (
+          <button
+            key={filter.key}
+            type="button"
+            onClick={filter.clear}
+            className="shop-chip-sm inline-flex cursor-pointer items-center gap-0.5 rounded-full bg-brand-50 py-px pl-1.5 pr-1 text-brand-700 transition hover:bg-brand-100"
+          >
+            {filter.label}
+            <X size={9} aria-hidden="true" />
+            <span className="sr-only">Remove {filter.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FilterPanel({
   categories,
   category,
   categoryCounts,
+  brands,
+  brand,
+  brandCounts,
+  availabilityOptions,
+  availability,
+  availabilityCounts,
+  portTypes,
+  portType,
+  portTypeCounts,
   minPrice,
   maxPrice,
   minPriceLimit,
   priceLimit,
   setCategory,
+  setBrand,
+  setAvailability,
+  setPortType,
   setMinPriceLimit,
   setPriceLimit,
+  activeFilters,
+  onClearAll,
   onCategorySelect,
 }) {
   function clampMin() {
@@ -75,43 +163,38 @@ function FilterPanel({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
-          Categories
-        </h3>
-        <ul className="mt-3 sm:mt-4 space-y-1">
-          {categories.map((item) => {
-            const active = category === item;
-            return (
-              <li key={item}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategory(item);
-                    onCategorySelect?.();
-                  }}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm transition ${
-                    active
-                      ? "bg-brand-50 font-semibold text-brand-700"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  }`}
-                >
-                  <span className="truncate pr-2">{item}</span>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-xs ${
-                      active
-                        ? "bg-brand-500 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {categoryCounts[item] || 0}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <AppliedFilters filters={activeFilters} onClearAll={onClearAll} />
+      <FilterGroup
+        title="Categories"
+        options={categories}
+        value={category}
+        counts={categoryCounts}
+        onChange={(item) => {
+          setCategory(item);
+          onCategorySelect?.();
+        }}
+      />
+      <FilterGroup
+        title="Brand"
+        options={brands}
+        value={brand}
+        counts={brandCounts}
+        onChange={setBrand}
+      />
+      <FilterGroup
+        title="Availability"
+        options={availabilityOptions}
+        value={availability}
+        counts={availabilityCounts}
+        onChange={setAvailability}
+      />
+      <FilterGroup
+        title="Port type"
+        options={portTypes}
+        value={portType}
+        counts={portTypeCounts}
+        onChange={setPortType}
+      />
 
       <div>
         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
@@ -200,6 +283,9 @@ function FilterPanel({
 export default function Shop() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [brand, setBrand] = useState("All");
+  const [availability, setAvailability] = useState("All");
+  const [portType, setPortType] = useState("All");
   const [sort, setSort] = useState("low");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -228,6 +314,43 @@ export default function Shop() {
     return counts;
   }, []);
 
+  const brands = useMemo(
+    () => ["All", ...new Set(products.map((product) => product.brand))],
+    []
+  );
+
+  const brandCounts = useMemo(() => {
+    const counts = { All: products.length };
+    products.forEach((p) => {
+      counts[p.brand] = (counts[p.brand] || 0) + 1;
+    });
+    return counts;
+  }, []);
+
+  const availabilityOptions = ["All", "In stock", "Out of stock"];
+
+  const availabilityCounts = useMemo(() => {
+    const inStock = products.filter((product) => product.stock > 0).length;
+    return {
+      All: products.length,
+      "In stock": inStock,
+      "Out of stock": products.length - inStock,
+    };
+  }, []);
+
+  const portTypes = useMemo(
+    () => ["All", ...new Set(products.map((product) => product.portType))],
+    []
+  );
+
+  const portTypeCounts = useMemo(() => {
+    const counts = { All: products.length };
+    products.forEach((p) => {
+      counts[p.portType] = (counts[p.portType] || 0) + 1;
+    });
+    return counts;
+  }, []);
+
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
     const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
@@ -238,15 +361,32 @@ export default function Shop() {
     let result = products.filter((product) => {
       const matchesSearch =
         product.title.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query);
+        product.category.toLowerCase().includes(query) ||
+        product.brand.toLowerCase().includes(query) ||
+        product.portType.toLowerCase().includes(query);
 
       const matchesCategory =
         category === "All" || product.category === category;
+      const matchesBrand = brand === "All" || product.brand === brand;
+      const matchesAvailability =
+        availability === "All" ||
+        (availability === "In stock"
+          ? product.stock > 0
+          : product.stock <= 0);
+      const matchesPort =
+        portType === "All" || product.portType === portType;
 
       const price = Number(product.price);
       const matchesPrice = price >= min && price <= max;
 
-      return matchesSearch && matchesCategory && matchesPrice;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesAvailability &&
+        matchesPort &&
+        matchesPrice
+      );
     });
 
     if (sort === "low") {
@@ -260,7 +400,18 @@ export default function Shop() {
     }
 
     return result;
-  }, [search, category, sort, minPriceLimit, priceLimit, minPrice, maxPrice]);
+  }, [
+    search,
+    category,
+    brand,
+    availability,
+    portType,
+    sort,
+    minPriceLimit,
+    priceLimit,
+    minPrice,
+    maxPrice,
+  ]);
 
   useEffect(() => {
     document.title = "Shop | Wasooli Store";
@@ -268,7 +419,7 @@ export default function Shop() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, category, sort, minPriceLimit, priceLimit]);
+  }, [search, category, brand, availability, portType, sort, minPriceLimit, priceLimit]);
   useEffect(() => {
     document.body.style.overflow = filtersOpen ? "hidden" : "";
     return () => {
@@ -288,6 +439,21 @@ export default function Shop() {
       label: category,
       clear: () => setCategory("All"),
     },
+    brand !== "All" && {
+      key: "brand",
+      label: brand,
+      clear: () => setBrand("All"),
+    },
+    availability !== "All" && {
+      key: "availability",
+      label: availability,
+      clear: () => setAvailability("All"),
+    },
+    portType !== "All" && {
+      key: "port",
+      label: portType,
+      clear: () => setPortType("All"),
+    },
     priceActive && {
       key: "price",
       label:
@@ -301,31 +467,47 @@ export default function Shop() {
         setPriceLimit(maxPrice);
       },
     },
-    search.trim() && {
-      key: "search",
-      label: `"${search.trim()}"`,
-      clear: () => setSearch(""),
-    },
   ].filter(Boolean);
+
+  const clearFilters = () => {
+    setCategory("All");
+    setBrand("All");
+    setAvailability("All");
+    setPortType("All");
+    setMinPriceLimit(minPrice);
+    setPriceLimit(maxPrice);
+  };
 
   const clearAll = () => {
     setSearch("");
-    setCategory("All");
-    setMinPriceLimit(minPrice);
-    setPriceLimit(maxPrice);
+    clearFilters();
   };
 
   const filterProps = {
     categories,
     category,
     categoryCounts,
+    brands,
+    brand,
+    brandCounts,
+    availabilityOptions,
+    availability,
+    availabilityCounts,
+    portTypes,
+    portType,
+    portTypeCounts,
     minPrice,
     maxPrice,
     minPriceLimit,
     priceLimit,
     setCategory,
+    setBrand,
+    setAvailability,
+    setPortType,
     setMinPriceLimit,
     setPriceLimit,
+    activeFilters,
+    onClearAll: clearFilters,
   };
 
   return (
@@ -391,9 +573,9 @@ export default function Shop() {
 
           <div className="min-w-0">
             {/* Toolbar */}
-            <div className="sticky top-16 z-20 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
-                <div className="relative flex-1">
+            <div className="sticky top-[var(--store-header-height,0px)] z-30 -mx-4 border-b border-slate-200 bg-slate-50 px-4 py-2.5 shadow-sm backdrop-blur-md transition-[top] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:top-auto lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:transition-none mb-6">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
+                <div className="relative min-w-0 flex-1">
                   <Search
                     size={18}
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 sm:left-4"
@@ -453,27 +635,10 @@ export default function Shop() {
                   </label>
                 </div>
               </div>
-
-              {/* Mobile category chips */}
-              <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {categories.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setCategory(item)}
-                    className={`shrink-0 whitespace-nowrap cursor-pointer rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition ${category === item
-                        ? "bg-brand-500 text-white shadow-xs"
-                        : "border border-slate-200 bg-white text-slate-600 hover:border-brand-500 hover:text-brand-600"
-                      }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Results summary + active filters */}
-            <div className="mb-4 mt-3 sm:mb-5 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Results summary */}
+            {/* <div className="mb-4 mt-3 sm:mb-5 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2 lg:mt-0">
               <p className="mr-2 text-xs sm:text-sm text-slate-500">
                 Showing{" "}
                 <span className="font-semibold text-slate-900">
@@ -485,16 +650,7 @@ export default function Shop() {
                 </span>{" "}
                 products
               </p>
-              {activeFilters.length > 1 && (
-                <button
-                  type="button"
-                  onClick={clearAll}
-                  className="cursor-pointer text-[11px] sm:text-xs font-semibold text-slate-500 underline-offset-2 hover:text-brand-600 hover:underline"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
+            </div> */}
 
             {/* Grid */}
             {visibleProducts.length > 0 ? (
@@ -573,34 +729,11 @@ export default function Shop() {
           className={`absolute inset-y-0 left-0 flex w-[85vw] max-w-xs sm:max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${filtersOpen ? "translate-x-0" : "-translate-x-full"
             }`}
         >
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">Filters</h2>
-              <p className="text-xs text-slate-500">{filteredProducts.length} products available</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(false)}
-              aria-label="Close filters"
-              className="cursor-pointer rounded-full p-2 text-slate-500 hover:bg-slate-100"
-            >
-              <X size={20} />
-            </button>
-          </div>
           <div className="flex-1 overflow-y-auto px-5 py-6">
             <FilterPanel
               {...filterProps}
               onCategorySelect={() => setFiltersOpen(false)}
             />
-          </div>
-          <div className="border-t border-slate-200 p-4">
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(false)}
-              className="w-full cursor-pointer rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 active:scale-[0.99]"
-            >
-              Show {filteredProducts.length} products
-            </button>
           </div>
         </aside>
       </div>

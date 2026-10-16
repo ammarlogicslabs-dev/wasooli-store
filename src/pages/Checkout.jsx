@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
@@ -11,6 +11,7 @@ import {
   Phone,
   ShoppingBag,
   Truck,
+  ArrowLeft
 } from "lucide-react";
 import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
@@ -134,6 +135,30 @@ const SUCCESS_BITS = [
   { x: -6, y: 6, color: "#12b76a", delay: 0.14 },
 ];
 
+function readBuyNowItem(state) {
+  const buyNow = state?.buyNow;
+  const product = buyNow?.product;
+  if (!product || product.id == null || !product.title) return null;
+
+  const price = Number(product.price);
+  if (!Number.isFinite(price)) return null;
+
+  const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : null;
+  const requested = Math.max(1, Number(buyNow.quantity) || 1);
+  const quantity = stock === null ? requested : Math.min(stock, requested);
+  if (quantity <= 0) return null;
+
+  return {
+    id: product.id,
+    slug: product.slug,
+    title: product.title,
+    image: product.image,
+    price,
+    stock,
+    quantity,
+  };
+}
+
 function riseMotion(delay, reduce) {
   if (reduce) return {};
   return {
@@ -223,7 +248,10 @@ function FieldError({ id, message }) {
 
   export default function Checkout() {
   const { user } = useAuth();
+  const location = useLocation();
   const { items, clearCart } = useCart();
+  const buyNowItem = readBuyNowItem(location.state);
+  const orderItems = buyNowItem ? [buyNowItem] : items;
   const [form, setForm] = useState(() => {
     const saved = readSavedAddress();
     return {
@@ -248,14 +276,14 @@ function FieldError({ id, message }) {
   const showError = (name) =>
     (touched[name] || submitAttempted) && errors[name];
 
-  const subtotal = items.reduce(
+  const subtotal = orderItems.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
   const deliveryOption =
     DELIVERY_OPTIONS.find((option) => option.id === form.delivery) ||
     DELIVERY_OPTIONS[0];
-  const deliveryFee = items.length ? deliveryOption.fee : 0;
+  const deliveryFee = orderItems.length ? deliveryOption.fee : 0;
   const total = subtotal + deliveryFee;
   const paymentOption =
     PAYMENT_OPTIONS.find((option) => option.id === form.payment) ||
@@ -296,7 +324,7 @@ function FieldError({ id, message }) {
   function handleSubmit(event) {
     event.preventDefault();
     setSubmitAttempted(true);
-    if (Object.keys(errors).length > 0 || items.length === 0 || placing) {
+    if (Object.keys(errors).length > 0 || orderItems.length === 0 || placing) {
       const firstInvalid = Object.keys(errors)[0];
       if (firstInvalid) {
         document.getElementById(firstInvalid)?.focus();
@@ -307,7 +335,7 @@ function FieldError({ id, message }) {
     setPlacing(true);
     const placed = {
       id: `WS-${Date.now().toString().slice(-8)}`,
-      items,
+      items: orderItems,
       delivery: {
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
@@ -351,7 +379,7 @@ function FieldError({ id, message }) {
     localStorage.setItem(ORDERS_KEY, JSON.stringify([placed, ...previous]));
 
     setOrder(placed);
-    clearCart();
+    if (!buyNowItem) clearCart();
     setPlacing(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -442,7 +470,7 @@ function FieldError({ id, message }) {
     );
   }
 
-  if (items.length === 0) {
+  if (orderItems.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50">
         <StoreHeader />
@@ -487,6 +515,13 @@ function FieldError({ id, message }) {
           <ChevronRight size={14} className="text-slate-300" />
           <span className="font-medium text-slate-900">Checkout</span>
         </nav>
+        <Link
+          to="/shop"
+          className="mt-5 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-brand-600"
+        >
+          <ArrowLeft size={17} />
+          Back to shopping
+        </Link>
 
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Checkout<span className="text-brand-500">.</span>
@@ -824,7 +859,7 @@ function FieldError({ id, message }) {
           <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-base font-semibold text-slate-900">Order summary</h2>
             <ul className="mt-4 space-y-4">
-              {items.map((item) => (
+              {orderItems.map((item) => (
                 <li key={item.id} className="flex gap-3">
                   <img
                     src={item.image}

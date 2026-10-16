@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Check,
@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  Zap,
 } from "lucide-react";
 import { products, formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
@@ -38,6 +39,7 @@ function Stars({ rating }) {
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { addItem, isWished, toggleWishlist } = useCart();
   const addedTimer = useRef(null);
 
@@ -137,6 +139,26 @@ export default function ProductDetail() {
       window.clearTimeout(addedTimer.current);
     }
     addedTimer.current = window.setTimeout(() => setAdded(false), 1800);
+  }
+
+  function handleBuyNow() {
+    if (outOfStock) return;
+
+    navigate("/checkout", {
+      state: {
+        buyNow: {
+          product: {
+            id: product.id,
+            slug: product.slug,
+            title: product.title,
+            image: product.image,
+            price: product.price,
+            stock: product.stock,
+          },
+          quantity,
+        },
+      },
+    });
   }
 
   const cartLabel = outOfStock ? "Out of Stock" : added ? "Added to Cart!" : "Add to Cart";
@@ -332,8 +354,8 @@ export default function ProductDetail() {
             <p className="mb-2 text-sm font-semibold text-slate-900">
               Quantity
             </p>
-            <div className="flex gap-3">
-              <div className="flex h-13 shrink-0 items-center rounded-xl border border-slate-200 bg-white">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="flex h-13 w-fit shrink-0 items-center rounded-3xl border border-slate-200 bg-white">
                 <button
                   type="button"
                   disabled={quantity <= 1}
@@ -370,19 +392,31 @@ export default function ProductDetail() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                disabled={outOfStock}
-                onClick={handleAddToCart}
-                className={`inline-flex h-13 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 ${
-                  added
-                    ? "bg-emerald-500 hover:bg-emerald-600"
-                    : "bg-brand-500 hover:bg-brand-600"
-                }`}
-              >
-                {added ? <Check size={19} /> : <ShoppingBag size={19} />}
-                {cartLabel}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={outOfStock}
+                  onClick={handleAddToCart}
+                  className={`inline-flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-3xl px-5 font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 sm:flex-none sm:px-6 ${
+                    added
+                      ? "bg-emerald-500 hover:bg-emerald-600"
+                      : "bg-brand-500 hover:bg-brand-600"
+                  }`}
+                >
+                  {added ? <Check size={19} /> : <ShoppingBag size={19} />}
+                  {cartLabel}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={outOfStock}
+                  onClick={handleBuyNow}
+                  className="inline-flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-3xl border border-slate-900 bg-white px-5 font-semibold text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 sm:flex-none sm:px-6"
+                >
+                  <Zap size={19} />
+                  Buy it now
+                </button>
+              </div>
             </div>
 
             <p className="mt-3 text-sm text-slate-500">
@@ -641,7 +675,7 @@ export default function ProductDetail() {
             type="button"
             disabled={outOfStock}
             onClick={handleAddToCart}
-            className={`inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
+            className={`inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
               added
                 ? "bg-emerald-500"
                 : "bg-brand-500 hover:bg-brand-600"
@@ -649,6 +683,15 @@ export default function ProductDetail() {
           >
             {added ? <Check size={18} /> : <ShoppingBag size={18} />}
             {cartLabel}
+          </button>
+          <button
+            type="button"
+            disabled={outOfStock}
+            onClick={handleBuyNow}
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-900 bg-white px-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            <Zap size={18} />
+            Buy it now
           </button>
         </div>
       </div>

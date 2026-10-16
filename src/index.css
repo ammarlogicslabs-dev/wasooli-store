@@ -25,6 +25,10 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow-anchor: none;
+}
+
 body {
     margin: 0;
     min-width: 320px;
@@ -36,6 +40,17 @@ input,
 select,
 textarea {
     font: inherit;
+}
+
+.shop-chip-sm {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 13px;
+}
+
+.shop-filter-item {
+    font-size: 13px;
+    line-height: 18px;
 }
 
 button,
@@ -131,6 +146,39 @@ img {
     outline: none;
   }
   
+
+@keyframes store-headline {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.store-headline {
+    container-type: inline-size;
+}
+
+.store-headline-track {
+    display: flex;
+    width: max-content;
+    animation: store-headline 20s linear infinite;
+}
+
+.store-headline-track > span {
+    padding-right: 100cqi;
+}
+
+.store-headline:hover .store-headline-track {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .store-headline-track {
+        animation: none;
+    }
+}
 
 @utility scrollbar-none {
     scrollbar-width: none;

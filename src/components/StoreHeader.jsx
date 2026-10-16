@@ -1,12 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Heart, LogOut, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Heart, LogOut, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice, products } from "../data/product";
 
 const STORE_NAME = "Wasooli Store";
+const STORE_PHONE = "0300 1234567";
+const STORE_EMAIL = "hello@wasooli.store";
+const STORE_HEADLINE =
+  "Nationwide delivery on networking cables  ·  Orders packed in 1-2 working days  ·  Standard delivery in 3-5 days  ·  Express in 1-2 days";
+
+// Scroll behaviour tuning
+const TOP_THRESHOLD = 18; // px from top where everything is shown again
+const SCROLL_DELTA = 2; // ignore tiny scroll movements
+const NAV_HIDE_AFTER = 80; // extra px scrolled down (after headline hides) before the nav hides
+const MOTION_EASE = [0.22, 1, 0.36, 1];
 
 function formatWishlistDate(value) {
   if (!value) return "Saved earlier";
@@ -160,6 +171,18 @@ export default function StoreHeader() {
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const headlineRef = useRef(null);
+  const navRef = useRef(null);
+  const [headlineHeight, setHeadlineHeight] = useState(0);
+  const [navHeight, setNavHeight] = useState(0);
+  // Headline collapses first, then the nav bar slides away.
+  const [headlineHidden, setHeadlineHidden] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
+
+  const reduceMotion = useReducedMotion();
+  const motionTransition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.35, ease: MOTION_EASE };
 
   const closeCart = () => setCartOpen(false);
   const closeWishlist = () => setWishlistOpen(false);
@@ -177,6 +200,80 @@ export default function StoreHeader() {
     setWishlistOpen(false);
   }, [location.pathname]);
 
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (headlineRef.current) setHeadlineHeight(headlineRef.current.offsetHeight);
+      if (navRef.current) setNavHeight(navRef.current.offsetHeight);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (headlineRef.current) observer.observe(headlineRef.current);
+    if (navRef.current) observer.observe(navRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const height =
+      (headlineHidden ? 0 : headlineHeight) + (navHidden ? 0 : navHeight);
+    document.documentElement.style.setProperty(
+      "--store-header-height",
+      `${height}px`
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--store-header-height");
+    };
+  }, [headlineHidden, headlineHeight, navHidden, navHeight]);
+
+  /*
+   * Scroll behaviour (staged):
+   *  - 1st scroll down : only the headline hides
+   *  - scrolling on    : after NAV_HIDE_AFTER more px, the nav bar hides too
+   *  - scroll up       : only the nav bar comes back (headline stays hidden)
+   *  - back at top     : headline is restored as well
+   */
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let downDistance = 0; // px scrolled down since the last upward scroll
+    let headlineIsHidden = false;
+
+    function onScroll() {
+      const y = window.scrollY;
+      const delta = y - lastY;
+      lastY = y;
+
+      if (y <= TOP_THRESHOLD) {
+        downDistance = 0;
+        headlineIsHidden = false;
+        setHeadlineHidden(false);
+        setNavHidden(false);
+        return;
+      }
+
+      if (Math.abs(delta) < SCROLL_DELTA) return;
+
+      if (delta > 0) {
+        downDistance += delta;
+
+        if (!headlineIsHidden) {
+          headlineIsHidden = true;
+          setHeadlineHidden(true);
+          // restart the count so the nav needs its own extra scroll
+          downDistance = 0;
+          return;
+        }
+
+        if (downDistance > NAV_HIDE_AFTER) setNavHidden(true);
+      } else {
+        downDistance = 0;
+        setNavHidden(false);
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const wishlistItems = wishlist
     .map((entry) => {
       const product = products.find((item) => item.id === entry.id);
@@ -190,7 +287,7 @@ export default function StoreHeader() {
     0
   );
 
-  // Lock page scroll and allow Escape to close while the cart is open
+  // Lock page scroll and allow Escape to close while a drawer is open
   useEffect(() => {
     if (!drawerOpen) return undefined;
 
@@ -271,8 +368,61 @@ export default function StoreHeader() {
           className="fixed inset-0 z-[9998] cursor-default bg-slate-900/50"
         />
       )}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <motion.header
+        initial={false}
+        animate={{ y: navHidden ? "-100%" : "0%" }}
+        transition={motionTransition}
+        className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur ${navHidden ? "pointer-events-none" : ""}`}
+      >
+        {/* Headline bar: height collapses smoothly (outer), natural height measured (inner) */}
+        <motion.div
+          initial={false}
+          animate={{
+            height: headlineHidden ? 0 : "auto",
+            opacity: headlineHidden ? 0 : 1,
+          }}
+          transition={motionTransition}
+          className="overflow-hidden"
+          aria-hidden={headlineHidden}
+        >
+          <div ref={headlineRef} className="bg-brand-700 text-white">
+            <div className="mx-auto flex max-w-8xl flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
+              <div
+                className="store-headline min-w-0 flex-1 overflow-hidden"
+                aria-label={STORE_HEADLINE}
+              >
+                <div className="store-headline-track text-[11px] font-medium sm:text-xs">
+                  <span className="whitespace-nowrap">{STORE_HEADLINE}</span>
+                  <span className="whitespace-nowrap" aria-hidden="true">
+                    {STORE_HEADLINE}
+                  </span>
+                </div>
+              </div>
+              <div className="hidden shrink-0 items-center gap-x-3 overflow-x-auto text-[11px] font-medium scrollbar-none sm:flex sm:gap-4 sm:text-xs">
+                <a
+                  href={`tel:${STORE_PHONE.replace(/\s/g, "")}`}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap transition hover:text-brand-100"
+                >
+                  <Phone size={13} aria-hidden="true" />
+                  {STORE_PHONE}
+                </a>
+                <a
+                  href={`mailto:${STORE_EMAIL}`}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap transition hover:text-brand-100"
+                >
+                  <Mail size={13} aria-hidden="true" />
+                  {STORE_EMAIL}
+                </a>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <MapPin size={13} aria-hidden="true" />
+                  Karachi
+                </span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <div ref={navRef} className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link to="/shop" className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white">
               <img
@@ -344,7 +494,14 @@ export default function StoreHeader() {
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
+
+      {/* Spacer keeps page content in place; its height stays constant so scrolling never jumps */}
+      <div
+        aria-hidden="true"
+        className="[overflow-anchor:none]"
+        style={{ height: headlineHeight + navHeight }}
+      />
 
       {/* Cart drawer */}
       <div
