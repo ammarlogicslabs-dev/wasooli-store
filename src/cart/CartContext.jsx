@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { products as baseProducts } from "../data/product";
+import { ensureAdminSeed, getCatalog, getStorefrontProducts, recordSaleAdjustments } from "../services/storage/adminDataService";
+import { DATA_EVENT } from "../services/storage/storageService";
 
 const CartContext = createContext(null);
 const STOCK_KEY = "wasooli_stock";
@@ -71,6 +73,7 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStorage("wasooli_cart", []));
   const [wishlist, setWishlist] = useState(readWishlist);
   const [notifications, setNotifications] = useState(readNotifications);
+  const [catalogTick, setCatalogTick] = useState(0);
   const [stockMap, setStockMap] = useState(() => {
     const savedOverride = readStorage(STOCK_KEY, {});
     const savedBase = readStorage(BASE_STOCK_KEY, {});
@@ -133,14 +136,8 @@ export function CartProvider({ children }) {
     .join(",");
 
   const products = useMemo(
-    () =>
-      baseProducts.map((product) => {
-        const override = stockMap[product.id];
-        return Number.isFinite(override)
-          ? { ...product, stock: Math.max(0, override) }
-          : product;
-      }),
-    [stockMap, baseStockSignature]
+    () => getStorefrontProducts(stockMap, catalogTick),
+    [stockMap, baseStockSignature, catalogTick]
   );
 
   useEffect(() => {
@@ -214,15 +211,22 @@ export function CartProvider({ children }) {
   }, [baseStockSignature]);
 
   useEffect(() => {
+    ensureAdminSeed();
+  }, []);
+
+  useEffect(() => {
     function handleStorage(event) {
-      if (event.key === STOCK_KEY) {
-        setStockMap(readStorage(STOCK_KEY, {}));
-      } else if (event.key === NOTIFICATIONS_KEY) {
-        setNotifications(readNotifications());
-      }
+      const key = event.key || event.detail?.key;
+      if (!key || key === STOCK_KEY) setStockMap(readStorage(STOCK_KEY, {}));
+      if (!key || key === "wasooli_admin_products_v1") setCatalogTick((tick) => tick + 1);
+      if (!key || key === NOTIFICATIONS_KEY) setNotifications(readNotifications());
     }
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener(DATA_EVENT, handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DATA_EVENT, handleStorage);
+    };
   }, []);
 
   const deductStock = useCallback((orderedItems) => {
@@ -234,8 +238,10 @@ export function CartProvider({ children }) {
 
     setStockMap((current) => {
       const next = { ...current };
+      const saleAdjustments = [];
       orderedItems.forEach((entry) => {
-        const base = baseProducts.find((item) => item.id === entry.id);
+        const base = getCatalog().find((item) => Number(item.id) === Number(entry.id))
+          || baseProducts.find((item) => item.id === entry.id);
         const currentStock = Number.isFinite(next[entry.id])
           ? next[entry.id]
           : Number.isFinite(base?.stock)
@@ -246,6 +252,12 @@ export function CartProvider({ children }) {
           const qty = Math.max(0, Number(entry.quantity) || 0);
           const updatedStock = Math.max(0, currentStock - qty);
           next[entry.id] = updatedStock;
+          saleAdjustments.push({
+            productId: entry.id,
+            previous: currentStock,
+            next: updatedStock,
+            reason: "Order placed",
+          });
 
           if (wishedIds.has(entry.id) && base && currentStock > 0 && updatedStock === 0) {
             newNotifications.push({
@@ -264,6 +276,7 @@ export function CartProvider({ children }) {
       });
 
       localStorage.setItem(STOCK_KEY, JSON.stringify(next));
+      recordSaleAdjustments(saleAdjustments);
 
       setItems((cartItems) => {
         const updatedCart = cartItems.flatMap((cartItem) => {

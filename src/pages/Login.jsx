@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { isAdminIdentifier, useAdminAuth } from "../admin/auth/AdminAuthContext";
 import { useAuth } from "../auth/AuthContext";
 import {
   AlertCircle,
@@ -48,9 +49,12 @@ function validate({ identifier, password }) {
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
+  const { login: adminLogin, isAuthenticated: isAdminAuthenticated } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/shop";
+  const redirectPath = location.state?.from?.pathname;
+  const from = redirectPath || "/shop";
+  const wantsAdmin = Boolean(redirectPath && redirectPath.startsWith("/admin"));
   const loginTimer = useRef(null);
 
   const [form, setForm] = useState({ identifier: "", password: "" });
@@ -64,10 +68,15 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    if (!redirectPath) return;
+    if (wantsAdmin) {
+      if (isAdminAuthenticated) navigate(from, { replace: true });
+      return;
+    }
     if (isAuthenticated) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, from, navigate]);
+  }, [isAuthenticated, isAdminAuthenticated, from, navigate, redirectPath, wantsAdmin]);
 
   useEffect(() => {
     return () => {
@@ -100,12 +109,18 @@ export default function Login() {
     setAuthError("");
 
     loginTimer.current = window.setTimeout(() => {
-      const result = login(form.identifier, form.password);
+      const signingInAsAdmin = isAdminIdentifier(form.identifier);
+      const result = signingInAsAdmin
+        ? adminLogin(form.identifier, form.password)
+        : login(form.identifier, form.password);
       setLoading(false);
 
       if (result.success) {
         toast.success("Logged in successfully");
-        navigate(from, { replace: true });
+        const nextPath = signingInAsAdmin
+          ? (wantsAdmin ? from : "/admin")
+          : (wantsAdmin ? "/shop" : from);
+        navigate(nextPath, { replace: true });
       } else {
         setAuthError(result.message);
       }

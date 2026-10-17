@@ -16,6 +16,8 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { getSettings } from "../services/storage/adminDataService";
+import { writeJson } from "../services/storage/storageService";
 
 const ADDRESS_KEY = "wasooli_address";
 const ORDERS_KEY = "wasooli_orders";
@@ -65,6 +67,14 @@ const DELIVERY_OPTIONS = [
     fee: 300,
   },
 ];
+
+function deliveryChoices() {
+  const fee = Number(getSettings().shippingFee);
+  const standardFee = Number.isFinite(fee) && fee >= 0 ? fee : DELIVERY_OPTIONS[0].fee;
+  return DELIVERY_OPTIONS.map((option) => (
+    option.id === "standard" ? { ...option, fee: standardFee } : option
+  ));
+}
 
 const EMPTY_FORM = {
   fullName: "",
@@ -307,8 +317,8 @@ function FieldError({ id, message }) {
     0
   );
   const deliveryOption =
-    DELIVERY_OPTIONS.find((option) => option.id === form.delivery) ||
-    DELIVERY_OPTIONS[0];
+    deliveryChoices().find((option) => option.id === form.delivery) ||
+    deliveryChoices()[0];
   const deliveryFee = orderItems.length ? deliveryOption.fee : 0;
   const total = subtotal + deliveryFee;
   const paymentOption =
@@ -365,9 +375,11 @@ function FieldError({ id, message }) {
     if (placing || orderItems.length === 0) return;
 
     setPlacing(true);
+    const createdAt = new Date().toISOString();
     const placed = {
       id: `WS-${Date.now().toString().slice(-8)}-${crypto.randomUUID()}`,
       items: orderItems,
+      customerEmail: user?.email || "",
       delivery: {
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
@@ -386,7 +398,18 @@ function FieldError({ id, message }) {
         label: paymentOption.title,
         reference: form.payment === "bank" ? form.transactionRef.trim() : "",
       },
-      createdAt: new Date().toISOString(),
+      adminStatus: "pending",
+      paymentStatus: form.payment === "bank" ? "paid" : "cod_pending",
+      courier: "Wasooli Express",
+      trackingNumber: "",
+      statusHistory: [
+        {
+          status: "pending",
+          note: "Order placed by customer",
+          at: createdAt,
+        },
+      ],
+      createdAt,
     };
 
     const addressToSave = {
@@ -408,7 +431,7 @@ function FieldError({ id, message }) {
         return [];
       }
     })();
-    localStorage.setItem(ORDERS_KEY, JSON.stringify([placed, ...previous]));
+    writeJson(ORDERS_KEY, [placed, ...previous]);
 
     deductStock(orderItems);
     setOrder(placed);
@@ -735,7 +758,7 @@ function FieldError({ id, message }) {
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {DELIVERY_OPTIONS.map((option) => {
+                {deliveryChoices().map((option) => {
                   const selected = form.delivery === option.id;
                   return (
                     <label

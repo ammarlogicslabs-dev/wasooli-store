@@ -4,23 +4,104 @@ import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Bell,
+  Box,
+  CheckCircle2,
+  Clock,
   Eye,
   EyeOff,
   Heart,
   KeyRound,
   LogOut,
+  MapPin,
   Minus,
+  Navigation,
   Package,
+  PackageCheck,
+  Phone,
   Plus,
+  RotateCcw,
   ShoppingBag,
   Trash2,
+  Truck,
 } from "lucide-react";
 import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
+import { DATA_EVENT } from "../services/storage/storageService";
 
 const ORDERS_KEY = "wasooli_orders";
+const TRACKING_KEY = "wasooli_order_tracking";
+
+const TRACKING_STEPS = [
+  {
+    key: "confirmed",
+    title: "Order Confirmed",
+    shortLabel: "Confirmed",
+    location: "Wasooli Store HQ · Karachi",
+    description: "Your order has been verified and confirmed by Wasooli Store.",
+    icon: CheckCircle2,
+    offsetMinutes: 0,
+  },
+  {
+    key: "packed",
+    title: "Order Packed",
+    shortLabel: "Packed",
+    location: "Fulfillment Warehouse · Karachi",
+    description: "Items have been quality-checked, sealed, and packed for dispatch.",
+    icon: Box,
+    offsetMinutes: 18,
+  },
+  {
+    key: "handover",
+    title: "Handed Over to Delivery Partner",
+    shortLabel: "Handed Over",
+    location: "Wasooli Express Sortation Hub",
+    description: "Package has been handed over to our courier partner and scanned at the sorting facility.",
+    icon: Truck,
+    offsetMinutes: 65,
+  },
+  {
+    key: "rider",
+    title: "Rider Will Arrive Soon",
+    shortLabel: "Out for Delivery",
+    location: "Local Delivery Hub",
+    description: "Rider Muhammad Ahmed (0300-4829104) is on the way to your address. Keep your phone reachable.",
+    icon: Navigation,
+    offsetMinutes: 140,
+  },
+  {
+    key: "delivered",
+    title: "Delivered",
+    shortLabel: "Delivered",
+    location: "Customer Address",
+    description: "Package has been delivered successfully and signed off at the destination.",
+    icon: PackageCheck,
+    offsetMinutes: 195,
+  },
+];
+
+function readTrackingMap() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TRACKING_KEY) || "{}");
+    return saved && typeof saved === "object" ? saved : {};
+  } catch {
+    return {};
+  }
+}
+
+function formatStepTime(baseIso, offsetMinutes = 0) {
+  const base = baseIso ? new Date(baseIso) : new Date();
+  const baseTime = Number.isNaN(base.getTime()) ? Date.now() : base.getTime();
+  const date = new Date(baseTime + offsetMinutes * 60 * 1000);
+  return new Intl.DateTimeFormat("en-PK", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 const HIDDEN_PASSWORDS = { current: true, next: false, confirm: false };
 
@@ -110,6 +191,9 @@ export default function Account() {
   const logoutToastId = useRef(null);
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [orders, setOrders] = useState(readOrders);
+  const [trackingMap, setTrackingMap] = useState(readTrackingMap);
+  const [trackingOrderId, setTrackingOrderId] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     next: "",
@@ -126,6 +210,18 @@ export default function Account() {
   useEffect(() => {
     document.title = "My account | Wasooli Store";
     setOrders(readOrders());
+
+    function refreshOrders(event) {
+      const key = event.key || event.detail?.key;
+      if (!key || key === ORDERS_KEY) setOrders(readOrders());
+    }
+
+    window.addEventListener("storage", refreshOrders);
+    window.addEventListener(DATA_EVENT, refreshOrders);
+    return () => {
+      window.removeEventListener("storage", refreshOrders);
+      window.removeEventListener(DATA_EVENT, refreshOrders);
+    };
   }, []);
 
   useEffect(() => {
@@ -133,6 +229,97 @@ export default function Account() {
       markNotificationsRead?.();
     }
   }, [section, notificationCount, markNotificationsRead]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (orders.length === 0) return;
+    const maxOffsetMs =
+      (TRACKING_STEPS[TRACKING_STEPS.length - 1]?.offsetMinutes || 195) * 60 * 1000;
+
+    const missingStart = orders.some((order) => {
+      if (!order?.id) return false;
+      const existingStart = trackingMap[order.id]?.startedAt;
+      return !existingStart || Number.isNaN(new Date(existingStart).getTime());
+    });
+
+    if (!missingStart) return;
+
+    setTrackingMap((current) => {
+      const next = { ...current };
+
+      orders.forEach((order) => {
+        if (!order?.id) return;
+        const existingStart = next[order.id]?.startedAt;
+        if (existingStart && !Number.isNaN(new Date(existingStart).getTime())) {
+          return;
+        }
+        const createdTime = new Date(order.createdAt).getTime();
+        const isRecentOrder =
+          Number.isFinite(createdTime) && Date.now() - createdTime <= maxOffsetMs;
+
+        next[order.id] = {
+          startedAt: isRecentOrder ? order.createdAt : new Date().toISOString(),
+        };
+      });
+
+      localStorage.setItem(TRACKING_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [orders, trackingMap]);
+
+  const getOrderStartTime = (order) => {
+    const savedStart = trackingMap[order?.id]?.startedAt;
+    if (savedStart && !Number.isNaN(new Date(savedStart).getTime())) {
+      return savedStart;
+    }
+    return order?.createdAt || new Date().toISOString();
+  };
+
+  const getOrderStage = (order) => {
+    const managedStage = adminStage(order);
+    if (managedStage != null) return managedStage;
+
+    const startIso = getOrderStartTime(order);
+    const startTime = new Date(startIso).getTime();
+    if (Number.isNaN(startTime)) return 0;
+
+    const elapsedMs = Math.max(0, now - startTime);
+    let currentStage = 0;
+    for (let index = 0; index < TRACKING_STEPS.length; index += 1) {
+      const stepOffsetMs = (TRACKING_STEPS[index].offsetMinutes || 0) * 60 * 1000;
+      if (elapsedMs >= stepOffsetMs) {
+        currentStage = index;
+      }
+    }
+    return currentStage;
+  };
+
+  function openOrderTracking(orderId) {
+    setNow(Date.now());
+    setTrackingOrderId(orderId);
+  }
+
+  // function replayOrderTracking(orderId) {
+  //   const nowIso = new Date().toISOString();
+  //   setTrackingMap((current) => {
+  //     const next = {
+  //       ...current,
+  //       [orderId]: {
+  //         startedAt: nowIso,
+  //       },
+  //     };
+  //     localStorage.setItem(TRACKING_KEY, JSON.stringify(next));
+  //     return next;
+  //   });
+  //   setNow(Date.now());
+  //   setTrackingOrderId(orderId);
+  // }
 
   const wishlistItems = wishlist
     .map((entry) => {
@@ -242,6 +429,7 @@ export default function Account() {
       label: "Cart",
       detail: cartCount === 0 ? "Empty" : `${cartCount} ${cartCount === 1 ? "item" : "items"}`,
     },
+    
   ];
 
   return (
@@ -495,31 +683,283 @@ export default function Account() {
                   Browse products
                 </Link>
               ) : (
-                <ul className="space-y-3">
-                  {orders.map((order) => (
-                    <li key={order.id} className="rounded-2xl border border-slate-200 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900">{order.id}</p>
-                          <p className="mt-0.5 text-xs text-slate-500">{formatDate(order.createdAt)}</p>
+                <ul className="space-y-4">
+                  {orders.map((order) => {
+                    const orderStartTime = getOrderStartTime(order);
+                    const stageIndex = getOrderStage(order);
+                    const currentStep = TRACKING_STEPS[stageIndex] || TRACKING_STEPS[0];
+                    const isCancelled = order.adminStatus === "cancelled";
+                    const isDelivered = !isCancelled && stageIndex === TRACKING_STEPS.length - 1;
+                    const isTrackingOpen = trackingOrderId === order.id;
+
+                    return (
+                      <li
+                        key={order.id}
+                        className={`rounded-2xl border transition ${
+                          isTrackingOpen
+                            ? "border-brand-300 bg-white shadow-md"
+                            : "border-slate-200 bg-white"
+                        } p-4 sm:p-5`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                                  isCancelled
+                                    ? "bg-red-50 text-red-600"
+                                    : isDelivered
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-brand-50 text-brand-600"
+                                }`}
+                              >
+                                <span
+                                  className={`size-1.5 rounded-full ${
+                                    isCancelled
+                                      ? "bg-red-500"
+                                      : isDelivered
+                                      ? "bg-emerald-500"
+                                      : "animate-pulse bg-brand-500"
+                                  }`}
+                                />
+                                {isCancelled ? "Cancelled" : currentStep.title}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Placed on {formatDate(order.createdAt)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2.5">
+                            <p className="text-sm font-bold text-slate-900">
+                              {formatPrice(order.total)}
+                            </p>
+                            
+                          </div>
                         </div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {formatPrice(order.total)}
+
+                        <ul className="mt-3 space-y-1">
+                          {(order.items || []).map((item) => (
+                            <li key={`${order.id}-${item.id}`} className="text-sm text-slate-600">
+                              {item.title} · Qty {item.quantity}
+                            </li>
+                          ))}
+                        </ul>
+                          <div className="flex items-center justify-between gap-2">
+                          <p className="mt-2.5 text-xs text-slate-500">
+                          {order.payment?.label || "Payment"}
+                          {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
                         </p>
-                      </div>
-                      <ul className="mt-3 space-y-1">
-                        {(order.items || []).map((item) => (
-                          <li key={`${order.id}-${item.id}`} className="text-sm text-slate-600">
-                            {item.title} · Qty {item.quantity}
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-3 text-xs text-slate-500">
-                        {order.payment?.label || "Payment"}
-                        {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
-                      </p>
-                    </li>
-                  ))}
+                          <button
+                              type="button"
+                              onClick={() =>
+                                isTrackingOpen
+                                  ? setTrackingOrderId(null)
+                                  : openOrderTracking(order.id)
+                              }
+                              className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
+                                isTrackingOpen
+                                  ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                  : "bg-brand-500 text-white hover:bg-brand-600"
+                              }`}
+                            >
+                              <Truck size={13} />
+                              {isTrackingOpen ? "Hide tracking" : "Track order"}
+                            </button>
+                          </div>
+                        
+                        
+
+                        {isTrackingOpen && (
+                          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                            {/* Top Daraz-style banner */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                                    Wasooli Express
+                                  </span>
+                                  {!isDelivered && !isCancelled && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                      <Clock size={11} className="animate-spin" />
+                                      In progress
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {order.delivery?.method?.title || "Standard delivery"} ·{" "}
+                                  {isCancelled
+                                    ? "Order cancelled"
+                                    : isDelivered
+                                    ? "Delivered to recipient"
+                                    : order.delivery?.method?.text || "Arrives in 3-5 working days"}
+                                </p>
+                                {order.trackingNumber ? (
+                                  <p className="mt-1 text-xs font-medium text-slate-600">
+                                    {order.courier || "Courier"} · {order.trackingNumber}
+                                  </p>
+                                ) : null}
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {/* {!isDelivered && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setLiveSimulating(false);
+                                      updateOrderStage(order.id, stageIndex + 1);
+                                    }}
+                                    className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+                                  >
+                                    Next step
+                                  </button>
+                                )} */}
+                                {/* <button
+                                  type="button"
+                                  onClick={() => replayOrderTracking(order.id)}
+                                  className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-brand-500 hover:text-brand-600"
+                                >
+                                  <RotateCcw size={11} />
+                                  Replay live
+                                </button> */}
+                              </div>
+                            </div>
+
+                            {/* Horizontal Daraz-style Stepper */}
+                            <div className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2">
+                              {TRACKING_STEPS.map((step, index) => {
+                                const StepIcon = step.icon;
+                                const reached = index <= stageIndex;
+                                const current = index === stageIndex;
+                                return (
+                                  <div key={step.key} className="flex flex-col items-center text-center">
+                                    <div className="relative flex w-full items-center justify-center">
+                                      {index > 0 && (
+                                        <span
+                                          className={`absolute right-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 transition-colors duration-500 ${
+                                            reached ? "bg-brand-500" : "bg-slate-200"
+                                          }`}
+                                        />
+                                      )}
+                                      <span
+                                        className={`relative z-10 grid size-8 place-items-center rounded-full border-2 transition-all duration-300 sm:size-9 ${
+                                          current
+                                            ? "border-brand-500 bg-brand-500 text-white ring-4 ring-brand-100"
+                                            : reached
+                                            ? "border-brand-500 bg-brand-50 text-brand-600"
+                                            : "border-slate-200 bg-white text-slate-400"
+                                        }`}
+                                      >
+                                        <StepIcon size={15} />
+                                      </span>
+                                    </div>
+                                    <p
+                                      className={`mt-1.5 text-[10px] font-semibold leading-tight sm:text-[11px] ${
+                                        reached ? "text-slate-900" : "text-slate-400"
+                                      }`}
+                                    >
+                                      {step.shortLabel}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Vertical Daraz-style Detailed Timeline */}
+                            <div className="mt-5 border-t border-slate-200 pt-4">
+                              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Tracking Timeline
+                              </p>
+                              <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-5">
+                                {TRACKING_STEPS.map((step, index) => {
+                                  const reached = index <= stageIndex;
+                                  const current = index === stageIndex;
+                                  const locationText =
+                                    step.key === "delivered" && order.delivery?.city
+                                      ? `${order.delivery.address || ""}${
+                                          order.delivery.city ? `, ${order.delivery.city}` : ""
+                                        }`
+                                      : step.location;
+
+                                  return (
+                                    <li key={step.key} className="relative">
+                                      <span
+                                        className={`absolute -left-[24px] top-1 grid size-3.5 place-items-center rounded-full border-2 ${
+                                          current
+                                            ? "border-brand-500 bg-brand-500 ring-4 ring-brand-100"
+                                            : reached
+                                            ? "border-brand-500 bg-brand-500"
+                                            : "border-slate-300 bg-white"
+                                        }`}
+                                      />
+                                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                        <p
+                                          className={`text-xs font-bold sm:text-sm ${
+                                            current
+                                              ? "text-brand-600"
+                                              : reached
+                                              ? "text-slate-900"
+                                              : "text-slate-400"
+                                          }`}
+                                        >
+                                          {step.title}
+                                        </p>
+                                        <span
+                                          className={`text-[11px] ${
+                                            reached ? "font-medium text-slate-500" : "text-slate-400"
+                                          }`}
+                                        >
+                                          {!reached
+                                            ? "Pending"
+                                            : historyTimeForStage(order, index)
+                                            ? formatStepTime(historyTimeForStage(order, index), 0)
+                                            : order.adminStatus
+                                            ? "Updated"
+                                            : formatStepTime(orderStartTime, step.offsetMinutes)}
+                                        </span>
+                                      </div>
+                                      <p
+                                        className={`mt-0.5 text-xs leading-relaxed ${
+                                          reached ? "text-slate-600" : "text-slate-400"
+                                        }`}
+                                      >
+                                        {step.description}
+                                      </p>
+                                      <p
+                                        className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${
+                                          reached ? "text-slate-500" : "text-slate-400"
+                                        }`}
+                                      >
+                                        <MapPin size={11} />
+                                        {locationText}
+                                      </p>
+                                    </li>
+                                  );
+                                })}
+                              </ol>
+                            </div>
+
+                            {/* Delivery & Receiver Summary */}
+                            {order.delivery && (
+                              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-600">
+                                <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
+                                  <MapPin size={13} className="text-brand-600" />
+                                  {order.delivery.fullName} · {order.delivery.address},{" "}
+                                  {order.delivery.city}
+                                </span>
+                                {order.delivery.phone && (
+                                  <span className="inline-flex items-center gap-1 text-slate-500">
+                                    <Phone size={12} />
+                                    {order.delivery.phone}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Section>
