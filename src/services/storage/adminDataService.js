@@ -406,9 +406,9 @@ export function updateOrder(orderId, changes) {
       history.push({ status: "cancelled", note: note || "Order cancelled", at: now });
       order.adminStatus = "cancelled";
     } else if (ORDER_FLOW.some((step) => step.id === changes.adminStatus)) {
-      if (order.adminStatus === "cancelled") {
-        return { ok: false, message: "Cancelled orders stay cancelled in this demo." };
-      }
+      // if (order.adminStatus === "cancelled") {
+      //   return { ok: false, message: "Cancelled orders stay cancelled in this demo." };
+      // }
       const target = ORDER_FLOW.findIndex((step) => step.id === changes.adminStatus);
       ORDER_FLOW.slice(0, target + 1).forEach((step) => {
         if (!history.some((event) => event.status === step.id && event.type !== "note" && event.type !== "refund")) {
@@ -662,7 +662,7 @@ export function saveCategory(input) {
   const next = {
     id: input.id || `cat-${slug}`,
     name,
-    slug,
+    slug, 
     description: String(input.description || "").trim(),
     image: String(input.image || "").trim(),
     status: input.status === "archived" ? "archived" : "active",

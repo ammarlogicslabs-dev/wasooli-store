@@ -53,12 +53,12 @@ export default function SettingsPage() {
           <label className="block text-sm font-semibold text-slate-900">Low-stock threshold
             <input value={form.lowStockThreshold} onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })} inputMode="numeric" className={`${inputClass} mt-1.5`} />
           </label>
-          <label className="block text-sm font-semibold text-slate-900">Table density
+          {/* <label className="block text-sm font-semibold text-slate-900">Table density
             <select value={form.density} onChange={(event) => setForm({ ...form, density: event.target.value })} className={`${inputClass} mt-1.5`}>
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
-          </label>
+          </label> */}
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-900">
             <input type="checkbox" checked={Boolean(form.notifyLowStock)} onChange={(event) => setForm({ ...form, notifyLowStock: event.target.checked })} />
             Low-stock alerts

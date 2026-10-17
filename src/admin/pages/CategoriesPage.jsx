@@ -9,7 +9,7 @@ import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
 
-const EMPTY = { name: "", slug: "", description: "", image: "", status: "active" };
+const EMPTY = { name: "", description: "", image: "", status: "active" };
 
 export default function CategoriesPage() {
   const { categories } = useAdminData();
@@ -68,7 +68,7 @@ export default function CategoriesPage() {
                   {category.image ? <img src={category.image} alt="" className="size-12 rounded-xl object-cover" /> : <span className="grid size-12 place-items-center rounded-xl bg-slate-100 text-xs text-slate-400">None</span>}
                   <span>
                     <span className="block font-semibold text-slate-900">{category.name}</span>
-                    <span className="text-xs text-slate-500">{category.slug}</span>
+                    {/* <span className="text-xs text-slate-500">{category.slug}</span> */}
                   </span>
                 </span>
               ),
@@ -98,7 +98,7 @@ export default function CategoriesPage() {
       <AdminModal open={Boolean(form)} title={form?.id ? "Edit category" : "Add category"} onClose={() => setForm(null)}>
         {form && (
           <form onSubmit={handleSave} className="space-y-3">
-            {["name", "slug", "description", "image"].map((field) => (
+            {["name", "description", "image"].map((field) => (
               <label key={field} className="block text-sm font-semibold capitalize text-slate-900">
                 {field === "image" ? "Image URL" : field}
                 {field === "description" ? (
@@ -108,7 +108,7 @@ export default function CategoriesPage() {
                 )}
               </label>
             ))}
-            {form.image ? <img src={form.image} alt="" className="h-28 w-full rounded-2xl object-cover" /> : null}
+            {form.image ? <img src={form.image} alt="" className="h-48 w-full rounded-2xl object-contain" /> : null}
             {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
             <button type="submit" className={buttonClass}>Save category</button>
           </form>
