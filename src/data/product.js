@@ -108,7 +108,7 @@ export const products = [
             { label: "Length", value: "2 Meters" },
             { label: "Jacket", value: "Double Braided Nylon" },
         ],
-        stock: 0,
+        stock: 5,
     },
     {
         id: 4,
@@ -663,7 +663,7 @@ export const products = [
             { label: "Use", value: "Access points and IP cameras" },
             { label: "Power", value: "Included adapter" },
         ],
-        stock: 3,
+        stock: 4,
     },
     {
         id: 19,

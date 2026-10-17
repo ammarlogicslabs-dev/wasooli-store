@@ -248,8 +248,21 @@ function FieldError({ id, message }) {
   export default function Checkout() {
   const { user } = useAuth();
   const location = useLocation();
-  const { items, clearCart } = useCart();
-  const buyNowItem = readBuyNowItem(location.state);
+  const { products, items, clearCart, deductStock } = useCart();
+  const rawBuyNowItem = readBuyNowItem(location.state);
+  const buyNowItem = (() => {
+    if (!rawBuyNowItem) return null;
+    const liveProduct = products.find((item) => item.id === rawBuyNowItem.id);
+    const liveStock = Number.isFinite(liveProduct?.stock)
+      ? liveProduct.stock
+      : rawBuyNowItem.stock;
+    if (liveStock !== null && liveStock <= 0) return null;
+    const quantity =
+      liveStock === null
+        ? rawBuyNowItem.quantity
+        : Math.min(liveStock, rawBuyNowItem.quantity);
+    return { ...rawBuyNowItem, stock: liveStock, quantity };
+  })();
   const orderItems = buyNowItem ? [buyNowItem] : items;
   const [form, setForm] = useState(() => {
     const saved = readSavedAddress();
@@ -353,7 +366,7 @@ function FieldError({ id, message }) {
 
     setPlacing(true);
     const placed = {
-      id: `WS-${Date.now().toString().slice(-8)}`,
+      id: `WS-${Date.now().toString().slice(-8)}-${crypto.randomUUID()}`,
       items: orderItems,
       delivery: {
         fullName: form.fullName.trim(),
@@ -397,6 +410,7 @@ function FieldError({ id, message }) {
     })();
     localStorage.setItem(ORDERS_KEY, JSON.stringify([placed, ...previous]));
 
+    deductStock(orderItems);
     setOrder(placed);
     if (!buyNowItem) clearCart();
     setConfirmOpen(false);
@@ -443,8 +457,7 @@ function FieldError({ id, message }) {
                 className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500 sm:text-sm lg:mx-0"
                 {...riseMotion(0.75, reduceMotion)}
               >
-                Order <span className="font-semibold text-slate-900">{order.id}</span>{" "}
-                is confirmed.{" "}
+                Your order  is confirmed.{" "}
                 {order.payment.method === "bank"
                   ? `Bank transfer reference ${order.payment.reference} is saved. The order ships after the payment is confirmed.`
                   : "Pay this amount in cash when it arrives."}

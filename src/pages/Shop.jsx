@@ -12,9 +12,10 @@ import {
   BadgePercent,
   Trash2,
 } from "lucide-react";
-import { formatPrice, products } from "../data/product";
+import { formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
 import StoreHeader from "../components/StoreHeader";
+import { useCart } from "../cart/CartContext";
 
 const PAGE_SIZE = 12;
 
@@ -283,6 +284,7 @@ function FilterPanel({
 }
 
 export default function Shop() {
+  const { products } = useCart();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [category, setCategory] = useState("All");
@@ -299,14 +301,14 @@ export default function Shop() {
       minPrice: Math.floor(Math.min(...prices, 0)),
       maxPrice: Math.ceil(Math.max(...prices, 0)),
     };
-  }, []);
+  }, [products]);
 
   const [minPriceLimit, setMinPriceLimit] = useState(minPrice);
   const [priceLimit, setPriceLimit] = useState(maxPrice);
 
   const categories = useMemo(
     () => ["All", ...new Set(products.map((product) => product.category))],
-    []
+    [products]
   );
 
   const categoryCounts = useMemo(() => {
@@ -315,14 +317,14 @@ export default function Shop() {
       counts[p.category] = (counts[p.category] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [products]);
 
   const categoryProducts = useMemo(
     () =>
       category === "All"
         ? products
         : products.filter((product) => product.category === category),
-    [category]
+    [category, products]
   );
 
   const brands = useMemo(
@@ -429,6 +431,7 @@ export default function Shop() {
 
     return result;
   }, [
+    products,
     debouncedSearch,
     category,
     brand,

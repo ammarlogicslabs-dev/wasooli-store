@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
+  Bell,
   Eye,
   EyeOff,
   Heart,
@@ -17,7 +18,7 @@ import {
 import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
-import { formatPrice, products } from "../data/product";
+import { formatPrice } from "../data/product";
 
 const ORDERS_KEY = "wasooli_orders";
 
@@ -91,7 +92,20 @@ function Section({ icon: Icon, title, detail, children }) {
 
 export default function Account() {
   const { user, logout, changePassword } = useAuth();
-  const { items, cartCount, removeItem, updateQuantity, wishlist, toggleWishlist } = useCart();
+  const {
+    products,
+    items,
+    cartCount,
+    removeItem,
+    updateQuantity,
+    wishlist,
+    toggleWishlist,
+    notifications = [],
+    notificationCount = 0,
+    markNotificationsRead,
+    removeNotification,
+    clearNotifications,
+  } = useCart();
   const navigate = useNavigate();
   const logoutToastId = useRef(null);
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
@@ -113,6 +127,12 @@ export default function Account() {
     document.title = "My account | Wasooli Store";
     setOrders(readOrders());
   }, []);
+
+  useEffect(() => {
+    if (section === "notifications" && notificationCount > 0) {
+      markNotificationsRead?.();
+    }
+  }, [section, notificationCount, markNotificationsRead]);
 
   const wishlistItems = wishlist
     .map((entry) => {
@@ -202,6 +222,12 @@ export default function Account() {
   const links = [
     { id: "password", label: "Change password" },
     {
+      id: "notifications",
+      label: "Notifications",
+      detail: null,
+      badge: notificationCount,
+    },
+    {
       id: "orders",
       label: "Order history",
       detail: orders.length === 0 ? "No orders yet" : `${orders.length} orders`,
@@ -271,7 +297,12 @@ export default function Account() {
                     key={link.id}
                     type="button"
                     aria-current={active ? "page" : undefined}
-                    onClick={() => setSection(link.id)}
+                    onClick={() => {
+                      setSection(link.id);
+                      if (link.id === "notifications") {
+                        markNotificationsRead?.();
+                      }
+                    }}
                     className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
                       active
                         ? "bg-brand-50 text-brand-600"
@@ -279,7 +310,11 @@ export default function Account() {
                     }`}
                   >
                     <span>{link.label}</span>
-                    {link.detail ? (
+                    {link.badge > 0 ? (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1.5 text-[11px] font-bold text-white">
+                        {link.badge}
+                      </span>
+                    ) : link.detail ? (
                       <span className={`text-xs font-medium ${active ? "text-brand-600" : "text-slate-400"}`}>
                         {link.detail}
                       </span>
@@ -358,6 +393,90 @@ export default function Account() {
             </Section>
             ) : null}
 
+            {section === "notifications" ? (
+            <Section
+              icon={Bell}
+              title="Notifications"
+              detail="Stock updates and availability alerts."
+            >
+              {notifications.length === 0 ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center">
+                  <p className="text-sm font-semibold text-slate-900">No notifications right now</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    When an out-of-stock product becomes available again, you'll see a message here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => clearNotifications?.()}
+                      className="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-red-600"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <ul className="space-y-3">
+                    {notifications.map((notif) => {
+                      const isAvailable = notif.type !== "out_of_stock";
+                      return (
+                        <li
+                          key={notif.id}
+                          className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5"
+                        >
+                          {notif.image && (
+                            <Link
+                              to={`/products/${notif.slug}`}
+                              className="size-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
+                            >
+                              <img src={notif.image} alt="" className="h-full w-full object-cover" />
+                            </Link>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                                  isAvailable
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-red-50 text-red-600"
+                                }`}
+                              >
+                                {isAvailable ? "Back in stock" : "Out of stock"}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                {formatDate(notif.createdAt)}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-sm font-medium text-slate-900">
+                              {notif.message}
+                            </p>
+                            {notif.slug && (
+                              <Link
+                                to={`/products/${notif.slug}`}
+                                className="mt-2 inline-flex h-8 items-center rounded-lg bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600"
+                              >
+                                View product
+                              </Link>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeNotification?.(notif.id)}
+                            aria-label="Remove notification"
+                            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </Section>
+            ) : null}
+
             {section === "orders" ? (
             <Section
               icon={Package}
@@ -425,38 +544,60 @@ export default function Account() {
                 </Link>
               ) : (
                 <ul className="space-y-4">
-                  {wishlistItems.map((item) => (
-                    <li key={item.id} className="flex gap-3">
-                      <Link
-                        to={`/products/${item.slug}`}
-                        className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
-                      >
-                        <img src={item.image} alt="" className="h-full w-full object-cover" />
-                      </Link>
-                      <div className="min-w-0 flex-1">
+                  {wishlistItems.map((item) => {
+                    const outOfStock = Number.isFinite(item.stock) && item.stock <= 0;
+                    const lowStock = Number.isFinite(item.stock) && item.stock > 0 && item.stock <= 5;
+                    return (
+                      <li key={item.id} className="flex gap-3">
                         <Link
                           to={`/products/${item.slug}`}
-                          className="line-clamp-2 text-sm font-semibold text-slate-900 hover:text-brand-600"
+                          className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
                         >
-                          {item.title}
+                          <img src={item.image} alt="" className="h-full w-full object-cover" />
                         </Link>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {formatPrice(item.price)}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {item.addedAt ? `Saved ${formatDate(item.addedAt)}` : "Saved earlier"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleWishlist(item.id)}
-                        aria-label={`Remove ${item.title} from wishlist`}
-                        className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </li>
-                  ))}
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to={`/products/${item.slug}`}
+                            className="line-clamp-2 text-sm font-semibold text-slate-900 hover:text-brand-600"
+                          >
+                            {item.title}
+                          </Link>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {formatPrice(item.price)}
+                            </span>
+                            <span
+                              className={`text-xs font-semibold ${
+                                outOfStock
+                                  ? "text-red-600"
+                                  : lowStock
+                                  ? "text-amber-600"
+                                  : "text-emerald-700"
+                              }`}
+                            >
+                              ·{" "}
+                              {outOfStock
+                                ? "Out of stock"
+                                : lowStock
+                                ? `Only ${item.stock} left`
+                                : "In stock"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {item.addedAt ? `Saved ${formatDate(item.addedAt)}` : "Saved earlier"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleWishlist(item.id)}
+                          aria-label={`Remove ${item.title} from wishlist`}
+                          className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Section>

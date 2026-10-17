@@ -13,7 +13,7 @@ import {
   Truck,
   Zap,
 } from "lucide-react";
-import { products, formatPrice } from "../data/product";
+import { formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
@@ -39,7 +39,7 @@ function Stars({ rating }) {
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addItem, isWished, toggleWishlist } = useCart();
+  const { products, addItem, isWished, toggleWishlist } = useCart();
   const addedTimer = useRef(null);
 
   const product = products.find((item) => item.slug === slug);
@@ -111,7 +111,7 @@ export default function ProductDetail() {
 
   const stock = Number.isFinite(product.stock) ? product.stock : null;
   const outOfStock = stock !== null && stock === 0 || stock === null;
-  const lowStock = stock !== null && stock <= 5;
+  const lowStock = stock !== null && stock <= 5 && stock > 0;
 
   const hasDiscount = product.oldPrice > product.price;
   const discount = hasDiscount
@@ -516,7 +516,7 @@ export default function ProductDetail() {
               role="tab"
               aria-selected={tab === item.id}
               onClick={() => setTab(item.id)}
-              className={`-mb-px cursor-pointer whitespace-nowrap border-b-2 pb-3 text-sm font-semibold transition ${
+              className={`-mb-px cursor-pointer whitespace-nowrap border-b-2 pb-3 text-sm font-bold transition ${
                 tab === item.id
                   ? "border-brand-500 text-brand-600"
                   : "border-transparent text-slate-500 hover:text-slate-900"

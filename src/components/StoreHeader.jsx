@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { Heart, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, User, X } from "lucide-react";
 import { useCart } from "../cart/CartContext";
-import { formatPrice, products } from "../data/product";
+import { formatPrice } from "../data/product";
 
 const STORE_NAME = "Wasooli Store";
 const STORE_PHONE = "0300 1234567";
@@ -29,10 +29,13 @@ function formatWishlistDate(value, emptyLabel = "Saved earlier") {
 }
 
 function availabilityOf(stock) {
-  if (!Number.isFinite(stock) || stock > 0) {
-    return { label: "In stock", className: "text-emerald-700" };
+  if (Number.isFinite(stock) && stock <= 0) {
+    return { label: "Out of stock", className: "text-red-600", out: true };
   }
-  return { label: "Out of stock", className: "text-red-600" };
+  if (Number.isFinite(stock) && stock <= 5) {
+    return { label: `Only ${stock} left in stock`, className: "text-amber-600", low: true };
+  }
+  return { label: "In stock", className: "text-emerald-700" };
 }
 
 function WishlistItem({ item, onView, onRemove }) {
@@ -154,12 +157,14 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
 
 export default function StoreHeader() {
   const {
+    products,
     items,
     cartCount,
     removeItem,
     updateQuantity,
     wishlist,
     toggleWishlist,
+    notificationCount = 0,
     subscribeCartOpen,
   } = useCart();
   const location = useLocation();
@@ -373,12 +378,6 @@ export default function StoreHeader() {
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* {user?.name && (
-              <span className="hidden max-w-40 truncate text-sm font-medium text-slate-600 sm:inline">
-                {user.name}
-              </span>
-            )} */}
-
             <button
               type="button"
               onClick={() => {
@@ -421,15 +420,24 @@ export default function StoreHeader() {
 
             <Link
               to="/account"
-              aria-label="My account"
+              aria-label={
+                notificationCount > 0
+                  ? `My account, ${notificationCount} ${notificationCount === 1 ? "notification" : "notifications"}`
+                  : "My account"
+              }
               aria-current={location.pathname === "/account" ? "page" : undefined}
-              className={`grid size-10 place-items-center rounded-xl border transition ${
+              className={`relative grid size-10 place-items-center rounded-xl border transition ${
                 location.pathname === "/account"
                   ? "border-brand-500 bg-brand-50 text-brand-600"
                   : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
               }`}
             >
               <User size={18} />
+              {notificationCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
