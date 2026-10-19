@@ -1,13 +1,83 @@
-export function getProductInstructions(product) {
-  if (!product) return null;
+export const EMPTY_BOT_INSTRUCTIONS = {
+  setupSteps: [],
+  dosAndDonts: [],
+  compatibilityList: [],
+  speedTips: [],
+  troubleshooting: [],
+  quickFaqs: [],
+};
+
+function hasCustomInstructions(raw) {
+  if (!raw || typeof raw !== "object") return false;
+  return (
+    (Array.isArray(raw.setupSteps) && raw.setupSteps.length > 0) ||
+    (Array.isArray(raw.dosAndDonts) && raw.dosAndDonts.length > 0) ||
+    (Array.isArray(raw.compatibilityList) && raw.compatibilityList.length > 0) ||
+    (Array.isArray(raw.speedTips) && raw.speedTips.length > 0) ||
+    (Array.isArray(raw.troubleshooting) && raw.troubleshooting.length > 0) ||
+    (Array.isArray(raw.quickFaqs) && raw.quickFaqs.length > 0)
+  );
+}
+
+export function normalizeBotInstructions(raw) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const setupSteps = (Array.isArray(source.setupSteps) ? source.setupSteps : [])
+    .map((item, index) => ({
+      step: Number(item?.step) || index + 1,
+      title: String(item?.title || "").trim(),
+      detail: String(item?.detail || "").trim(),
+    }))
+    .filter((item) => item.title || item.detail)
+    .map((item, index) => ({ ...item, step: index + 1 }));
+
+  const dosAndDonts = (Array.isArray(source.dosAndDonts) ? source.dosAndDonts : [])
+    .map((item) => ({
+      type: item?.type === "dont" ? "dont" : "do",
+      text: String(item?.text || "").trim(),
+    }))
+    .filter((item) => item.text);
+
+  const compatibilityList = (Array.isArray(source.compatibilityList) ? source.compatibilityList : [])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+
+  const speedTips = (Array.isArray(source.speedTips) ? source.speedTips : [])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+
+  const troubleshooting = (Array.isArray(source.troubleshooting) ? source.troubleshooting : [])
+    .map((item) => ({
+      problem: String(item?.problem || "").trim(),
+      solution: String(item?.solution || "").trim(),
+    }))
+    .filter((item) => item.problem || item.solution);
+
+  const quickFaqs = (Array.isArray(source.quickFaqs) ? source.quickFaqs : [])
+    .map((item) => ({
+      q: String(item?.q || "").trim(),
+      a: String(item?.a || "").trim(),
+    }))
+    .filter((item) => item.q || item.a);
+
+  return {
+    setupSteps,
+    dosAndDonts,
+    compatibilityList,
+    speedTips,
+    troubleshooting,
+    quickFaqs,
+  };
+}
+
+/** Category-based defaults used when a product has no saved bot instructions. */
+export function buildDefaultInstructions(product) {
+  if (!product) return { ...EMPTY_BOT_INSTRUCTIONS };
 
   const title = product.title || "Product";
   const category = (product.category || "").toLowerCase();
   const brand = product.brand || "Standard";
   const portType = product.portType || "Standard Interface";
-  const specs = product.specifications || [];
 
-  // Determine category-specific guidance
   let setupSteps = [];
   let dosAndDonts = [];
   let compatibilityList = [];
@@ -85,7 +155,7 @@ export function getProductInstructions(product) {
       },
       {
         q: `What is the maximum speed supported by this ${brand} cable?`,
-        a: `This cable supports full rated bandwidth as specified in specifications (${product.specifications?.find((s) => s.label.toLowerCase().includes("speed"))?.value || "Gigabit speeds"}).`,
+        a: `This cable supports full rated bandwidth as specified in specifications (${product.specifications?.find((s) => s.label?.toLowerCase().includes("speed"))?.value || "Gigabit speeds"}).`,
       },
       {
         q: "Does this cable require any software drivers?",
@@ -157,7 +227,6 @@ export function getProductInstructions(product) {
       },
     ];
   } else {
-    // General networking accessories (Adapters, PoE, etc.)
     setupSteps = [
       {
         step: 1,
@@ -209,18 +278,34 @@ export function getProductInstructions(product) {
     ];
   }
 
-  return {
-    productTitle: title,
-    brand,
-    category: product.category,
-    portType,
-    specs,
+  return normalizeBotInstructions({
     setupSteps,
     dosAndDonts,
     compatibilityList,
     speedTips,
     troubleshooting,
     quickFaqs,
+  });
+}
+
+export function getProductInstructions(product) {
+  if (!product) return null;
+
+  const title = product.title || "Product";
+  const brand = product.brand || "Standard";
+  const portType = product.portType || "Standard Interface";
+  const specs = product.specifications || [];
+  const custom = hasCustomInstructions(product.botInstructions)
+    ? normalizeBotInstructions(product.botInstructions)
+    : buildDefaultInstructions(product);
+
+  return {
+    productTitle: title,
+    brand,
+    category: product.category,
+    portType,
+    specs,
+    ...custom,
   };
 }
 
@@ -237,52 +322,58 @@ export function generateBotResponse(query, product, instructions) {
   const brand = product.brand || "Wasooli";
   const price = product.price ? `Rs. ${product.price.toLocaleString()}` : "our listed price";
 
-  // Installation / Setup query
   if (q.includes("install") || q.includes("setup") || q.includes("how to use") || q.includes("connect") || q.includes("plug")) {
-    const steps = instructions.setupSteps.map((s) => `• Step ${s.step} (${s.title}): ${s.detail}`).join("\n");
-    return `Here are the official setup instructions for ${title}:\n\n${steps}\n\n💡 Pro tip: Always make sure the connection clicks firmly into place!`;
+    const steps = (instructions.setupSteps || []).map((s) => `• Step ${s.step} (${s.title}): ${s.detail}`).join("\n");
+    return steps
+      ? `Here are the official setup instructions for ${title}:\n\n${steps}\n\n Pro tip: Always make sure the connection clicks firmly into place!`
+      : `Setup details for ${title} are being prepared. Check the product description meanwhile.`;
   }
 
-  // Compatibility query
   if (q.includes("compatible") || q.includes("support") || q.includes("work with") || q.includes("ps5") || q.includes("xbox") || q.includes("tv") || q.includes("router")) {
-    const devices = instructions.compatibilityList.map((d) => `✓ ${d}`).join("\n");
-    return `Yes! ${title} is designed for wide networking compatibility:\n\n${devices}\n\nIt features standard ${instructions.portType} interfaces for zero-hassle connectivity.`;
+    const devices = (instructions.compatibilityList || []).map((d) => `✓ ${d}`).join("\n");
+    return devices
+      ? `Yes! ${title} is designed for wide networking compatibility:\n\n${devices}\n\nIt features standard ${instructions.portType} interfaces for zero-hassle connectivity.`
+      : `${title} uses standard ${instructions.portType || "networking"} interfaces. Check the specifications tab for details.`;
   }
 
-  // Speed / Performance query
   if (q.includes("speed") || q.includes("bandwidth") || q.includes("gbps") || q.includes("fast") || q.includes("ping") || q.includes("gaming") || q.includes("lag")) {
-    const speedSpec = instructions.specs.find((s) => s.label.toLowerCase().includes("speed") || s.label.toLowerCase().includes("bandwidth"));
-    const tips = instructions.speedTips.map((t) => `• ${t}`).join("\n");
-    return `⚡ Performance & Speed for ${title}:\n` +
+    const speedSpec = (instructions.specs || []).find((s) => s.label.toLowerCase().includes("speed") || s.label.toLowerCase().includes("bandwidth"));
+    const tips = (instructions.speedTips || []).map((t) => `• ${t}`).join("\n");
+    return `Performance & Speed for ${title}:\n` +
       (speedSpec ? `Rated capacity: ${speedSpec.value}\n\n` : "") +
-      `Tips to achieve full performance:\n${tips}`;
+      (tips ? `Tips to achieve full performance:\n${tips}` : "See product specifications for rated speed.");
   }
 
-  // Specifications / Details query
   if (q.includes("spec") || q.includes("detail") || q.includes("feature") || q.includes("material") || q.includes("length")) {
-    const specList = instructions.specs.length > 0
+    const specList = (instructions.specs || []).length > 0
       ? instructions.specs.map((s) => `• ${s.label}: ${s.value}`).join("\n")
       : product.features?.map((f) => `• ${f}`).join("\n") || "Standard high-performance specifications.";
-    return `📋 Specifications for ${title}:\n\n${specList}`;
+    return `Specifications for ${title}:\n\n${specList}`;
   }
 
-  // Troubleshooting / Problem query
   if (q.includes("problem") || q.includes("not working") || q.includes("issue") || q.includes("fix") || q.includes("error") || q.includes("slow")) {
-    const fixes = instructions.troubleshooting.map((t) => `❓ ${t.problem}\n👉 Fix: ${t.solution}`).join("\n\n");
-    return `Here are quick troubleshooting steps for ${title}:\n\n${fixes}\n\nIf the issue persists, feel free to contact Wasooli Store support at hello@wasooli.store!`;
+    const fixes = (instructions.troubleshooting || []).map((t) => ` ${t.problem}\n Fix: ${t.solution}`).join("\n\n");
+    return fixes
+      ? `Here are quick troubleshooting steps for ${title}:\n\n${fixes}\n\nIf the issue persists, feel free to contact Wasooli Store support at hello@wasooli.store!`
+      : `If ${title} is not working as expected, try reconnecting and contact hello@wasooli.store if the issue continues.`;
   }
 
-  // Price / Discount / Buy query
   if (q.includes("price") || q.includes("cost") || q.includes("discount") || q.includes("buy")) {
     return `${title} is currently priced at ${price}.${product.oldPrice > product.price ? ` You save Rs. ${(product.oldPrice - product.price).toLocaleString()} off the original Rs. ${product.oldPrice.toLocaleString()} price!` : ""} You can add it to your cart or click 'Buy it now' for fast nationwide delivery.`;
   }
 
-  // Warranty / Return query
   if (q.includes("warranty") || q.includes("return") || q.includes("exchange") || q.includes("guarantee")) {
     return `Wasooli Store offers a safe delivery guarantee on ${title}. Exchanges are available within 2 days of delivery for unused items in their original sealed packaging.`;
   }
 
-  // Default response
+  const faqHit = (instructions.quickFaqs || []).find((item) => {
+    const question = (item.q || "").toLowerCase();
+    return question && q.split(/\s+/).some((word) => word.length > 3 && question.includes(word));
+  });
+  if (faqHit) {
+    return `${faqHit.q}\n\n${faqHit.a}`;
+  }
+
   return `Regarding "${query}" for ${title}:\n` +
     `This is a genuine ${brand} product (${instructions.portType}) with tested high reliability. ` +
     `You can explore the 'Instructions' tab above for step-by-step setup guides, compatibility checklists, and troubleshooting!`;

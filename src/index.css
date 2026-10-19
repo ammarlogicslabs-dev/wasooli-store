@@ -8,6 +8,7 @@
     --color-brand-500: #2c9aff;
     --color-brand-600: #1676d2;
     --color-brand-700: #125eaa;
+    --color-brand-950: #0f172a;
     --font-sans: "Inter", sans-serif;
 }
 
@@ -36,11 +37,17 @@ body {
     min-height: 100vh;
 }
 
-button,
+button {
+    font: inherit;
+}
+
 input,
 select,
 textarea {
-    font: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 400;
+    line-height: inherit;
 }
 
 .shop-chip-sm {

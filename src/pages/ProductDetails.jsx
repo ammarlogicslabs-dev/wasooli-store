@@ -133,7 +133,6 @@ export default function ProductDetail() {
 
   const detailTabs = [
     { id: "overview", label: "Overview" },
-    { id: "instructions", label: "Bot Instructions" },
     { id: "reviews", label: "Reviews" },
   ];
 
@@ -746,7 +745,7 @@ export default function ProductDetail() {
             <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 border border-slate-900" />
           </div>
           <div className="text-left">
-            <p className="text-[11px] font-bold leading-tight">Product Info</p>
+            <p className="text-[11px] font-bold leading-tight">Product Bot</p>
             <p className="text-[9px] text-slate-300">Ask instructions</p>
           </div>
         </button>

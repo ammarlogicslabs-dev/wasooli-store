@@ -1,4 +1,5 @@
 import { products as baseProducts } from "../../data/product";
+import { normalizeBotInstructions } from "../../data/productInstructions";
 import { readJson, removeStorageKey, writeJson } from "./storageService";
 import { ORDER_FLOW, paymentBucket } from "./orderStatus";
 
@@ -121,6 +122,9 @@ function normalizeProduct(product) {
     images,
     features: Array.isArray(product.features) ? product.features : [],
     specifications: Array.isArray(product.specifications) ? product.specifications : [],
+    botInstructions: product.botInstructions
+      ? normalizeBotInstructions(product.botInstructions)
+      : undefined,
     price: Number(product.price) || 0,
     oldPrice: product.oldPrice == null || product.oldPrice === "" ? null : Number(product.oldPrice),
     stock: Math.max(0, Number(product.stock) || 0),
@@ -579,6 +583,9 @@ export function saveProduct(input) {
         return { label: label.trim(), value: rest.join("|").trim() };
       }).filter((item) => item.label && item.value);
 
+  const botInstructions = normalizeBotInstructions(input.botInstructions);
+  const hasBotContent = Object.values(botInstructions).some((value) => Array.isArray(value) && value.length > 0);
+
   const payload = {
     title: String(input.title).trim(),
     slug: slugify(input.slug || input.title),
@@ -596,6 +603,7 @@ export function saveProduct(input) {
     description: String(input.description || "").trim(),
     features: Array.isArray(input.features) ? input.features : linesToList(input.featuresText),
     specifications: specs,
+    botInstructions: hasBotContent ? botInstructions : undefined,
     rating: Number(input.rating) || 0,
     reviews: Number(input.reviews) || 0,
   };

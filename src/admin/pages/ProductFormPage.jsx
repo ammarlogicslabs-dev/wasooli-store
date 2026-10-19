@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
+import {
+  buildDefaultInstructions,
+  EMPTY_BOT_INSTRUCTIONS,
+  normalizeBotInstructions,
+} from "../../data/productInstructions";
 import { getProduct, saveProduct } from "../../services/storage/adminDataService";
+import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
@@ -26,12 +32,19 @@ const EMPTY = {
   description: "",
   featuresText: "",
   specificationsText: "",
+  botInstructions: { ...EMPTY_BOT_INSTRUCTIONS },
 };
 
 const MAX_EXTRA = 4;
 
+function instructionsForForm(product) {
+  if (!product) return { ...EMPTY_BOT_INSTRUCTIONS };
+  if (product.botInstructions) return normalizeBotInstructions(product.botInstructions);
+  return buildDefaultInstructions(product);
+}
+
 function toForm(product) {
-  if (!product) return EMPTY;
+  if (!product) return { ...EMPTY, botInstructions: { ...EMPTY_BOT_INSTRUCTIONS } };
   const extras = (product.images || []).filter((src) => src && src !== product.image);
   return {
     ...EMPTY,
@@ -42,6 +55,7 @@ function toForm(product) {
     extraImages: extras,
     featuresText: (product.features || []).join("\n"),
     specificationsText: (product.specifications || []).map((item) => `${item.label} | ${item.value}`).join("\n"),
+    botInstructions: instructionsForForm(product),
   };
 }
 
@@ -72,6 +86,24 @@ export default function ProductFormPage() {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: "" }));
+  }
+
+  function loadCategoryTemplate() {
+    const template = buildDefaultInstructions({
+      title: form.title || "Product",
+      category: form.category,
+      brand: form.brand,
+      portType: form.portType,
+      specifications: (form.specificationsText || "")
+        .split("\n")
+        .map((line) => {
+          const [label, ...rest] = line.split("|");
+          return { label: label?.trim(), value: rest.join("|").trim() };
+        })
+        .filter((item) => item.label && item.value),
+    });
+    update("botInstructions", template);
+    toast.success("Category template loaded. Edit anything before saving.");
   }
 
   async function handleExtraFiles(event) {
@@ -113,6 +145,7 @@ export default function ProductFormPage() {
       ...form,
       id: existing?.id,
       images: form.image ? [form.image, ...extras] : extras,
+      botInstructions: form.botInstructions,
     });
     if (!result.ok) {
       setErrors(result.errors || {});
@@ -136,7 +169,7 @@ export default function ProductFormPage() {
       <PageHeader
         crumbs={[{ label: "Products", to: "/admin/products" }, { label: existing ? "Edit" : "Add" }]}
         title={existing ? "Edit product" : "Add product"}
-        detail="Draft products stay hidden on the shop until you mark them active."
+        detail="Draft products stay hidden on the shop until you mark them active. Bot instructions power the product assistant."
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -180,7 +213,7 @@ export default function ProductFormPage() {
             <textarea value={form.specificationsText} onChange={(event) => update("specificationsText", event.target.value)} rows={4} className={`${inputClass} mt-1.5`} />
           </label>
         </section>
-        <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-4 lg:self-start">
           <p className="text-sm font-semibold text-slate-900">Images</p>
           <input ref={extraInputRef} type="file" accept="image/*" multiple className="sr-only" onChange={handleExtraFiles} />
           <ImagePicker
@@ -222,6 +255,12 @@ export default function ProductFormPage() {
           </div>
         </aside>
       </div>
+
+      <BotInstructionsEditor
+        value={form.botInstructions}
+        onChange={(botInstructions) => update("botInstructions", botInstructions)}
+        onLoadTemplate={loadCategoryTemplate}
+      />
     </form>
   );
 }
