@@ -19,7 +19,6 @@ import {
   PackageCheck,
   Phone,
   Plus,
-  RotateCcw,
   ShoppingBag,
   Trash2,
   Truck,
@@ -281,24 +280,90 @@ export default function Account() {
     return order?.createdAt || new Date().toISOString();
   };
 
-  const getOrderStage = (order) => {
+  function getOrderStage(order) {
     const managedStage = adminStage(order);
-    if (managedStage != null) return managedStage;
+  
+    // Cancelled order par automatic tracking rok do.
+    if (order.adminStatus === "cancelled") {
+      return managedStage ?? 0;
+    }
+  
+    // Delivered final stage hai; iske baad timer nahi chalega.
+    if (order.adminStatus === "delivered") {
+      return TRACKING_STEPS.length - 1;
+    }
+  
+    // Admin ne status update kiya hai:
+    // us stage se aglay steps ka timer calculate karo.
+    if (managedStage !== null) {
+      const latestStatusEvent = [...(order.statusHistory || [])]
+  .reverse()
+  .find(
+    (event) =>
+      event.type !== "note" &&
+      event.type !== "refund" &&
+      event.status === order.adminStatus
+  );
 
-    const startIso = getOrderStartTime(order);
-    const startTime = new Date(startIso).getTime();
-    if (Number.isNaN(startTime)) return 0;
-
+const anchorTime = new Date(
+  order.adminStatusUpdatedAt || latestStatusEvent?.at
+).getTime();
+  
+      if (!Number.isFinite(anchorTime)) {
+        return managedStage;
+      }
+  
+      const elapsedMs = Math.max(0, now - anchorTime);
+      let currentStage = managedStage;
+      let elapsedForNextStage = 0;
+  
+      for (
+        let index = managedStage + 1;
+        index < TRACKING_STEPS.length;
+        index += 1
+      ) {
+        const previousOffset =
+          TRACKING_STEPS[index - 1].offsetMinutes || 0;
+  
+        const currentOffset =
+          TRACKING_STEPS[index].offsetMinutes || 0;
+  
+        const durationMs =
+          (currentOffset - previousOffset) * 60 * 1000;
+  
+        elapsedForNextStage += durationMs;
+  
+        if (elapsedMs >= elapsedForNextStage) {
+          currentStage = index;
+        } else {
+          break;
+        }
+      }
+  
+      return currentStage;
+    }
+  
+    // Admin update nahi hua: original demo timer use karo.
+    const startTime = new Date(
+      getOrderStartTime(order)
+    ).getTime();
+  
+    if (!Number.isFinite(startTime)) return 0;
+  
     const elapsedMs = Math.max(0, now - startTime);
     let currentStage = 0;
+  
     for (let index = 0; index < TRACKING_STEPS.length; index += 1) {
-      const stepOffsetMs = (TRACKING_STEPS[index].offsetMinutes || 0) * 60 * 1000;
-      if (elapsedMs >= stepOffsetMs) {
+      const offsetMs =
+        (TRACKING_STEPS[index].offsetMinutes || 0) * 60 * 1000;
+  
+      if (elapsedMs >= offsetMs) {
         currentStage = index;
       }
     }
+  
     return currentStage;
-  };
+  }
 
   function openOrderTracking(orderId) {
     setNow(Date.now());
@@ -909,13 +974,35 @@ export default function Account() {
                                             reached ? "font-medium text-slate-500" : "text-slate-400"
                                           }`}
                                         >
-                                          {!reached
-                                            ? "Pending"
-                                            : historyTimeForStage(order, index)
-                                            ? formatStepTime(historyTimeForStage(order, index), 0)
-                                            : order.adminStatus
-                                            ? "Updated"
-                                            : formatStepTime(orderStartTime, step.offsetMinutes)}
+                                          
+{!reached
+  ? "Pending"
+  : (() => {
+      const historyTime = historyTimeForStage(order, index);
+
+      if (historyTime) {
+        return formatStepTime(historyTime, 0);
+      }
+
+      // Admin status update ka actual timestamp
+      const statusTime =
+        order.adminStatusUpdatedAt ||
+        [...(order.statusHistory || [])]
+          .reverse()
+          .find(
+            (event) =>
+              event.type !== "note" &&
+              event.type !== "refund" &&
+              event.status === order.adminStatus
+          )?.at;
+
+      // Current stage ka timestamp na mile to simulated time use karo
+      return formatStepTime(
+        statusTime || orderStartTime,
+        statusTime ? 0 : step.offsetMinutes
+      );
+    })()}
+
                                         </span>
                                       </div>
                                       <p

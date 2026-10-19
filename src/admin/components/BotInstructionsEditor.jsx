@@ -34,7 +34,20 @@ function RemoveButton({ onClick, label }) {
 }
 
 export default function BotInstructionsEditor({ value, onChange, onLoadTemplate }) {
-  const instructions = value || EMPTY_BOT_INSTRUCTIONS;
+  const instructions = value || EMPTY_BOT_INSTRUCTIONS; 
+
+  const hasInstructions = [
+    ...(instructions.setupSteps || []),
+    ...(instructions.dosAndDonts || []),
+    ...(instructions.compatibilityList || []),
+    ...(instructions.speedTips || []),
+    ...(instructions.troubleshooting || []),
+    ...(instructions.quickFaqs || []),
+  ].some((item) => 
+    typeof item === "string" 
+    ? item.trim() > 0 
+    : Object.values(item).some(
+      (field) => typeof field === "string" && field.trim().length > 0));
 
   function setSection(key, next) {
     onChange({ ...instructions, [key]: next });
@@ -63,7 +76,7 @@ export default function BotInstructionsEditor({ value, onChange, onLoadTemplate 
             These sections appear in the product bot and Bot Instructions tab. Leave empty to use the category template.
           </p>
         </div>
-        {onLoadTemplate ? (
+        {onLoadTemplate && !hasInstructions ? (
           <button type="button" onClick={onLoadTemplate} className={quietButtonClass}>
             Load category template
           </button>

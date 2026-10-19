@@ -30,10 +30,24 @@ export default function OrderDetailsPage() {
   }
 
   function apply(changes, success) {
-    const result = updateOrder(order.id, changes);
-    if (!result.ok) toast.error(result.message);
-    else toast.success(success);
+    const updates = { ...changes };
+  
+    if (
+      Object.prototype.hasOwnProperty.call(changes, "adminStatus") &&
+      changes.adminStatus !== order.adminStatus
+    ) {
+      updates.adminStatusUpdatedAt = new Date().toISOString();
+    }
+  
+    const result = updateOrder(order.id, updates);
+  
+    if (!result.ok) {
+      toast.error(result.message);
+    } else {
+      toast.success(success);
+    }
   }
+
 
   const history = [...(order.statusHistory || [])].reverse();
 
