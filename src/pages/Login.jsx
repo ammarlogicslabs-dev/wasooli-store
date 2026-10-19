@@ -137,7 +137,7 @@ export default function Login() {
 
   return (
     <main className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 lg:flex lg:flex-col lg:justify-start lg:gap-18 xl:gap-20 lg:p-12 xl:p-16">
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
 
@@ -180,7 +180,7 @@ export default function Login() {
         </div>
       </aside>
 
-  
+
       <section className="flex min-h-screen items-start justify-center px-4 pt-8 pb-10 sm:px-6 sm:pt-28 lg:min-h-0 lg:items-center lg:pt-10">
         <div className="w-full max-w-md">
           {/* Mobile brand */}
@@ -272,7 +272,7 @@ export default function Login() {
                   >
                     Password
                   </label>
-                 
+
                 </div>
                 <div className="relative">
                   <Lock

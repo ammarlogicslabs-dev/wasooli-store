@@ -7,6 +7,7 @@ import AdminLayout from "./admin/layouts/AdminLayout";
 import { useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./layout/ScrollToTop";
+import PageLoader from "./components/PageLoader";
 
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetails"));
@@ -23,7 +24,6 @@ const OrderDetailsPage = lazy(() => import("./admin/pages/OrderDetailsPage"));
 const InventoryPage = lazy(() => import("./admin/pages/InventoryPage"));
 const CustomersPage = lazy(() => import("./admin/pages/CustomersPage"));
 const CustomerDetailsPage = lazy(() => import("./admin/pages/CustomerDetailsPage"));
-// const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ReportsPage = lazy(() => import("./admin/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./admin/pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
@@ -42,19 +42,14 @@ function RequireAdmin({ children }) {
   return children;
 }
 
-function pageLoader() {
-  return (
-    <div className="flex h-dvh items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500"></div>
-    </div>
-  );
-}
+
 
 export default function App() {
   return (
     <>
-      <Suspense fallback={pageLoader()}>
-        <ScrollToTop />
+    <ScrollToTop />
+      <Suspense fallback={<PageLoader />}>
+        
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
@@ -81,7 +76,6 @@ export default function App() {
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="customers/:key" element={<CustomerDetailsPage />} />
-            {/* <Route path="coupons" element={<CouponsPage />} /> */}
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="profile" element={<ProfilePage />} />

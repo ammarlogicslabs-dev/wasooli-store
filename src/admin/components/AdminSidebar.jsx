@@ -38,7 +38,7 @@ function Item({ item, collapsed, onNavigate }) {
       end={item.end}
       title={item.label}
       onClick={onNavigate}
-      className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+      className={({ isActive }) => `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
         isActive ? "bg-brand-500 text-white" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700"
       }`}
     >

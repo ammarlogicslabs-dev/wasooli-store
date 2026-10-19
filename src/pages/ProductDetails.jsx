@@ -2,19 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  BookOpen,
+  Bot,
   Check,
+  CheckCircle2,
   Heart,
   Minus,
   Plus,
   RotateCcw,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   Star,
   Truck,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { formatPrice } from "../data/product";
+import { getProductInstructions } from "../data/productInstructions";
 import ProductCard from "../components/ProductCard";
+import ProductBotModal from "../components/ProductBotModal";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
 
@@ -49,7 +56,9 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(false);
   const [tab, setTab] = useState("overview");
   const [openPolicy, setOpenPolicy] = useState("shipping");
+  const [floatingBotOpen, setFloatingBotOpen] = useState(false);
   const wished = product ? isWished(product.id) : false;
+  const instructions = getProductInstructions(product);
 
   // Reset page state when navigating between products
   useEffect(() => {
@@ -124,6 +133,7 @@ export default function ProductDetail() {
 
   const detailTabs = [
     { id: "overview", label: "Overview" },
+    { id: "instructions", label: "Bot Instructions" },
     { id: "reviews", label: "Reviews" },
   ];
 
@@ -585,6 +595,73 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {tab === "instructions" && instructions && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-brand-50/70 border border-brand-200">
+                <div className="flex items-center gap-3">
+                  <div className="grid size-10 place-items-center rounded-xl bg-brand-600 text-white">
+                    <Bot size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Official Product Instructions</h3>
+                    <p className="text-xs text-slate-600">Tailored setup, performance, and compatibility for {product.title}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFloatingBotOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition cursor-pointer self-start sm:self-auto"
+                >
+                  <Sparkles size={13} /> Ask Bot Live
+                </button>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <Wrench size={18} className="text-brand-600" /> Step-by-Step Installation
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {instructions.setupSteps.map((item) => (
+                    <div key={item.step} className="p-4 rounded-2xl border border-slate-200 bg-white">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="grid size-6 place-items-center rounded-lg bg-brand-100 text-brand-700 text-xs font-bold">
+                          {item.step}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900">{item.title}</h4>
+                      </div>
+                      <p className="text-xs text-slate-600 pl-8 leading-relaxed">{item.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-brand-600" /> Do's & Don'ts
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {instructions.dosAndDonts.map((rule, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-start gap-2.5 p-3.5 rounded-xl border text-xs leading-relaxed ${
+                        rule.type === "do"
+                          ? "bg-emerald-50/50 border-emerald-100 text-emerald-900"
+                          : "bg-red-50/50 border-red-100 text-red-900"
+                      }`}
+                    >
+                      {rule.type === "do" ? (
+                        <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <RotateCcw size={16} className="text-red-500 shrink-0 mt-0.5" />
+                      )}
+                      <span>{rule.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === "reviews" && (
             <div>
               <div className="flex items-center gap-4">
@@ -656,6 +733,30 @@ export default function ProductDetail() {
           </div>
         </section>
       )}
+
+      {/* Floating Bot Trigger Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          type="button"
+          onClick={() => setFloatingBotOpen(true)}
+          className="group flex items-center gap-2.5 rounded-full bg-slate-900 py-2.5 pl-3 pr-4 text-white shadow-xl ring-4 ring-brand-500/20 transition hover:bg-brand-600 hover:scale-105 cursor-pointer"
+        >
+          <div className="relative grid size-8 place-items-center rounded-full bg-brand-500 text-white">
+            <Bot size={18} className="animate-pulse" />
+            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 border border-slate-900" />
+          </div>
+          <div className="text-left">
+            <p className="text-[11px] font-bold leading-tight">Product Info</p>
+            <p className="text-[9px] text-slate-300">Ask instructions</p>
+          </div>
+        </button>
+      </div>
+
+      <ProductBotModal
+        product={product}
+        isOpen={floatingBotOpen}
+        onClose={() => setFloatingBotOpen(false)}
+      />
 
     </main>
   );

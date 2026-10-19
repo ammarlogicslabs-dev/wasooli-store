@@ -1,9 +1,12 @@
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAdminAuth } from "../auth/AdminAuthContext";
+import { useAdminData } from "../hooks/useAdminData";
 
 export default function AdminHeader({ collapsed, onToggleCollapse, onOpenMobile }) {
   const { admin } = useAdminAuth();
+  const { settings } = useAdminData();
   const initial = (admin?.name || "A").charAt(0).toUpperCase();
+  const avatarUrl = settings.avatarUrl;
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
@@ -20,7 +23,11 @@ export default function AdminHeader({ collapsed, onToggleCollapse, onOpenMobile 
           <p className="text-sm font-semibold text-slate-900">{admin?.name || "Admin"}</p>
           <p className="text-xs text-slate-500">{admin?.email}</p>
         </div>
-        <span className="grid size-10 place-items-center rounded-full bg-brand-500 text-sm font-bold text-white">{initial}</span>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-10 rounded-full object-cover" />
+        ) : (
+          <span className="grid size-10 place-items-center rounded-full bg-brand-500 text-sm font-bold text-white">{initial}</span>
+        )}
       </div>
     </header>
   );

@@ -4,6 +4,7 @@ import { deleteCategory, saveCategory } from "../../services/storage/adminDataSe
 import AdminModal from "../components/AdminModal";
 import AdminTable from "../components/AdminTable";
 import ConfirmDialog from "../components/ConfirmDialog";
+import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass } from "../components/formStyles";
@@ -98,17 +99,24 @@ export default function CategoriesPage() {
       <AdminModal open={Boolean(form)} title={form?.id ? "Edit category" : "Add category"} onClose={() => setForm(null)}>
         {form && (
           <form onSubmit={handleSave} className="space-y-3">
-            {["name", "description", "image"].map((field) => (
-              <label key={field} className="block text-sm font-semibold capitalize text-slate-900">
-                {field === "image" ? "Image URL" : field}
-                {field === "description" ? (
-                  <textarea value={form[field] ?? ""} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className={`${inputClass} mt-1.5`} rows={3} />
-                ) : (
-                  <input value={form[field] ?? ""} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className={`${inputClass} mt-1.5`} />
-                )}
-              </label>
-            ))}
-            {form.image ? <img src={form.image} alt="" className="h-48 w-full rounded-2xl object-contain" /> : null}
+            <label className="block text-sm font-semibold text-slate-900">
+              Name
+              <input value={form.name ?? ""} onChange={(event) => setForm({ ...form, name: event.target.value })} className={`${inputClass} mt-1.5`} />
+            </label>
+            <label className="block text-sm font-semibold text-slate-900">
+              Description
+              <textarea value={form.description ?? ""} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${inputClass} mt-1.5`} rows={3} />
+            </label>
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-slate-900">Image</p>
+              <ImagePicker
+                value={form.image}
+                onChange={(image) => setForm({ ...form, image })}
+                label="Select category image"
+                previewClassName="h-48 w-full object-cover"
+                emptyClassName="h-48"
+              />
+            </div>
             {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
             <button type="submit" className={buttonClass}>Save category</button>
           </form>

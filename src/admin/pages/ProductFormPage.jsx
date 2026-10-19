@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { X } from "lucide-react";
 import { getProduct, saveProduct } from "../../services/storage/adminDataService";
+import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
+import { readImageFile } from "../utils/readImageFile";
 
 const EMPTY = {
   title: "",
@@ -18,22 +21,25 @@ const EMPTY = {
   stock: "0",
   status: "draft",
   image: "",
-  imagesText: "",
+  extraImages: [],
   shortDescription: "",
   description: "",
   featuresText: "",
   specificationsText: "",
 };
 
+const MAX_EXTRA = 4;
+
 function toForm(product) {
   if (!product) return EMPTY;
+  const extras = (product.images || []).filter((src) => src && src !== product.image);
   return {
     ...EMPTY,
     ...product,
     price: String(product.price ?? ""),
     oldPrice: product.oldPrice ?? "",
     stock: String(product.stock ?? 0),
-    imagesText: (product.images || []).join("\n"),
+    extraImages: extras,
     featuresText: (product.features || []).join("\n"),
     specificationsText: (product.specifications || []).map((item) => `${item.label} | ${item.value}`).join("\n"),
   };
@@ -46,12 +52,12 @@ export default function ProductFormPage() {
   const existing = id ? products.find((item) => Number(item.id) === Number(id)) || getProduct(id) : null;
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [reading, setReading] = useState(false);
+  const extraInputRef = useRef(null);
 
   useEffect(() => {
     setForm(toForm(id ? getProduct(id) : null));
     setErrors({});
-    setPreviewUrl("");
   }, [id]);
 
   if (id && !existing) {
@@ -68,16 +74,46 @@ export default function ProductFormPage() {
     setErrors((current) => ({ ...current, [field]: "" }));
   }
 
-  function handleFile(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setPreviewUrl(URL.createObjectURL(file));
-    toast.info("Local files are preview-only. Paste an image URL to save it.");
+  async function handleExtraFiles(event) {
+    const files = [...(event.target.files || [])];
+    event.target.value = "";
+    if (files.length === 0) return;
+    setReading(true);
+    try {
+      const remaining = MAX_EXTRA - form.extraImages.length;
+      if (remaining <= 0) {
+        toast.error(`You can add up to ${MAX_EXTRA} extra images.`);
+        return;
+      }
+      const selected = files.slice(0, remaining);
+      const urls = [];
+      for (const file of selected) {
+        urls.push(await readImageFile(file));
+      }
+      setForm((current) => ({ ...current, extraImages: [...current.extraImages, ...urls] }));
+      toast.success(urls.length === 1 ? "Extra image added." : `${urls.length} extra images added.`);
+    } catch (error) {
+      toast.error(error.message || "Could not use that image.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  function removeExtra(index) {
+    setForm((current) => ({
+      ...current,
+      extraImages: current.extraImages.filter((_, itemIndex) => itemIndex !== index),
+    }));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
-    const result = saveProduct({ ...form, id: existing?.id, imagesText: form.imagesText });
+    const extras = (form.extraImages || []).filter(Boolean);
+    const result = saveProduct({
+      ...form,
+      id: existing?.id,
+      images: form.image ? [form.image, ...extras] : extras,
+    });
     if (!result.ok) {
       setErrors(result.errors || {});
       toast.error("Check the highlighted fields.");
@@ -87,7 +123,6 @@ export default function ProductFormPage() {
     navigate("/admin/products");
   }
 
-  const preview = previewUrl || form.image;
   const field = (name, label, props = {}) => (
     <label className="block text-sm font-semibold text-slate-900">
       {label}
@@ -147,22 +182,42 @@ export default function ProductFormPage() {
         </section>
         <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-semibold text-slate-900">Images</p>
-          {preview ? <img src={preview} alt="" className="aspect-square w-full rounded-2xl border border-slate-100 object-cover" /> : <div className="grid aspect-square place-items-center rounded-2xl bg-slate-50 text-sm text-slate-400">No preview</div>}
-          <label className="block text-sm font-semibold text-slate-900">
-            Main image URL
-            <input value={form.image} onChange={(event) => update("image", event.target.value)} className={`${inputClass} mt-1.5`} placeholder="https://..." />
-            {errors.image ? <span className="mt-1 block text-xs font-medium text-red-600">{errors.image}</span> : null}
-          </label>
-          <label className="block text-sm font-semibold text-slate-900">
-            More image URLs
-            <textarea value={form.imagesText} onChange={(event) => update("imagesText", event.target.value)} rows={4} className={`${inputClass} mt-1.5`} placeholder="One URL per line" />
-          </label>
-          <label className="block text-xs font-medium text-slate-500">
-            Local preview only
-            <input type="file" accept="image/*" onChange={handleFile} className="mt-1.5 block w-full text-xs" />
-          </label>
+          <input ref={extraInputRef} type="file" accept="image/*" multiple className="sr-only" onChange={handleExtraFiles} />
+          <ImagePicker
+            value={form.image}
+            onChange={(image) => update("image", image)}
+            label="Select product image"
+          />
+          {errors.image ? <p className="text-xs font-medium text-red-600">{errors.image}</p> : null}
+
+          {form.extraImages.length > 0 ? (
+            <ul className="grid grid-cols-4 gap-2">
+              {form.extraImages.map((src, index) => (
+                <li key={`${src.slice(0, 24)}-${index}`} className="relative">
+                  <img src={src} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                  <button
+                    type="button"
+                    aria-label="Remove extra image"
+                    onClick={() => removeExtra(index)}
+                    className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-slate-900 text-white"
+                  >
+                    <X size={10} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => extraInputRef.current?.click()}
+            disabled={reading || form.extraImages.length >= MAX_EXTRA}
+            className={quietButtonClass}
+          >
+            Add extra images
+          </button>
           <div className="flex flex-col gap-2">
-            <button type="submit" className={buttonClass}>Save product</button>
+            <button type="submit" className={buttonClass} disabled={reading}>Save product</button>
             <Link to="/admin/products" className={quietButtonClass}>Cancel</Link>
           </div>
         </aside>
