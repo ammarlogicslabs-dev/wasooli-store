@@ -1,12 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { products as baseProducts } from "../data/product";
-import { ensureAdminSeed, getCatalog, getStorefrontProducts, recordSaleAdjustments } from "../services/storage/adminDataService";
+import { useAuth } from "../auth/AuthContext";
+import {
+  addWishlistApi,
+  clearCartApi,
+  ensureAdminSeed,
+  fetchCartApi,
+  fetchNotificationsApi,
+  fetchWishlistApi,
+  getStorefrontProducts,
+  markAllNotificationsReadApi,
+  refreshStorefrontProducts,
+  removeWishlistApi,
+  replaceCartApi,
+} from "../services/storage/adminDataService";
 import { DATA_EVENT } from "../services/storage/storageService";
+import { getToken } from "../services/api/client";
 
 const CartContext = createContext(null);
 const STOCK_KEY = "wasooli_stock";
-const BASE_STOCK_KEY = "wasooli_base_stock";
-const NOTIFICATIONS_KEY = "wasooli_notifications";
 
 function readStorage(key, fallback) {
   try {
@@ -17,209 +28,113 @@ function readStorage(key, fallback) {
   }
 }
 
-function readWishlist() {
-  const saved = readStorage("wasooli_wishlist", []);
-  if (!Array.isArray(saved)) return [];
-
-  return saved
-    .map((entry) => {
-      if (typeof entry === "number" || typeof entry === "string") {
-        return { id: Number(entry), addedAt: null };
-      }
-      if (entry && entry.id != null) {
-        return { id: Number(entry.id), addedAt: entry.addedAt ?? null };
-      }
-      return null;
-    })
-    .filter((entry) => entry && Number.isFinite(entry.id));
-}
-
-function readNotifications() {
-  try {
-    const seeded = localStorage.getItem("wasooli_notifications_seeded");
-    const raw = localStorage.getItem(NOTIFICATIONS_KEY);
-    const existing = raw ? JSON.parse(raw) : [];
-    const list = Array.isArray(existing) ? existing : [];
-
-    if (!seeded) {
-      localStorage.setItem("wasooli_notifications_seeded", "1");
-      const restocked = baseProducts.find((item) => item.id === 3 && item.stock > 0);
-      if (restocked && !list.some((n) => n.productId === restocked.id)) {
-        const initial = [
-          {
-            id: `notif-${restocked.id}-init`,
-            productId: restocked.id,
-            slug: restocked.slug,
-            title: restocked.title,
-            image: restocked.image,
-            type: "in_stock",
-            message: `${restocked.title} is now available in stock (${restocked.stock} items available).`,
-            createdAt: new Date().toISOString(),
-            read: false,
-          },
-          ...list,
-        ];
-        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(initial));
-        return initial;
-      }
-    }
-    return list;
-  } catch {
-    return [];
-  }
-}
-
 export function CartProvider({ children }) {
-  const [items, setItems] = useState(() => readStorage("wasooli_cart", []));
-  const [wishlist, setWishlist] = useState(readWishlist);
-  const [notifications, setNotifications] = useState(readNotifications);
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [catalogTick, setCatalogTick] = useState(0);
-  const [stockMap, setStockMap] = useState(() => {
-    const savedOverride = readStorage(STOCK_KEY, {});
-    const savedBase = readStorage(BASE_STOCK_KEY, {});
-    const nextOverride = { ...savedOverride };
-    const nextBase = {};
-    const newNotifications = [];
-
-    baseProducts.forEach((product) => {
-      const prevBaseStock = savedBase[product.id];
-      nextBase[product.id] = product.stock;
-
-      if (prevBaseStock !== undefined && prevBaseStock !== product.stock) {
-        delete nextOverride[product.id];
-
-        if (product.stock > prevBaseStock && product.stock > 0) {
-          newNotifications.push({
-            id: `notif-${product.id}-${Date.now()}`,
-            productId: product.id,
-            slug: product.slug,
-            title: product.title,
-            image: product.image,
-            type: "in_stock",
-            message: `${product.title} is now available in stock (${product.stock} items available).`,
-            createdAt: new Date().toISOString(),
-            read: false,
-          });
-        } else if (prevBaseStock > 0 && product.stock <= 0) {
-          const currentWishlist = readWishlist();
-          if (currentWishlist.some((entry) => entry.id === product.id)) {
-            newNotifications.push({
-              id: `notif-${product.id}-${Date.now()}`,
-              productId: product.id,
-              slug: product.slug,
-              title: product.title,
-              image: product.image,
-              type: "out_of_stock",
-              message: `${product.title} from your wishlist is now out of stock.`,
-              createdAt: new Date().toISOString(),
-              read: false,
-            });
-          }
-        }
-      }
-    });
-
-    if (newNotifications.length > 0) {
-      const existing = readNotifications();
-      const updated = [...newNotifications, ...existing];
-      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-    }
-
-    localStorage.setItem(BASE_STOCK_KEY, JSON.stringify(nextBase));
-    localStorage.setItem(STOCK_KEY, JSON.stringify(nextOverride));
-    return nextOverride;
-  });
+  const [stockMap, setStockMap] = useState(() => readStorage(STOCK_KEY, {}));
+  const [apiProducts, setApiProducts] = useState([]);
+  const [ready, setReady] = useState(false);
   const cartListeners = useRef(new Set());
+  const syncingRef = useRef(false);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  const baseStockSignature = baseProducts
-    .map((product) => `${product.id}:${product.stock}`)
-    .join(",");
-
-  const products = useMemo(
-    () => getStorefrontProducts(stockMap, catalogTick),
-    [stockMap, baseStockSignature, catalogTick]
-  );
-
-  useEffect(() => {
-    setNotifications(readNotifications());
-  }, [baseStockSignature]);
-
-  useEffect(() => {
-    const savedBase = readStorage(BASE_STOCK_KEY, {});
-    let stockChanged = false;
-    const nextBase = { ...savedBase };
-    const nextOverride = { ...readStorage(STOCK_KEY, {}) };
-    const newNotifications = [];
-    const currentWishlist = readWishlist();
-
-    baseProducts.forEach((product) => {
-      const prevBaseStock = savedBase[product.id];
-      if (prevBaseStock !== product.stock) {
-        nextBase[product.id] = product.stock;
-        if (prevBaseStock !== undefined) {
-          delete nextOverride[product.id];
-          stockChanged = true;
-
-          if (product.stock > prevBaseStock && product.stock > 0) {
-            newNotifications.push({
-              id: `notif-${product.id}-${Date.now()}`,
-              productId: product.id,
-              slug: product.slug,
-              title: product.title,
-              image: product.image,
-              type: "in_stock",
-              message: `${product.title} is now available in stock (${product.stock} items available).`,
-              createdAt: new Date().toISOString(),
-              read: false,
-            });
-          } else if (
-            prevBaseStock > 0 &&
-            product.stock <= 0 &&
-            currentWishlist.some((entry) => entry.id === product.id)
-          ) {
-            newNotifications.push({
-              id: `notif-${product.id}-${Date.now()}`,
-              productId: product.id,
-              slug: product.slug,
-              title: product.title,
-              image: product.image,
-              type: "out_of_stock",
-              message: `${product.title} from your wishlist is now out of stock.`,
-              createdAt: new Date().toISOString(),
-              read: false,
-            });
-          }
-        }
-      }
+  const products = useMemo(() => {
+    const list = apiProducts.length ? apiProducts : getStorefrontProducts();
+    return list.map((product) => {
+      const override = stockMap?.[product.id];
+      return Number.isFinite(Number(override))
+        ? { ...product, stock: Math.max(0, Number(override)) }
+        : product;
     });
+  }, [apiProducts, stockMap, catalogTick]);
 
-    localStorage.setItem(BASE_STOCK_KEY, JSON.stringify(nextBase));
-    if (stockChanged) {
-      localStorage.setItem(STOCK_KEY, JSON.stringify(nextOverride));
-      setStockMap(nextOverride);
+  const persistCart = useCallback(async (nextItems) => {
+    if (!getToken("customer")) return;
+    try {
+      syncingRef.current = true;
+      const result = await replaceCartApi(nextItems);
+      if (Array.isArray(result?.items)) setItems(result.items);
+    } catch {
+      // Keep local optimistic state if sync fails.
+    } finally {
+      syncingRef.current = false;
     }
-    if (newNotifications.length > 0) {
-      setNotifications((current) => {
-        const filtered = current.filter(
-          (existing) => !newNotifications.some((n) => n.productId === existing.productId && n.type === existing.type)
-        );
-        const updated = [...newNotifications, ...filtered];
-        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-        return updated;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    refreshStorefrontProducts()
+      .then((list) => {
+        if (!cancelled) setApiProducts(list);
+      })
+      .catch(() => {
+        if (!cancelled) setApiProducts([]);
       });
-    }
-  }, [baseStockSignature]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     ensureAdminSeed();
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadCustomerState() {
+      if (!user || !getToken("customer")) {
+        setItems([]);
+        setWishlist([]);
+        setNotifications([]);
+        setReady(true);
+        return;
+      }
+
+      setReady(false);
+      try {
+        const [cart, wish, notifs] = await Promise.all([
+          fetchCartApi(),
+          fetchWishlistApi(),
+          fetchNotificationsApi(),
+        ]);
+        if (cancelled) return;
+        setItems(Array.isArray(cart?.items) ? cart.items : []);
+        setWishlist(
+          Array.isArray(wish)
+            ? wish.map((entry) => ({ id: Number(entry.id), addedAt: entry.addedAt ?? null }))
+            : []
+        );
+        setNotifications(Array.isArray(notifs) ? notifs : []);
+      } catch {
+        if (!cancelled) {
+          setItems([]);
+          setWishlist([]);
+          setNotifications([]);
+        }
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    }
+
+    loadCustomerState();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
     function handleStorage(event) {
       const key = event.key || event.detail?.key;
       if (!key || key === STOCK_KEY) setStockMap(readStorage(STOCK_KEY, {}));
-      if (!key || key === "wasooli_admin_products_v1") setCatalogTick((tick) => tick + 1);
-      if (!key || key === NOTIFICATIONS_KEY) setNotifications(readNotifications());
+      if (!key || key === "wasooli_admin_products_v1") {
+        setApiProducts(getStorefrontProducts());
+        setCatalogTick((tick) => tick + 1);
+      }
     }
     window.addEventListener("storage", handleStorage);
     window.addEventListener(DATA_EVENT, handleStorage);
@@ -229,81 +144,14 @@ export function CartProvider({ children }) {
     };
   }, []);
 
-  const deductStock = useCallback((orderedItems) => {
-    if (!Array.isArray(orderedItems) || orderedItems.length === 0) return;
-
-    const currentWishlist = readWishlist();
-    const wishedIds = new Set(currentWishlist.map((entry) => entry.id));
-    const newNotifications = [];
-
-    setStockMap((current) => {
-      const next = { ...current };
-      const saleAdjustments = [];
-      orderedItems.forEach((entry) => {
-        const base = getCatalog().find((item) => Number(item.id) === Number(entry.id))
-          || baseProducts.find((item) => item.id === entry.id);
-        const currentStock = Number.isFinite(next[entry.id])
-          ? next[entry.id]
-          : Number.isFinite(base?.stock)
-          ? base.stock
-          : null;
-
-        if (currentStock !== null) {
-          const qty = Math.max(0, Number(entry.quantity) || 0);
-          const updatedStock = Math.max(0, currentStock - qty);
-          next[entry.id] = updatedStock;
-          saleAdjustments.push({
-            productId: entry.id,
-            previous: currentStock,
-            next: updatedStock,
-            reason: "Order placed",
-          });
-
-          if (wishedIds.has(entry.id) && base && currentStock > 0 && updatedStock === 0) {
-            newNotifications.push({
-              id: `notif-${base.id}-${Date.now()}`,
-              productId: base.id,
-              slug: base.slug,
-              title: base.title,
-              image: base.image,
-              type: "out_of_stock",
-              message: `${base.title} from your wishlist is now out of stock.`,
-              createdAt: new Date().toISOString(),
-              read: false,
-            });
-          }
-        }
-      });
-
-      localStorage.setItem(STOCK_KEY, JSON.stringify(next));
-      recordSaleAdjustments(saleAdjustments);
-
-      setItems((cartItems) => {
-        const updatedCart = cartItems.flatMap((cartItem) => {
-          const updatedStock = next[cartItem.id];
-          if (!Number.isFinite(updatedStock)) return [cartItem];
-          if (updatedStock <= 0) return [];
-          return [
-            {
-              ...cartItem,
-              stock: updatedStock,
-              quantity: Math.min(cartItem.quantity, updatedStock),
-            },
-          ];
-        });
-        localStorage.setItem("wasooli_cart", JSON.stringify(updatedCart));
-        return updatedCart;
-      });
-
-      return next;
-    });
-
-    if (newNotifications.length > 0) {
-      setNotifications((current) => {
-        const updated = [...newNotifications, ...current];
-        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-        return updated;
-      });
+  const deductStock = useCallback(async () => {
+    try {
+      const list = await refreshStorefrontProducts();
+      setApiProducts(list);
+      localStorage.removeItem(STOCK_KEY);
+      setStockMap({});
+    } catch {
+      // Keep current catalog if refresh fails.
     }
   }, []);
 
@@ -316,85 +164,108 @@ export function CartProvider({ children }) {
     return () => cartListeners.current.delete(listener);
   }, []);
 
-  const addItem = useCallback((product, quantity = 1) => {
-    const requested = Math.max(1, Number(quantity) || 1);
-    const stock = Number.isFinite(product.stock) ? product.stock : null;
+  const addItem = useCallback(
+    (product, quantity = 1) => {
+      const requested = Math.max(1, Number(quantity) || 1);
+      const stock = Number.isFinite(product.stock) ? product.stock : null;
 
-    setItems((current) => {
-      const existing = current.find((item) => item.id === product.id);
-      const currentQty = existing?.quantity ?? 0;
-      const nextQty =
-        stock === null
-          ? currentQty + requested
-          : Math.min(stock, currentQty + requested);
+      setItems((current) => {
+        const existing = current.find((item) => item.id === product.id);
+        const currentQty = existing?.quantity ?? 0;
+        const nextQty =
+          stock === null
+            ? currentQty + requested
+            : Math.min(stock, currentQty + requested);
 
-      if (nextQty <= 0) return current;
+        if (nextQty <= 0) return current;
 
-      const next = existing
-        ? current.map((item) =>
-            item.id === product.id
-              ? { ...item, quantity: nextQty, stock }
-              : item
-          )
-        : [
-            ...current,
-            {
-              id: product.id,
-              slug: product.slug,
-              title: product.title,
-              image: product.image,
-              price: product.price,
-              stock,
-              quantity: nextQty,
-            },
-          ];
+        const next = existing
+          ? current.map((item) =>
+              item.id === product.id
+                ? { ...item, quantity: nextQty, stock }
+                : item
+            )
+          : [
+              ...current,
+              {
+                id: product.id,
+                slug: product.slug,
+                title: product.title,
+                image: product.image,
+                price: product.price,
+                stock,
+                quantity: nextQty,
+              },
+            ];
 
-      localStorage.setItem("wasooli_cart", JSON.stringify(next));
-      return next;
-    });
-  }, []);
-
-  const updateQuantity = useCallback((id, quantity) => {
-    setItems((current) => {
-      const next = current.flatMap((item) => {
-        if (item.id !== id) return [item];
-        const stock = Number.isFinite(item.stock) ? item.stock : null;
-        const nextQty = Math.max(1, Number(quantity) || 1);
-        const capped = stock === null ? nextQty : Math.min(stock, nextQty);
-        return [{ ...item, quantity: capped }];
+        void persistCart(next);
+        return next;
       });
-      localStorage.setItem("wasooli_cart", JSON.stringify(next));
-      return next;
-    });
-  }, []);
+    },
+    [persistCart]
+  );
 
-  const removeItem = useCallback((id) => {
-    setItems((current) => {
-      const next = current.filter((item) => item.id !== id);
-      localStorage.setItem("wasooli_cart", JSON.stringify(next));
-      return next;
-    });
-  }, []);
+  const updateQuantity = useCallback(
+    (id, quantity) => {
+      setItems((current) => {
+        const next = current.flatMap((item) => {
+          if (item.id !== id) return [item];
+          const stock = Number.isFinite(item.stock) ? item.stock : null;
+          const nextQty = Math.max(1, Number(quantity) || 1);
+          const capped = stock === null ? nextQty : Math.min(stock, nextQty);
+          return [{ ...item, quantity: capped }];
+        });
+        void persistCart(next);
+        return next;
+      });
+    },
+    [persistCart]
+  );
+
+  const removeItem = useCallback(
+    (id) => {
+      setItems((current) => {
+        const next = current.filter((item) => item.id !== id);
+        void persistCart(next);
+        return next;
+      });
+    },
+    [persistCart]
+  );
 
   const clearCart = useCallback(() => {
     setItems([]);
-    localStorage.setItem("wasooli_cart", "[]");
+    void clearCartApi().catch(() => {});
   }, []);
 
-  const toggleWishlist = useCallback((id) => {
+  const toggleWishlist = useCallback(async (id) => {
     const productId = Number(id);
+    const exists = wishlist.some((entry) => entry.id === productId);
     setWishlist((current) => {
-      const exists = current.some((entry) => entry.id === productId);
-      const next = exists
-        ? current.filter((entry) => entry.id !== productId)
-        : [
-            ...current,
-            { id: productId, addedAt: new Date().toISOString() },
-          ];
-      localStorage.setItem("wasooli_wishlist", JSON.stringify(next));
-      return next;
+      if (exists) return current.filter((entry) => entry.id !== productId);
+      return [...current, { id: productId, addedAt: new Date().toISOString() }];
     });
-  }, []);
+    try {
+      const next = exists
+        ? await removeWishlistApi(productId)
+        : await addWishlistApi(productId);
+      if (Array.isArray(next)) {
+        setWishlist(next.map((entry) => ({ id: Number(entry.id), addedAt: entry.addedAt ?? null })));
+      }
+    } catch {
+      // Revert on failure by reloading.
+      try {
+        const wish = await fetchWishlistApi();
+        setWishlist(
+          Array.isArray(wish)
+            ? wish.map((entry) => ({ id: Number(entry.id), addedAt: entry.addedAt ?? null }))
+            : []
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [wishlist]);
 
   const isWished = useCallback(
     (id) => wishlist.some((entry) => entry.id === Number(id)),
@@ -404,23 +275,28 @@ export function CartProvider({ children }) {
   const markNotificationsRead = useCallback(() => {
     setNotifications((current) => {
       if (!current.some((item) => !item.read)) return current;
-      const next = current.map((item) => (item.read ? item : { ...item, read: true }));
-      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(next));
-      return next;
+      return current.map((item) => (item.read ? item : { ...item, read: true }));
     });
+    void markAllNotificationsReadApi().catch(() => {});
   }, []);
 
   const removeNotification = useCallback((id) => {
-    setNotifications((current) => {
-      const next = current.filter((item) => item.id !== id);
-      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(next));
-      return next;
-    });
+    setNotifications((current) => current.filter((item) => item.id !== id));
   }, []);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);
-    localStorage.setItem(NOTIFICATIONS_KEY, "[]");
+    void markAllNotificationsReadApi().catch(() => {});
+  }, []);
+
+  const refreshNotifications = useCallback(async () => {
+    if (!getToken("customer")) return;
+    try {
+      const notifs = await fetchNotificationsApi();
+      setNotifications(Array.isArray(notifs) ? notifs : []);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
@@ -431,6 +307,7 @@ export function CartProvider({ children }) {
       products,
       items,
       cartCount,
+      ready,
       addItem,
       openCart,
       subscribeCartOpen,
@@ -446,11 +323,13 @@ export function CartProvider({ children }) {
       markNotificationsRead,
       removeNotification,
       clearNotifications,
+      refreshNotifications,
     }),
     [
       products,
       items,
       cartCount,
+      ready,
       addItem,
       openCart,
       subscribeCartOpen,
@@ -466,6 +345,7 @@ export function CartProvider({ children }) {
       markNotificationsRead,
       removeNotification,
       clearNotifications,
+      refreshNotifications,
     ]
   );
 

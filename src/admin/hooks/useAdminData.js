@@ -7,6 +7,7 @@ import {
   listInventoryHistory,
   listOrders,
   listProducts,
+  refreshAdminData,
 } from "../../services/storage/adminDataService";
 import { DATA_EVENT } from "../../services/storage/storageService";
 
@@ -25,25 +26,43 @@ function readSnapshot(tick = 0) {
 
 export function useAdminData() {
   const [snapshot, setSnapshot] = useState(() => readSnapshot(0));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let count = 0;
-    const refresh = () => {
+    let cancelled = false;
+
+    const refreshFromCache = () => {
       count += 1;
       setSnapshot(readSnapshot(count));
     };
-    refresh();
-    window.addEventListener(DATA_EVENT, refresh);
-    window.addEventListener("storage", refresh);
-    window.addEventListener("focus", refresh);
+
+    const load = async () => {
+      try {
+        await refreshAdminData();
+        if (!cancelled) {
+          setError("");
+          refreshFromCache();
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || "Failed to load admin data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    window.addEventListener(DATA_EVENT, refreshFromCache);
+    window.addEventListener("focus", load);
     return () => {
-      window.removeEventListener(DATA_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("focus", refresh);
+      cancelled = true;
+      window.removeEventListener(DATA_EVENT, refreshFromCache);
+      window.removeEventListener("focus", load);
     };
   }, []);
 
-  return snapshot;
+  return { ...snapshot, loading, error };
 }
 
 export function paginate(list, page, size) {

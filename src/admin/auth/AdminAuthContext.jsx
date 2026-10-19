@@ -1,16 +1,12 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { ADMIN_SESSION_KEY, ensureAdminSeed, getSettings, saveSettings } from "../../services/storage/adminDataService";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { apiRequest, getToken, setToken } from "../../services/api/client";
 
-const DEMO_ADMIN = {
-  email: "admin@wasooli.store",
-  username: "admin",
-  password: "admin123",
-};
+export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
-const ADMIN_IDENTIFIERS = [DEMO_ADMIN.email, DEMO_ADMIN.username];
+const DEMO_ADMIN_IDENTIFIERS = ["admin@wasooli.store", "admin"];
 
 export function isAdminIdentifier(value) {
-  return ADMIN_IDENTIFIERS.includes(String(value || "").trim().toLowerCase());
+  return DEMO_ADMIN_IDENTIFIERS.includes(String(value || "").trim().toLowerCase());
 }
 
 const AdminAuthContext = createContext(null);
@@ -24,61 +20,115 @@ function readSession() {
   }
 }
 
+function writeSession(session) {
+  const raw = JSON.stringify(session);
+  localStorage.setItem(ADMIN_SESSION_KEY, raw);
+  sessionStorage.setItem(ADMIN_SESSION_KEY, raw);
+}
+
+function clearSession() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
 export function AdminAuthProvider({ children }) {
   const [admin, setAdmin] = useState(readSession);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    ensureAdminSeed();
-    function handleStorage(event) {
-      if (!event.key || event.key === ADMIN_SESSION_KEY) {
-        setAdmin(readSession());
+    let cancelled = false;
+    async function hydrate() {
+      const token = getToken("admin");
+      if (!token) {
+        if (!cancelled) setReady(true);
+        return;
+      }
+      try {
+        const me = await apiRequest("/api/auth/me", { kind: "admin" });
+        if (me.role !== "Admin") {
+          setToken("admin", "");
+          clearSession();
+          if (!cancelled) setAdmin(null);
+        } else {
+          const session = {
+            email: me.email,
+            name: me.name,
+            avatarUrl: me.avatarUrl || "",
+            loggedInAt: new Date().toISOString(),
+          };
+          writeSession(session);
+          if (!cancelled) setAdmin(session);
+        }
+      } catch {
+        setToken("admin", "");
+        clearSession();
+        if (!cancelled) setAdmin(null);
+      } finally {
+        if (!cancelled) setReady(true);
       }
     }
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function login(email, password) {
-    const normalizedEmail = String(email || "").trim().toLowerCase();
-    const normalizedPassword = String(password || "").trim();
-    const valid = isAdminIdentifier(normalizedEmail) && normalizedPassword === DEMO_ADMIN.password;
-    if (!valid) {
-      return {
-        success: false,
-        message: "Invalid admin username, email, or password.",
+  const login = useCallback(async (email, password) => {
+    try {
+      const result = await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: { identifier: email, password },
+      });
+      if (result.user?.role !== "Admin") {
+        return { success: false, message: "Invalid admin username, email, or password." };
+      }
+      setToken("admin", result.token);
+      const session = {
+        email: result.user.email,
+        name: result.user.name,
+        avatarUrl: result.user.avatarUrl || "",
+        loggedInAt: new Date().toISOString(),
       };
+      writeSession(session);
+      setAdmin(session);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "Invalid admin username, email, or password." };
     }
-    const settings = getSettings();
-    const session = {
-      email: DEMO_ADMIN.email,
-      name: settings.adminName || "Store Admin",
-      loggedInAt: new Date().toISOString(),
-    };
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-    setAdmin(session);
-    return { success: true };
-  }
+  }, []);
 
-  function logout() {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
-    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  const logout = useCallback(() => {
+    setToken("admin", "");
+    clearSession();
     setAdmin(null);
-  }
+  }, []);
 
-  function updateProfile(patch) {
+  const updateProfile = useCallback(async (patch) => {
     const nextName = String(patch.name || "").trim();
     if (!nextName) return { ok: false, message: "Enter a display name." };
-    saveSettings({ adminName: nextName, avatarUrl: patch.avatarUrl || "" });
-    const next = { ...(admin || {}), name: nextName, email: DEMO_ADMIN.email };
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(next));
-    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(next));
-    setAdmin(next);
-    return { ok: true };
-  }
+    try {
+      const result = await apiRequest("/api/admin/profile", {
+        method: "PUT",
+        kind: "admin",
+        body: { name: nextName, avatarUrl: patch.avatarUrl || "" },
+      });
+      const next = {
+        ...(admin || {}),
+        name: result.profile?.name || nextName,
+        email: result.profile?.email || admin?.email,
+        avatarUrl: result.profile?.avatarUrl || "",
+      };
+      writeSession(next);
+      setAdmin(next);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: error.message || "Could not update profile." };
+    }
+  }, [admin]);
 
   const value = {
     admin,
+    ready,
     isAuthenticated: Boolean(admin),
     login,
     logout,

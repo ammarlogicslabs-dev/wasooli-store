@@ -27,11 +27,8 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { fetchMyOrders } from "../services/storage/adminDataService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
-import { DATA_EVENT } from "../services/storage/storageService";
-
-const ORDERS_KEY = "wasooli_orders";
-const TRACKING_KEY = "wasooli_order_tracking";
 
 const TRACKING_STEPS = [
   {
@@ -41,7 +38,6 @@ const TRACKING_STEPS = [
     location: "Wasooli Store HQ · Karachi",
     description: "Your order has been verified and confirmed by Wasooli Store.",
     icon: CheckCircle2,
-    offsetMinutes: 0,
   },
   {
     key: "packed",
@@ -50,7 +46,6 @@ const TRACKING_STEPS = [
     location: "Fulfillment Warehouse · Karachi",
     description: "Items have been quality-checked, sealed, and packed for dispatch.",
     icon: Box,
-    offsetMinutes: 18,
   },
   {
     key: "handover",
@@ -59,7 +54,6 @@ const TRACKING_STEPS = [
     location: "Wasooli Express Sortation Hub",
     description: "Package has been handed over to our courier partner and scanned at the sorting facility.",
     icon: Truck,
-    offsetMinutes: 65,
   },
   {
     key: "rider",
@@ -68,7 +62,6 @@ const TRACKING_STEPS = [
     location: "Local Delivery Hub",
     description: "Rider Muhammad Ahmed (0300-4829104) is on the way to your address. Keep your phone reachable.",
     icon: Navigation,
-    offsetMinutes: 140,
   },
   {
     key: "delivered",
@@ -77,23 +70,13 @@ const TRACKING_STEPS = [
     location: "Customer Address",
     description: "Package has been delivered successfully and signed off at the destination.",
     icon: PackageCheck,
-    offsetMinutes: 195,
   },
 ];
 
-function readTrackingMap() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(TRACKING_KEY) || "{}");
-    return saved && typeof saved === "object" ? saved : {};
-  } catch {
-    return {};
-  }
-}
-
-function formatStepTime(baseIso, offsetMinutes = 0) {
-  const base = baseIso ? new Date(baseIso) : new Date();
-  const baseTime = Number.isNaN(base.getTime()) ? Date.now() : base.getTime();
-  const date = new Date(baseTime + offsetMinutes * 60 * 1000);
+function formatStepTime(iso) {
+  if (!iso) return "Pending";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Pending";
   return new Intl.DateTimeFormat("en-PK", {
     day: "numeric",
     month: "short",
@@ -103,15 +86,6 @@ function formatStepTime(baseIso, offsetMinutes = 0) {
 }
 
 const HIDDEN_PASSWORDS = { current: true, next: false, confirm: false };
-
-function readOrders() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
-}
 
 function formatDate(value) {
   if (!value) return "Date unavailable";
@@ -185,14 +159,13 @@ export default function Account() {
     markNotificationsRead,
     removeNotification,
     clearNotifications,
+    refreshNotifications,
   } = useCart();
   const navigate = useNavigate();
   const logoutToastId = useRef(null);
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
-  const [orders, setOrders] = useState(readOrders);
-  const [trackingMap, setTrackingMap] = useState(readTrackingMap);
+  const [orders, setOrders] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
-  const [now, setNow] = useState(() => Date.now());
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     next: "",
@@ -208,183 +181,42 @@ export default function Account() {
 
   useEffect(() => {
     document.title = "My account | Wasooli Store";
-    setOrders(readOrders());
-
-    function refreshOrders(event) {
-      const key = event.key || event.detail?.key;
-      if (!key || key === ORDERS_KEY) setOrders(readOrders());
-    }
-
-    window.addEventListener("storage", refreshOrders);
-    window.addEventListener(DATA_EVENT, refreshOrders);
+    let cancelled = false;
+    fetchMyOrders()
+      .then((list) => {
+        if (!cancelled) setOrders(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      });
     return () => {
-      window.removeEventListener("storage", refreshOrders);
-      window.removeEventListener(DATA_EVENT, refreshOrders);
+      cancelled = true;
     };
   }, []);
 
   useEffect(() => {
-    if (section === "notifications" && notificationCount > 0) {
-      markNotificationsRead?.();
-    }
-  }, [section, notificationCount, markNotificationsRead]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (orders.length === 0) return;
-    const maxOffsetMs =
-      (TRACKING_STEPS[TRACKING_STEPS.length - 1]?.offsetMinutes || 195) * 60 * 1000;
-
-    const missingStart = orders.some((order) => {
-      if (!order?.id) return false;
-      const existingStart = trackingMap[order.id]?.startedAt;
-      return !existingStart || Number.isNaN(new Date(existingStart).getTime());
+    if (section !== "notifications") return undefined;
+    let cancelled = false;
+    Promise.resolve(refreshNotifications?.()).finally(() => {
+      if (!cancelled) markNotificationsRead?.();
     });
-
-    if (!missingStart) return;
-
-    setTrackingMap((current) => {
-      const next = { ...current };
-
-      orders.forEach((order) => {
-        if (!order?.id) return;
-        const existingStart = next[order.id]?.startedAt;
-        if (existingStart && !Number.isNaN(new Date(existingStart).getTime())) {
-          return;
-        }
-        const createdTime = new Date(order.createdAt).getTime();
-        const isRecentOrder =
-          Number.isFinite(createdTime) && Date.now() - createdTime <= maxOffsetMs;
-
-        next[order.id] = {
-          startedAt: isRecentOrder ? order.createdAt : new Date().toISOString(),
-        };
-      });
-
-      localStorage.setItem(TRACKING_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, [orders, trackingMap]);
-
-  const getOrderStartTime = (order) => {
-    const savedStart = trackingMap[order?.id]?.startedAt;
-    if (savedStart && !Number.isNaN(new Date(savedStart).getTime())) {
-      return savedStart;
-    }
-    return order?.createdAt || new Date().toISOString();
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [section, markNotificationsRead, refreshNotifications]);
 
   function getOrderStage(order) {
     const managedStage = adminStage(order);
-  
-    // Cancelled order par automatic tracking rok do.
-    if (order.adminStatus === "cancelled") {
-      return managedStage ?? 0;
-    }
-  
-    // Delivered final stage hai; iske baad timer nahi chalega.
     if (order.adminStatus === "delivered") {
       return TRACKING_STEPS.length - 1;
     }
-  
-    // Admin ne status update kiya hai:
-    // us stage se aglay steps ka timer calculate karo.
-    if (managedStage !== null) {
-      const latestStatusEvent = [...(order.statusHistory || [])]
-  .reverse()
-  .find(
-    (event) =>
-      event.type !== "note" &&
-      event.type !== "refund" &&
-      event.status === order.adminStatus
-  );
-
-const anchorTime = new Date(
-  order.adminStatusUpdatedAt || latestStatusEvent?.at
-).getTime();
-  
-      if (!Number.isFinite(anchorTime)) {
-        return managedStage;
-      }
-  
-      const elapsedMs = Math.max(0, now - anchorTime);
-      let currentStage = managedStage;
-      let elapsedForNextStage = 0;
-  
-      for (
-        let index = managedStage + 1;
-        index < TRACKING_STEPS.length;
-        index += 1
-      ) {
-        const previousOffset =
-          TRACKING_STEPS[index - 1].offsetMinutes || 0;
-  
-        const currentOffset =
-          TRACKING_STEPS[index].offsetMinutes || 0;
-  
-        const durationMs =
-          (currentOffset - previousOffset) * 60 * 1000;
-  
-        elapsedForNextStage += durationMs;
-  
-        if (elapsedMs >= elapsedForNextStage) {
-          currentStage = index;
-        } else {
-          break;
-        }
-      }
-  
-      return currentStage;
-    }
-  
-    // Admin update nahi hua: original demo timer use karo.
-    const startTime = new Date(
-      getOrderStartTime(order)
-    ).getTime();
-  
-    if (!Number.isFinite(startTime)) return 0;
-  
-    const elapsedMs = Math.max(0, now - startTime);
-    let currentStage = 0;
-  
-    for (let index = 0; index < TRACKING_STEPS.length; index += 1) {
-      const offsetMs =
-        (TRACKING_STEPS[index].offsetMinutes || 0) * 60 * 1000;
-  
-      if (elapsedMs >= offsetMs) {
-        currentStage = index;
-      }
-    }
-  
-    return currentStage;
+    return managedStage ?? 0;
   }
 
   function openOrderTracking(orderId) {
-    setNow(Date.now());
     setTrackingOrderId(orderId);
   }
 
-  // function replayOrderTracking(orderId) {
-  //   const nowIso = new Date().toISOString();
-  //   setTrackingMap((current) => {
-  //     const next = {
-  //       ...current,
-  //       [orderId]: {
-  //         startedAt: nowIso,
-  //       },
-  //     };
-  //     localStorage.setItem(TRACKING_KEY, JSON.stringify(next));
-  //     return next;
-  //   });
-  //   setNow(Date.now());
-  //   setTrackingOrderId(orderId);
-  // }
 
   const wishlistItems = wishlist
     .map((entry) => {
@@ -444,7 +276,7 @@ const anchorTime = new Date(
     );
   }
 
-  function handlePasswordSubmit(event) {
+  async function handlePasswordSubmit(event) {
     event.preventDefault();
     if (!passwordForm.current || !passwordForm.next || !passwordForm.confirm) {
       setPasswordError("Fill in all password fields.");
@@ -459,7 +291,7 @@ const anchorTime = new Date(
       return;
     }
 
-    const result = changePassword(passwordForm.current, passwordForm.next);
+    const result = await changePassword(passwordForm.current, passwordForm.next);
     if (!result.success) {
       setPasswordError(result.message);
       return;
@@ -750,7 +582,6 @@ const anchorTime = new Date(
               ) : (
                 <ul className="space-y-4">
                   {orders.map((order) => {
-                    const orderStartTime = getOrderStartTime(order);
                     const stageIndex = getOrderStage(order);
                     const currentStep = TRACKING_STEPS[stageIndex] || TRACKING_STEPS[0];
                     const isCancelled = order.adminStatus === "cancelled";
@@ -975,33 +806,7 @@ const anchorTime = new Date(
                                           }`}
                                         >
                                           
-{!reached
-  ? "Pending"
-  : (() => {
-      const historyTime = historyTimeForStage(order, index);
-
-      if (historyTime) {
-        return formatStepTime(historyTime, 0);
-      }
-
-      // Admin status update ka actual timestamp
-      const statusTime =
-        order.adminStatusUpdatedAt ||
-        [...(order.statusHistory || [])]
-          .reverse()
-          .find(
-            (event) =>
-              event.type !== "note" &&
-              event.type !== "refund" &&
-              event.status === order.adminStatus
-          )?.at;
-
-      // Current stage ka timestamp na mile to simulated time use karo
-      return formatStepTime(
-        statusTime || orderStartTime,
-        statusTime ? 0 : step.offsetMinutes
-      );
-    })()}
+{!reached ? "Pending" : formatStepTime(historyTimeForStage(order, index) || (index === stageIndex ? (order.statusHistory || []).slice().reverse().find((event) => event.type !== "note" && event.type !== "refund" && event.status === order.adminStatus)?.at : null) || (index === 0 ? order.createdAt : null))}
 
                                         </span>
                                       </div>

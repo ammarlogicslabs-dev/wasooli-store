@@ -99,7 +99,7 @@ export default function Login() {
     setTouched((current) => ({ ...current, [name]: true }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setTouched({ identifier: true, password: true });
 
@@ -108,23 +108,21 @@ export default function Login() {
     setLoading(true);
     setAuthError("");
 
-    loginTimer.current = window.setTimeout(() => {
-      const signingInAsAdmin = isAdminIdentifier(form.identifier);
-      const result = signingInAsAdmin
-        ? adminLogin(form.identifier, form.password)
-        : login(form.identifier, form.password);
-      setLoading(false);
+    const signingInAsAdmin = isAdminIdentifier(form.identifier);
+    const result = signingInAsAdmin
+      ? await adminLogin(form.identifier, form.password)
+      : await login(form.identifier, form.password);
+    setLoading(false);
 
-      if (result.success) {
-        toast.success("Logged in successfully");
-        const nextPath = signingInAsAdmin
-          ? (wantsAdmin ? from : "/admin")
-          : (wantsAdmin ? "/shop" : from);
-        navigate(nextPath, { replace: true });
-      } else {
-        setAuthError(result.message);
-      }
-    }, 800);
+    if (result.success) {
+      toast.success("Logged in successfully");
+      const nextPath = signingInAsAdmin
+        ? (wantsAdmin ? from : "/admin")
+        : (wantsAdmin ? "/shop" : from);
+      navigate(nextPath, { replace: true });
+    } else {
+      setAuthError(result.message);
+    }
   }
 
   const showError = (name) => touched[name] && errors[name];

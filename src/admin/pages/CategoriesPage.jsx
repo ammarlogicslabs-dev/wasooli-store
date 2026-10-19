@@ -26,10 +26,10 @@ export default function CategoriesPage() {
     setForm(EMPTY);
   }
 
-  function handleSave(event) {
+  async function handleSave(event) {
     event.preventDefault();
     if (!form) return;
-    const result = saveCategory(form);
+    const result = await saveCategory(form);
     if (!result.ok) {
       setError(result.message);
       return;
@@ -38,10 +38,10 @@ export default function CategoriesPage() {
     setForm(null);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     // The dialog can call this while nothing is selected, so guard against null.
     if (!pendingDelete) return;
-    const result = deleteCategory(pendingDelete.id);
+    const result = await deleteCategory(pendingDelete.id);
     if (!result.ok) toast.error(result.message);
     else toast.success("Category deleted.");
     setPendingDelete(null);
@@ -82,8 +82,8 @@ export default function CategoriesPage() {
               render: (category) => (
                 <span className="flex justify-end gap-3">
                   <button type="button" onClick={() => { setError(""); setForm(category); }} className="cursor-pointer text-xs font-semibold text-brand-600">Edit</button>
-                  <button type="button" onClick={() => {
-                    const result = saveCategory({ ...category, status: category.status === "archived" ? "active" : "archived" });
+                  <button type="button" onClick={async () => {
+                    const result = await saveCategory({ ...category, status: category.status === "archived" ? "active" : "archived" });
                     if (!result.ok) toast.error(result.message);
                     else toast.success("Category updated.");
                   }} className="cursor-pointer text-xs font-semibold text-slate-500">

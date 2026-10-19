@@ -1,74 +1,86 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { apiRequest, getToken, setToken } from "../services/api/client";
 
 const AuthContext = createContext(null);
+const USER_KEY = "wasooli_user";
 
-const PASSWORD_KEY = "wasooli_password";
-
-const DEMO_USER = {
-  id: 1,
-  name: "Wasooli",
-  email: "wasooli123@gmail.com",
-  password: "wasooli123",
-};
-
-function readPassword() {
+function readSavedUser() {
   try {
-    return localStorage.getItem(PASSWORD_KEY) || DEMO_USER.password;
-  } catch {
-    return DEMO_USER.password;
-  }
-}
-
-const ACCEPTED_IDENTIFIERS = [
-  DEMO_USER.email,
-  DEMO_USER.name,
-  "wasooli123@gmail.com",
-].map((value) => value.toLowerCase());
-
-function getSavedUser() {
-  try {
-    const savedUser = localStorage.getItem("wasooli_user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getSavedUser);
+  const [user, setUser] = useState(readSavedUser);
+  const [ready, setReady] = useState(false);
 
-  function login(identifier, password) {
-    const validCredentials = ACCEPTED_IDENTIFIERS.includes(identifier.trim().toLowerCase()) && password === readPassword();
-
-    if (!validCredentials) {
-      return {
-        success: false,
-        message: "Invalid username, email, or password.",
-      };
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrate() {
+      const token = getToken("customer");
+      if (!token) {
+        if (!cancelled) setReady(true);
+        return;
+      }
+      try {
+        const me = await apiRequest("/api/auth/me", { kind: "customer" });
+        if (me.role !== "Customer") {
+          setToken("customer", "");
+          localStorage.removeItem(USER_KEY);
+          if (!cancelled) setUser(null);
+        } else {
+          const next = { id: me.id, name: me.name, email: me.email, avatarUrl: me.avatarUrl || "" };
+          localStorage.setItem(USER_KEY, JSON.stringify(next));
+          if (!cancelled) setUser(next);
+        }
+      } catch {
+        setToken("customer", "");
+        localStorage.removeItem(USER_KEY);
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
     }
-
-    const loggedInUser = {
-      id: DEMO_USER.id,
-      name: DEMO_USER.name,
-      email: DEMO_USER.email,
+    hydrate();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    setUser(loggedInUser);
-    localStorage.setItem("wasooli_user", JSON.stringify(loggedInUser));
-
-    return { success: true };
-  }
-
-  function logout() {
-    setUser(null);
-    localStorage.removeItem("wasooli_user");
-  }
-
-  function changePassword(currentPassword, nextPassword) {
-    if (currentPassword !== readPassword()) {
-      return { success: false, message: "Current password is incorrect." };
+  const login = useCallback(async (identifier, password) => {
+    try {
+      const result = await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: { identifier, password },
+      });
+      if (result.user?.role !== "Customer") {
+        return { success: false, message: "Invalid username, email, or password." };
+      }
+      setToken("customer", result.token);
+      const loggedInUser = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        avatarUrl: result.user.avatarUrl || "",
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "Invalid username, email, or password." };
     }
+  }, []);
 
+  const logout = useCallback(() => {
+    setToken("customer", "");
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword, nextPassword) => {
     const next = String(nextPassword || "");
     if (next.length < 6) {
       return { success: false, message: "New password must be at least 6 characters." };
@@ -76,15 +88,23 @@ export function AuthProvider({ children }) {
     if (next === currentPassword) {
       return { success: false, message: "Choose a different password." };
     }
-
-    localStorage.setItem(PASSWORD_KEY, next);
-    return { success: true };
-  }
+    try {
+      await apiRequest("/api/auth/change-password", {
+        method: "POST",
+        kind: "customer",
+        body: { currentPassword, newPassword: next },
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "Could not change password." };
+    }
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        ready,
         isAuthenticated: Boolean(user),
         login,
         logout,

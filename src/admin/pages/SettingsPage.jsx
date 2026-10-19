@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getSettings, resetDemoData, saveSettings } from "../../services/storage/adminDataService";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -11,11 +11,16 @@ export default function SettingsPage() {
   const [form, setForm] = useState(settings);
   const [resetMode, setResetMode] = useState(null);
 
-  function handleSubmit(event) {
+  useEffect(() => {
+    setForm(settings);
+  }, [settings]);
+
+  async function handleSubmit(event) {
     event.preventDefault();
-    const result = saveSettings({
+    const result = await saveSettings({
       ...form,
       shippingFee: Number(form.shippingFee),
+      expressShippingFee: Number(form.expressShippingFee),
       lowStockThreshold: Number(form.lowStockThreshold),
       notifyLowStock: Boolean(form.notifyLowStock),
       notifyNewOrder: Boolean(form.notifyNewOrder),
@@ -24,11 +29,16 @@ export default function SettingsPage() {
       toast.error(result.message);
       return;
     }
-    toast.success("Settings saved on this browser.");
+    toast.success("Settings saved.");
   }
 
   function confirmReset() {
-    resetDemoData({ clearOrders: resetMode === "orders" });
+    const result = resetDemoData({ clearOrders: resetMode === "orders" });
+    if (!result.ok) {
+      toast.error(result.message || "Reset is unavailable with the live API.");
+      setResetMode(null);
+      return;
+    }
     toast.success(resetMode === "orders" ? "Demo data and orders were reset." : "Catalog, stock, coupons, and settings were restored.");
     setResetMode(null);
     setForm(getSettings());
@@ -36,7 +46,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader crumbs={[{ label: "Store Settings" }]} title="Store Settings" detail="These values stay in localStorage for this demo." />
+      <PageHeader crumbs={[{ label: "Store Settings" }]} title="Store Settings" detail="Store-wide settings saved in the API database." />
       <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <label className="block text-sm font-semibold text-slate-900">Store name
@@ -49,6 +59,9 @@ export default function SettingsPage() {
           </label>
           <label className="block text-sm font-semibold text-slate-900">Standard shipping fee
             <input value={form.shippingFee} onChange={(event) => setForm({ ...form, shippingFee: event.target.value })} inputMode="decimal" className={`${inputClass} mt-1.5`} />
+          </label>
+          <label className="block text-sm font-semibold text-slate-900">Express shipping fee
+            <input value={form.expressShippingFee ?? 300} onChange={(event) => setForm({ ...form, expressShippingFee: event.target.value })} inputMode="decimal" className={`${inputClass} mt-1.5`} />
           </label>
           <label className="block text-sm font-semibold text-slate-900">Low-stock threshold
             <input value={form.lowStockThreshold} onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })} inputMode="numeric" className={`${inputClass} mt-1.5`} />

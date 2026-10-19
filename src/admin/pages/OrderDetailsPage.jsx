@@ -29,7 +29,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  function apply(changes, success) {
+  async function apply(changes, success) {
     const updates = { ...changes };
   
     if (
@@ -39,7 +39,7 @@ export default function OrderDetailsPage() {
       updates.adminStatusUpdatedAt = new Date().toISOString();
     }
   
-    const result = updateOrder(order.id, updates);
+    const result = await updateOrder(order.id, updates);
   
     if (!result.ok) {
       toast.error(result.message);

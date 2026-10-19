@@ -42,9 +42,11 @@ export default function ProductsPage() {
 
   const view = paginate(filtered, page, PAGE_SIZE);
 
-  function confirmAction() {
+  async function confirmAction() {
     if (!pending) return;
-    const result = pending.mode === "delete" ? deleteProduct(pending.product.id) : archiveProduct(pending.product.id);
+    const result = pending.mode === "delete"
+      ? await deleteProduct(pending.product.id)
+      : await archiveProduct(pending.product.id);
     if (!result.ok) toast.error(result.message || "Could not update the product.");
     else toast.success(pending.mode === "delete" ? "Product deleted." : "Product archived.");
     setPending(null);

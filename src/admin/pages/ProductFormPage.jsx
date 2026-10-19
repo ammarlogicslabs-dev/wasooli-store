@@ -7,13 +7,12 @@ import {
   EMPTY_BOT_INSTRUCTIONS,
   normalizeBotInstructions,
 } from "../../data/productInstructions";
-import { getProduct, saveProduct } from "../../services/storage/adminDataService";
+import { getProduct, saveProduct, uploadImage } from "../../services/storage/adminDataService";
 import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
-import { readImageFile } from "../utils/readImageFile";
 
 const EMPTY = {
   title: "",
@@ -120,7 +119,8 @@ export default function ProductFormPage() {
       const selected = files.slice(0, remaining);
       const urls = [];
       for (const file of selected) {
-        urls.push(await readImageFile(file));
+        const uploaded = await uploadImage(file, "product");
+        urls.push(uploaded.url);
       }
       setForm((current) => ({ ...current, extraImages: [...current.extraImages, ...urls] }));
       toast.success(urls.length === 1 ? "Extra image added." : `${urls.length} extra images added.`);
@@ -138,10 +138,10 @@ export default function ProductFormPage() {
     }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const extras = (form.extraImages || []).filter(Boolean);
-    const result = saveProduct({
+    const result = await saveProduct({
       ...form,
       id: existing?.id,
       images: form.image ? [form.image, ...extras] : extras,
@@ -149,7 +149,7 @@ export default function ProductFormPage() {
     });
     if (!result.ok) {
       setErrors(result.errors || {});
-      toast.error("Check the highlighted fields.");
+      toast.error(result.message || "Check the highlighted fields.");
       return;
     }
     toast.success(existing ? "Product updated." : "Product added.");

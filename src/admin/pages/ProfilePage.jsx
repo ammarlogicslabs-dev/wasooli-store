@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { saveSettings } from "../../services/storage/adminDataService";
 import { useAdminAuth } from "../auth/AdminAuthContext";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
@@ -16,15 +15,17 @@ export default function ProfilePage() {
     avatarUrl: settings.avatarUrl || "",
   });
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    const result = saveSettings(form);
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
     if (typeof updateProfile === "function") {
-      updateProfile({ name: result.settings.adminName, avatarUrl: result.settings.avatarUrl });
+      const profileResult = await updateProfile({
+        name: form.adminName,
+        avatarUrl: form.avatarUrl,
+      });
+      if (!profileResult.ok) {
+        toast.error(profileResult.message);
+        return;
+      }
     }
     toast.success("Profile updated successfully.");
   }

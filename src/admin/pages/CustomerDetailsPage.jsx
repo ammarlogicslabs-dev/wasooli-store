@@ -35,7 +35,11 @@ export default function CustomerDetailsPage() {
           <button
             type="button"
             className={quietButtonClass}
-            onClick={() => { setCustomerStatus(customer.key, nextStatus); toast.success(nextStatus === "inactive" ? "Customer marked inactive." : "Customer restored."); }}
+            onClick={async () => {
+              const result = await setCustomerStatus(customer.key, nextStatus);
+              if (!result.ok) toast.error(result.message || "Could not update customer.");
+              else toast.success(nextStatus === "inactive" ? "Customer marked inactive." : "Customer restored.");
+            }}
           >
             {nextStatus === "inactive" ? "Mark inactive" : "Mark active"}
           </button>

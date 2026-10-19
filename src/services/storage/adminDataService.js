@@ -1,6 +1,5 @@
-import { products as baseProducts } from "../../data/product";
 import { normalizeBotInstructions } from "../../data/productInstructions";
-import { readJson, removeStorageKey, writeJson } from "./storageService";
+import { apiRequest } from "../api/client";
 import { ORDER_FLOW, paymentBucket } from "./orderStatus";
 
 export const STORAGE_KEYS = {
@@ -18,81 +17,32 @@ export const STORAGE_KEYS = {
 
 export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
-const DEFAULT_SETTINGS = {
-  storeName: "Wasooli Store",
-  currency: "PKR",
-  shippingFee: 200,
-  lowStockThreshold: 5,
-  notifyLowStock: true,
-  notifyNewOrder: true,
-  density: "comfortable",
-  adminName: "Wasooli Admin",
-  adminEmail: "admin@wasooli.store",
-  avatarUrl: "",
+const cache = {
+  products: [],
+  categories: [],
+  orders: [],
+  customers: [],
+  history: [],
+  settings: {
+    storeName: "Wasooli Store",
+    currency: "PKR",
+    shippingFee: 200,
+    expressShippingFee: 300,
+    lowStockThreshold: 5,
+    notifyLowStock: true,
+    notifyNewOrder: true,
+    density: "comfortable",
+    adminName: "Wasooli Admin",
+    adminEmail: "admin@wasooli.store",
+    avatarUrl: "",
+  },
+  storefront: [],
+  coupons: [],
+  loaded: false,
 };
 
-const DEMO_CUSTOMERS = [
-  {
-    key: "Ayesha",
-    name: "Ayesha Khan",
-    email: "ayesha@example.com",
-    phone: "0300-1112233",
-    city: "Karachi",
-    address: "House 18, DHA Phase 6",
-    status: "active",
-    createdAt: "2026-09-02T08:00:00.000Z",
-  },
-  {
-    key: "Bilal",
-    name: "Bilal Ahmed",
-    email: "bilal@example.com",
-    phone: "0321-5558899",
-    city: "Lahore",
-    address: "Street 4, Gulberg",
-    status: "active",
-    createdAt: "2026-09-12T08:00:00.000Z",
-  },
-  {
-    key: "Sara",
-    name: "Sara Malik",
-    email: "sara@example.com",
-    phone: "0333-4442211",
-    city: "Islamabad",
-    address: "F-10 Markaz",
-    status: "inactive",
-    createdAt: "2026-08-20T08:00:00.000Z",
-  },
-];
-
-const DEMO_COUPONS = [
-  {
-    id: "cpn-wasooli10",
-    code: "WASOOLI10",
-    type: "percent",
-    value: 10,
-    minOrder: 1000,
-    startDate: "2026-10-01",
-    expiryDate: "2026-12-31",
-    usageLimit: 100,
-    used: 12,
-    active: true,
-  },
-  {
-    id: "cpn-flat200",
-    code: "FLAT200",
-    type: "fixed",
-    value: 200,
-    minOrder: 2000,
-    startDate: "2026-10-01",
-    expiryDate: "2026-11-30",
-    usageLimit: 50,
-    used: 4,
-    active: false,
-  },
-];
-
-function defaultProductState() {
-  return { overrides: {}, created: [], deletedIds: [] };
+function emit(key) {
+  window.dispatchEvent(new CustomEvent("wasooli-data", { detail: { key } }));
 }
 
 function slugify(value) {
@@ -104,426 +54,180 @@ function slugify(value) {
   return slug || `item-${Date.now()}`;
 }
 
-function normalizeProduct(product) {
-  const images = Array.isArray(product.images)
-    ? product.images.filter(Boolean)
-    : product.image
-      ? [product.image]
-      : [];
+export async function refreshAdminData() {
+  const [products, categories, orders, customers, history, settings, coupons] = await Promise.all([
+    apiRequest("/api/admin/products", { kind: "admin" }),
+    apiRequest("/api/admin/categories", { kind: "admin" }),
+    apiRequest("/api/admin/orders", { kind: "admin" }),
+    apiRequest("/api/admin/customers", { kind: "admin" }),
+    apiRequest("/api/admin/inventory", { kind: "admin" }),
+    apiRequest("/api/settings"),
+    apiRequest("/api/admin/coupons", { kind: "admin" }),
+  ]);
+  cache.products = Array.isArray(products) ? products : [];
+  cache.categories = Array.isArray(categories) ? categories : [];
+  cache.orders = Array.isArray(orders) ? orders : [];
+  cache.customers = Array.isArray(customers) ? customers : [];
+  cache.history = Array.isArray(history) ? history : [];
+  cache.coupons = Array.isArray(coupons) ? coupons : [];
+  cache.settings = { ...cache.settings, ...(settings || {}) };
+  cache.loaded = true;
+  emit(STORAGE_KEYS.products);
+  emit(STORAGE_KEYS.coupons);
+  return snapshot();
+}
+
+export async function refreshStorefrontProducts() {
+  const result = await apiRequest("/api/products?pageSize=100");
+  cache.storefront = Array.isArray(result?.items) ? result.items : [];
+  emit(STORAGE_KEYS.products);
+  return cache.storefront;
+}
+
+function snapshot() {
   return {
-    ...product,
-    id: Number(product.id),
-    sku: product.sku || `WS-${String(product.id).padStart(4, "0")}`,
-    status: product.status || "active",
-    brand: product.brand || "Wasooli",
-    portType: product.portType || "",
-    category: product.category || "Uncategorized",
-    image: product.image || images[0] || "",
-    images,
-    features: Array.isArray(product.features) ? product.features : [],
-    specifications: Array.isArray(product.specifications) ? product.specifications : [],
-    botInstructions: product.botInstructions
-      ? normalizeBotInstructions(product.botInstructions)
-      : undefined,
-    price: Number(product.price) || 0,
-    oldPrice: product.oldPrice == null || product.oldPrice === "" ? null : Number(product.oldPrice),
-    stock: Math.max(0, Number(product.stock) || 0),
-    rating: Number(product.rating) || 0,
-    reviews: Number(product.reviews) || 0,
+    products: listProducts(),
+    categories: listCategories(),
+    orders: listOrders(),
+    customers: listCustomers(),
+    coupons: listCoupons(),
+    history: listInventoryHistory(),
+    settings: getSettings(),
   };
-}
-
-export function readProductState() {
-  const saved = readJson(STORAGE_KEYS.products, null);
-  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return defaultProductState();
-  return {
-    overrides: saved.overrides && typeof saved.overrides === "object" ? saved.overrides : {},
-    created: Array.isArray(saved.created) ? saved.created : [],
-    deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds.map(Number) : [],
-  };
-}
-
-function writeProductState(state) {
-  writeJson(STORAGE_KEYS.products, state);
-}
-
-export function readStockMap() {
-  const saved = readJson(STORAGE_KEYS.stock, {});
-  return saved && typeof saved === "object" ? saved : {};
-}
-
-function writeStockMap(stockMap) {
-  writeJson(STORAGE_KEYS.stock, stockMap);
-}
-
-export function getCatalog() {
-  const state = readProductState();
-  const deleted = new Set(state.deletedIds);
-  const fromBase = baseProducts
-    .filter((product) => !deleted.has(Number(product.id)))
-    .map((product) => normalizeProduct({ ...product, ...(state.overrides[product.id] || {}) }));
-  const created = state.created.map((product) => normalizeProduct(product));
-  return [...created, ...fromBase];
-}
-
-export function applyLiveStock(product, stockMap = readStockMap()) {
-  const override = stockMap?.[product.id];
-  return Number.isFinite(Number(override))
-    ? { ...product, stock: Math.max(0, Number(override)) }
-    : product;
 }
 
 export function listProducts() {
-  const stockMap = readStockMap();
-  return getCatalog()
-    .map((product) => applyLiveStock(product, stockMap))
-    .sort((a, b) => a.title.localeCompare(b.title));
+  return cache.products.slice().sort((a, b) => String(a.title).localeCompare(String(b.title)));
 }
 
-export function getStorefrontProducts(stockMap = readStockMap(), _tick = 0) {
-  void _tick;
-  return getCatalog()
-    .filter((product) => product.status === "active")
-    .map((product) => applyLiveStock(product, stockMap));
+export function getCatalog() {
+  return listProducts();
+}
+
+export function getStorefrontProducts() {
+  return cache.storefront.length
+    ? cache.storefront
+    : cache.products.filter((product) => product.status === "active");
 }
 
 export function getProduct(id) {
   return listProducts().find((product) => Number(product.id) === Number(id)) || null;
 }
 
-function categorySeed() {
-  const names = [...new Set(baseProducts.map((product) => product.category).filter(Boolean))];
-  return names.map((name) => ({
-    id: `cat-${slugify(name)}`,
-    name,
-    slug: slugify(name),
-    description: `${name} available at Wasooli Store.`,
-    image: baseProducts.find((product) => product.category === name)?.image || "",
-    status: "active",
-  }));
-}
-
 export function listCategories() {
-  const stored = readJson(STORAGE_KEYS.categories, null);
-  const categories = Array.isArray(stored) ? stored : categorySeed();
-  const known = new Set(categories.map((category) => category.name));
-  getCatalog().forEach((product) => {
-    if (product.category && !known.has(product.category)) {
-      known.add(product.category);
-      categories.push({
-        id: `cat-${slugify(product.category)}`,
-        name: product.category,
-        slug: slugify(product.category),
-        description: "",
-        image: product.image || "",
-        status: "active",
-      });
-    }
-  });
-  return categories.map((category) => ({
+  return cache.categories.map((category) => ({
     ...category,
-    productCount: listProducts().filter((product) => product.category === category.name && product.status !== "archived").length,
+    productCount:
+      category.productCount ??
+      listProducts().filter((product) => product.category === category.name && product.status !== "archived").length,
   }));
 }
 
 export function getSettings() {
-  const saved = readJson(STORAGE_KEYS.settings, null);
-  return { ...DEFAULT_SETTINGS, ...(saved && typeof saved === "object" ? saved : {}) };
+  return { ...cache.settings };
 }
 
-export function saveSettings(patch) {
-  const next = { ...getSettings(), ...patch };
-  const shippingFee = Number(next.shippingFee);
-  const threshold = Number(next.lowStockThreshold);
-  if (!next.storeName?.trim()) return { ok: false, message: "Store name is required." };
-  if (!Number.isFinite(shippingFee) || shippingFee < 0) return { ok: false, message: "Shipping fee must be 0 or more." };
-  if (!Number.isInteger(threshold) || threshold < 0) return { ok: false, message: "Low-stock threshold must be a whole number." };
-  next.storeName = next.storeName.trim();
-  next.shippingFee = shippingFee;
-  next.lowStockThreshold = threshold;
-  next.adminName = String(next.adminName || "Wasooli Admin").trim();
-  writeJson(STORAGE_KEYS.settings, next);
-  return { ok: true, settings: next };
-}
-
-function readOrders() {
-  const saved = readJson(STORAGE_KEYS.orders, []);
-  return Array.isArray(saved) ? saved : [];
+export async function saveSettings(patch) {
+  try {
+    const result = await apiRequest("/api/admin/settings", {
+      method: "PUT",
+      kind: "admin",
+      body: {
+        storeName: patch.storeName,
+        currency: patch.currency,
+        shippingFee: patch.shippingFee,
+        expressShippingFee: patch.expressShippingFee,
+        lowStockThreshold: patch.lowStockThreshold,
+        notifyLowStock: patch.notifyLowStock,
+        notifyNewOrder: patch.notifyNewOrder,
+        density: patch.density,
+      },
+    });
+    cache.settings = { ...cache.settings, ...(result.settings || {}) };
+    emit(STORAGE_KEYS.settings);
+    return { ok: true, settings: getSettings() };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not save settings." };
+  }
 }
 
 export function listOrders() {
-  return readOrders()
-    .slice()
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  return cache.orders.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
 export function getOrder(id) {
-  return listOrders().find((order) => String(order.id) === String(id)) || null;
-}
-
-function readHistory() {
-  const saved = readJson(STORAGE_KEYS.inventory, []);
-  return Array.isArray(saved) ? saved : [];
-}
-
-function logInventory(entry) {
-  const history = readHistory();
-  history.unshift({
-    id: `inv-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-    createdAt: new Date().toISOString(),
-    ...entry,
-  });
-  writeJson(STORAGE_KEYS.inventory, history.slice(0, 200));
+  return listOrders().find((order) => String(order.id) === String(id) || String(order.internalId) === String(id)) || null;
 }
 
 export function listInventoryHistory() {
-  return readHistory();
+  return cache.history.slice();
 }
 
-function liveStockOf(product, stockMap) {
-  return applyLiveStock(product, stockMap).stock;
-}
-
-function pushNotification(product, type) {
-  const list = readJson(STORAGE_KEYS.notifications, []);
-  const notifications = Array.isArray(list) ? list : [];
-  const message = type === "in_stock"
-    ? `${product.title} is now available in stock (${product.stock} items available).`
-    : `${product.title} from your wishlist is now out of stock.`;
-  notifications.unshift({
-    id: `notif-${product.id}-${Date.now()}`,
-    productId: product.id,
-    slug: product.slug,
-    title: product.title,
-    image: product.image,
-    type,
-    message,
-    createdAt: new Date().toISOString(),
-    read: false,
-  });
-  writeJson(STORAGE_KEYS.notifications, notifications.slice(0, 50));
-}
-
-function isWished(productId) {
-  const wishlist = readJson(STORAGE_KEYS.wishlist, []);
-  if (!Array.isArray(wishlist)) return false;
-  return wishlist.some((entry) => Number(entry?.id ?? entry) === Number(productId));
-}
-
-export function setProductStock(productId, nextStock, reason) {
-  const product = getCatalog().find((item) => Number(item.id) === Number(productId));
-  if (!product) return { ok: false, message: "Product not found." };
-  const quantity = Number(nextStock);
-  if (!Number.isInteger(quantity) || quantity < 0) {
-    return { ok: false, message: "Stock must be a whole number, 0 or more." };
-  }
-  if (!String(reason || "").trim()) return { ok: false, message: "Add a reason for this stock change." };
-
-  const stockMap = readStockMap();
-  const previous = liveStockOf(product, stockMap);
-  const hasOverride = Object.prototype.hasOwnProperty.call(stockMap, product.id)
-    || Object.prototype.hasOwnProperty.call(stockMap, String(product.id));
-  if (previous === quantity && hasOverride) return { ok: false, message: "Stock is already at that quantity." };
-
-  stockMap[product.id] = quantity;
-  writeStockMap(stockMap);
-  if (previous === quantity) return { ok: true, stock: quantity };
-  logInventory({
-    productId: product.id,
-    sku: product.sku,
-    title: product.title,
-    previous,
-    next: quantity,
-    delta: quantity - previous,
-    reason: String(reason).trim(),
-  });
-
-  if (isWished(product.id) && previous <= 0 && quantity > 0) {
-    pushNotification({ ...product, stock: quantity }, "in_stock");
-  } else if (isWished(product.id) && previous > 0 && quantity <= 0) {
-    pushNotification({ ...product, stock: quantity }, "out_of_stock");
-  }
-
-  return { ok: true, stock: quantity };
-}
-
-export function recordSaleAdjustments(entries) {
-  if (!Array.isArray(entries) || entries.length === 0) return;
-  const catalog = getCatalog();
-  entries.forEach((entry) => {
-    const product = catalog.find((item) => Number(item.id) === Number(entry.productId));
-    if (!product || !Number.isFinite(entry.previous) || !Number.isFinite(entry.next)) return;
-    logInventory({
-      productId: product.id,
-      sku: product.sku,
-      title: product.title,
-      previous: entry.previous,
-      next: entry.next,
-      delta: entry.next - entry.previous,
-      reason: entry.reason || "Order placed",
+export async function setProductStock(productId, nextStock, reason) {
+  try {
+    const result = await apiRequest(`/api/admin/inventory/${productId}`, {
+      method: "POST",
+      kind: "admin",
+      body: { quantity: Number(nextStock), reason },
     });
-  });
-}
-
-function restoreOrderStock(order) {
-  const stockMap = readStockMap();
-  const catalog = getCatalog();
-  (order.items || []).forEach((item) => {
-    const product = catalog.find((entry) => Number(entry.id) === Number(item.id));
-    if (!product) return;
-    const previous = liveStockOf(product, stockMap);
-    const qty = Math.max(0, Number(item.quantity) || 0);
-    const next = previous + qty;
-    stockMap[product.id] = next;
-    logInventory({
-      productId: product.id,
-      sku: product.sku,
-      title: product.title,
-      previous,
-      next,
-      delta: qty,
-      reason: "Order cancelled — stock restored",
-    });
-  });
-  writeStockMap(stockMap);
-}
-
-export function updateOrder(orderId, changes) {
-  const orders = readOrders();
-  const index = orders.findIndex((order) => String(order.id) === String(orderId));
-  if (index < 0) return { ok: false, message: "Order not found." };
-
-  const order = { ...orders[index] };
-  const history = Array.isArray(order.statusHistory) ? [...order.statusHistory] : [];
-  const now = new Date().toISOString();
-  const note = String(changes.note || "").trim();
-
-  if (changes.adminStatus && changes.adminStatus !== order.adminStatus) {
-    if (changes.adminStatus === "cancelled") {
-      if (order.adminStatus === "delivered") {
-        return { ok: false, message: "Delivered orders cannot be cancelled." };
-      }
-      if (!order.stockRestored) {
-        restoreOrderStock(order);
-        order.stockRestored = true;
-      }
-      history.push({ status: "cancelled", note: note || "Order cancelled", at: now });
-      order.adminStatus = "cancelled";
-    } else if (ORDER_FLOW.some((step) => step.id === changes.adminStatus)) {
-      // if (order.adminStatus === "cancelled") {
-      //   return { ok: false, message: "Cancelled orders stay cancelled in this demo." };
-      // }
-      const target = ORDER_FLOW.findIndex((step) => step.id === changes.adminStatus);
-      ORDER_FLOW.slice(0, target + 1).forEach((step) => {
-        if (!history.some((event) => event.status === step.id && event.type !== "note" && event.type !== "refund")) {
-          history.push({
-            status: step.id,
-            note: step.id === changes.adminStatus ? (note || "Status updated") : "Stage recorded",
-            at: now,
-          });
-        }
-      });
-      order.adminStatus = changes.adminStatus;
-    }
-  } else if (note) {
-    history.push({
-      status: order.adminStatus || "pending",
-      note,
-      at: now,
-      type: "note",
-    });
+    await refreshAdminData();
+    await refreshStorefrontProducts();
+    return { ok: true, stock: result.stock };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not update stock." };
   }
-
-  if (changes.courier != null) order.courier = String(changes.courier).trim();
-  if (changes.trackingNumber != null) order.trackingNumber = String(changes.trackingNumber).trim();
-  if (changes.paymentStatus) {
-    order.paymentStatus = changes.paymentStatus;
-    if (changes.paymentStatus === "refunded") {
-      history.push({
-        status: order.adminStatus || "pending",
-        note: note || "Refund recorded. No real payment was sent.",
-        at: now,
-        type: "refund",
-      });
-    }
-  }
-
-  order.statusHistory = history;
-  orders[index] = order;
-  writeJson(STORAGE_KEYS.orders, orders);
-  return { ok: true, order };
 }
 
-function customerKeyFromDelivery(delivery = {}) {
-  const phone = String(delivery.phone || "").replace(/\s+/g, "");
-  if (phone) return `phone-${phone}`;
-  const name = slugify(delivery.fullName || "customer");
-  return `name-${name}`;
+export function recordSaleAdjustments() {
+  // Stock adjustments are applied server-side when orders are placed.
+}
+
+export async function updateOrder(orderId, changes) {
+  try {
+    const result = await apiRequest(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+      method: "PUT",
+      kind: "admin",
+      body: {
+        adminStatus: changes.adminStatus,
+        note: changes.note,
+        courier: changes.courier,
+        trackingNumber: changes.trackingNumber,
+        paymentStatus: changes.paymentStatus,
+      },
+    });
+    await refreshAdminData();
+    return { ok: true, order: result.order };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not update order." };
+  }
 }
 
 export function listCustomers() {
-  const meta = readJson(STORAGE_KEYS.customers, null);
-  const stored = Array.isArray(meta?.records) ? meta.records : DEMO_CUSTOMERS;
-  const statusMap = meta?.status && typeof meta.status === "object" ? meta.status : {};
-  const byKey = new Map();
-
-  stored.forEach((customer) => {
-    byKey.set(customer.key, {
-      ...customer,
-      status: statusMap[customer.key] || customer.status || "active",
-      orders: 0,
-      spent: 0,
-    });
-  });
-
-  listOrders().forEach((order) => {
-    const key = customerKeyFromDelivery(order.delivery);
-    const current = byKey.get(key) || {
-      key,
-      name: order.delivery?.fullName || "Customer",
-      email: order.customerEmail || "",
-      phone: order.delivery?.phone || "",
-      city: order.delivery?.city || "",
-      address: order.delivery?.address || "",
-      status: statusMap[key] || "active",
-      createdAt: order.createdAt,
-      orders: 0,
-      spent: 0,
-    };
-    current.orders += 1;
-    if (order.adminStatus !== "cancelled") current.spent += Number(order.total) || 0;
-    current.name = current.name || order.delivery?.fullName || "Customer";
-    current.email = current.email || order.customerEmail || "";
-    current.phone = current.phone || order.delivery?.phone || "";
-    current.city = current.city || order.delivery?.city || "";
-    current.address = current.address || order.delivery?.address || "";
-    current.status = statusMap[key] || current.status || "active";
-    byKey.set(key, current);
-  });
-
-  return [...byKey.values()].sort((a, b) => b.orders - a.orders || a.name.localeCompare(b.name));
+  return cache.customers.slice();
 }
 
-export function setCustomerStatus(key, status) {
-  const meta = readJson(STORAGE_KEYS.customers, { records: DEMO_CUSTOMERS, status: {} });
-  const records = Array.isArray(meta.records) ? meta.records : DEMO_CUSTOMERS;
-  const nextStatus = { ...(meta.status || {}), [key]: status };
-  writeJson(STORAGE_KEYS.customers, { records, status: nextStatus });
-  return { ok: true };
+export async function setCustomerStatus(key, status) {
+  try {
+    await apiRequest(`/api/admin/customers/${encodeURIComponent(key)}/status`, {
+      method: "PUT",
+      kind: "admin",
+      body: { status },
+    });
+    await refreshAdminData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not update customer." };
+  }
 }
 
 export function ordersForCustomer(customer, allOrders = listOrders()) {
   if (!customer) return [];
-  return allOrders.filter((order) => customerKeyFromDelivery(order.delivery) === customer.key || (
-    customer.phone && order.delivery?.phone === customer.phone
-  ));
-}
-
-function linesToList(value) {
-  return String(value || "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return allOrders.filter(
+    (order) =>
+      order.customerId === customer.id ||
+      (customer.phone && order.delivery?.phone === customer.phone) ||
+      order.customerEmail === customer.email
+  );
 }
 
 export function validateProduct(input, products = listProducts()) {
@@ -554,26 +258,14 @@ export function validateProduct(input, products = listProducts()) {
   return errors;
 }
 
-function upsertCategoryName(name, image) {
-  const categories = listCategories().map(({ productCount, ...category }) => category);
-  if (categories.some((category) => category.name === name)) return;
-  categories.push({
-    id: `cat-${slugify(name)}`,
-    name,
-    slug: slugify(name),
-    description: "",
-    image: image || "",
-    status: "active",
-  });
-  writeJson(STORAGE_KEYS.categories, categories);
+function linesToList(value) {
+  return String(value || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
-export function saveProduct(input) {
-  const products = listProducts();
-  const errors = validateProduct(input, products);
-  if (Object.keys(errors).length) return { ok: false, errors };
-
-  const state = readProductState();
+function toProductPayload(input) {
   const images = (Array.isArray(input.images) ? input.images : linesToList(input.imagesText)).filter(Boolean);
   const primary = String(input.image || images[0] || "").trim();
   const specs = Array.isArray(input.specifications)
@@ -586,7 +278,7 @@ export function saveProduct(input) {
   const botInstructions = normalizeBotInstructions(input.botInstructions);
   const hasBotContent = Object.values(botInstructions).some((value) => Array.isArray(value) && value.length > 0);
 
-  const payload = {
+  return {
     title: String(input.title).trim(),
     slug: slugify(input.slug || input.title),
     sku: String(input.sku).trim(),
@@ -603,125 +295,99 @@ export function saveProduct(input) {
     description: String(input.description || "").trim(),
     features: Array.isArray(input.features) ? input.features : linesToList(input.featuresText),
     specifications: specs,
-    botInstructions: hasBotContent ? botInstructions : undefined,
+    botInstructions: hasBotContent ? botInstructions : null,
     rating: Number(input.rating) || 0,
     reviews: Number(input.reviews) || 0,
   };
-
-  let id = Number(input.id);
-  const isBase = baseProducts.some((product) => Number(product.id) === id);
-  if (!id) {
-    const maxId = Math.max(0, ...getCatalog().map((product) => Number(product.id) || 0), ...baseProducts.map((product) => product.id));
-    id = maxId + 1;
-    state.created.unshift(normalizeProduct({ ...payload, id }));
-  } else if (isBase) {
-    state.overrides[id] = { ...(state.overrides[id] || {}), ...payload };
-  } else {
-    state.created = state.created.map((product) => (
-      Number(product.id) === id ? normalizeProduct({ ...product, ...payload, id }) : product
-    ));
-  }
-
-  writeProductState(state);
-  upsertCategoryName(payload.category, payload.image);
-
-  const existing = products.find((product) => Number(product.id) === id);
-  const previousStock = existing ? existing.stock : payload.stock;
-  if (!existing || previousStock !== payload.stock) {
-    setProductStock(id, payload.stock, existing ? "Updated from product form" : "Opening stock");
-  }
-
-  return { ok: true, id };
 }
 
-export function archiveProduct(id) {
-  const product = getProduct(id);
-  if (!product) return { ok: false, message: "Product not found." };
-  return saveProduct({ ...product, status: "archived", imagesText: product.images });
-}
+export async function saveProduct(input) {
+  const products = listProducts();
+  const errors = validateProduct(input, products);
+  if (Object.keys(errors).length) return { ok: false, errors };
 
-export function deleteProduct(id) {
-  const product = getCatalog().find((item) => Number(item.id) === Number(id));
-  if (!product) return { ok: false, message: "Product not found." };
-  const state = readProductState();
-  const isBase = baseProducts.some((item) => Number(item.id) === Number(id));
-  if (isBase) {
-    if (!state.deletedIds.includes(Number(id))) state.deletedIds.push(Number(id));
-    delete state.overrides[id];
-  } else {
-    state.created = state.created.filter((item) => Number(item.id) !== Number(id));
-  }
-  writeProductState(state);
-  const stockMap = readStockMap();
-  delete stockMap[id];
-  delete stockMap[String(id)];
-  writeStockMap(stockMap);
-  return { ok: true };
-}
-
-export function saveCategory(input) {
-  const name = String(input.name || "").trim();
-  if (!name) return { ok: false, message: "Category name is required." };
-  const categories = listCategories().map(({ productCount, ...category }) => category);
-  const slug = slugify(input.slug || name);
-  const duplicate = categories.some((category) => category.slug === slug && category.id !== input.id);
-  if (duplicate) return { ok: false, message: "A category with this link already exists." };
-
-  const next = {
-    id: input.id || `cat-${slug}`,
-    name,
-    slug, 
-    description: String(input.description || "").trim(),
-    image: String(input.image || "").trim(),
-    status: input.status === "archived" ? "archived" : "active",
-  };
-  const existing = categories.find((category) => category.id === next.id);
-  if (existing && existing.name !== name) {
-    const state = readProductState();
-    getCatalog()
-      .filter((product) => product.category === existing.name)
-      .forEach((product) => {
-        const isBase = baseProducts.some((item) => item.id === product.id);
-        if (isBase) {
-          state.overrides[product.id] = { ...(state.overrides[product.id] || {}), category: name };
-        } else {
-          state.created = state.created.map((item) => (
-            item.id === product.id ? { ...item, category: name } : item
-          ));
-        }
+  const payload = toProductPayload(input);
+  try {
+    let result;
+    if (input.id) {
+      result = await apiRequest(`/api/admin/products/${input.id}`, {
+        method: "PUT",
+        kind: "admin",
+        body: payload,
       });
-    writeProductState(state);
+    } else {
+      result = await apiRequest("/api/admin/products", {
+        method: "POST",
+        kind: "admin",
+        body: payload,
+      });
+    }
+    await refreshAdminData();
+    await refreshStorefrontProducts();
+    return { ok: true, id: result.id };
+  } catch (error) {
+    return { ok: false, message: error.message, errors: error.data?.errors || {} };
   }
-
-  const without = categories.filter((category) => category.id !== next.id);
-  writeJson(STORAGE_KEYS.categories, [next, ...without]);
-  return { ok: true };
 }
 
-export function deleteCategory(id) {
-  const category = listCategories().find((item) => item.id === id);
-  if (!category) return { ok: false, message: "Category not found." };
-  const linked = getCatalog().filter((product) => product.category === category.name);
-  if (linked.length > 0) {
-    return {
-      ok: false,
-      message: `${linked.length} products still use ${category.name}. Archive the category or move those products first.`,
-    };
+export async function archiveProduct(id) {
+  try {
+    await apiRequest(`/api/admin/products/${id}/archive`, { method: "POST", kind: "admin" });
+    await refreshAdminData();
+    await refreshStorefrontProducts();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Product not found." };
   }
-  const categories = listCategories()
-    .filter((item) => item.id !== id)
-    .map(({ productCount, ...item }) => item);
-  writeJson(STORAGE_KEYS.categories, categories);
-  return { ok: true };
+}
+
+export async function deleteProduct(id) {
+  try {
+    await apiRequest(`/api/admin/products/${id}`, { method: "DELETE", kind: "admin" });
+    await refreshAdminData();
+    await refreshStorefrontProducts();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Product not found." };
+  }
+}
+
+export async function saveCategory(input) {
+  try {
+    const body = {
+      name: input.name,
+      slug: input.slug,
+      description: input.description,
+      image: input.image,
+      status: input.status,
+    };
+    if (input.id && Number.isFinite(Number(input.id))) {
+      await apiRequest(`/api/admin/categories/${input.id}`, { method: "PUT", kind: "admin", body });
+    } else {
+      await apiRequest("/api/admin/categories", { method: "POST", kind: "admin", body });
+    }
+    await refreshAdminData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not save category." };
+  }
+}
+
+export async function deleteCategory(id) {
+  try {
+    await apiRequest(`/api/admin/categories/${id}`, { method: "DELETE", kind: "admin" });
+    await refreshAdminData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not delete category." };
+  }
 }
 
 export function listCoupons() {
-  const saved = readJson(STORAGE_KEYS.coupons, null);
-  return Array.isArray(saved) ? saved : DEMO_COUPONS;
+  return Array.isArray(cache.coupons) ? cache.coupons.slice() : [];
 }
 
-export function saveCoupon(input) {
-  const coupons = listCoupons();
+export async function saveCoupon(input) {
   const code = String(input.code || "").trim().toUpperCase();
   const type = input.type === "fixed" ? "fixed" : "percent";
   const value = Number(input.value);
@@ -744,12 +410,8 @@ export function saveCoupon(input) {
   if (input.startDate && input.expiryDate && input.expiryDate < input.startDate) {
     return { ok: false, message: "Expiry date must be on or after the start date." };
   }
-  if (coupons.some((coupon) => coupon.code === code && coupon.id !== input.id)) {
-    return { ok: false, message: "That coupon code already exists." };
-  }
 
-  const next = {
-    id: input.id || `cpn-${Date.now()}`,
+  const body = {
     code,
     type,
     value,
@@ -760,14 +422,28 @@ export function saveCoupon(input) {
     used,
     active: Boolean(input.active),
   };
-  const rest = coupons.filter((coupon) => coupon.id !== next.id);
-  writeJson(STORAGE_KEYS.coupons, [next, ...rest]);
-  return { ok: true };
+
+  try {
+    if (input.id && Number.isFinite(Number(input.id))) {
+      await apiRequest(`/api/admin/coupons/${input.id}`, { method: "PUT", kind: "admin", body });
+    } else {
+      await apiRequest("/api/admin/coupons", { method: "POST", kind: "admin", body });
+    }
+    await refreshAdminData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not save coupon." };
+  }
 }
 
-export function deleteCoupon(id) {
-  writeJson(STORAGE_KEYS.coupons, listCoupons().filter((coupon) => coupon.id !== id));
-  return { ok: true };
+export async function deleteCoupon(id) {
+  try {
+    await apiRequest(`/api/admin/coupons/${id}`, { method: "DELETE", kind: "admin" });
+    await refreshAdminData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not delete coupon." };
+  }
 }
 
 function inRange(order, days) {
@@ -777,31 +453,6 @@ function inRange(order, days) {
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (days - 1));
   return created >= start.getTime();
-}
-
-function buildChart(orders, days) {
-  const bucketSize = days <= 7 ? 1 : days <= 30 ? 5 : 10;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const buckets = [];
-  for (let offset = days; offset > 0; offset -= bucketSize) {
-    const from = new Date(today);
-    from.setDate(from.getDate() - offset + 1);
-    const to = new Date(from);
-    to.setDate(from.getDate() + bucketSize - 1);
-    const end = to > today ? today : to;
-    const total = orders
-      .filter((order) => {
-        const time = new Date(order.createdAt).getTime();
-        return time >= from.getTime() && time < end.getTime() + 86400000 && order.adminStatus !== "cancelled";
-      })
-      .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-    buckets.push({
-      label: from.toLocaleDateString("en-PK", { day: "numeric", month: "short" }),
-      total,
-    });
-  }
-  return buckets;
 }
 
 export function getDashboard(days = 30, source = null) {
@@ -841,8 +492,12 @@ export function getDashboard(days = 30, source = null) {
     top: [...productSales.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5),
     lowStock: products.filter((product) => product.status === "active" && product.stock > 0 && product.stock <= threshold),
     outOfStock: products.filter((product) => product.status === "active" && product.stock <= 0),
-    chart: buildChart(allOrders, days),
+    chart: [],
   };
+}
+
+export async function fetchDashboard(days = 30) {
+  return apiRequest(`/api/admin/dashboard?days=${days}`, { kind: "admin" });
 }
 
 export function getReports(days = 30, source = null) {
@@ -875,36 +530,11 @@ export function getReports(days = 30, source = null) {
 }
 
 export function ensureAdminSeed() {
-  if (!Array.isArray(readJson(STORAGE_KEYS.categories, null))) {
-    writeJson(STORAGE_KEYS.categories, categorySeed(), { silent: true });
-  }
-  if (!Array.isArray(readJson(STORAGE_KEYS.coupons, null))) {
-    writeJson(STORAGE_KEYS.coupons, DEMO_COUPONS, { silent: true });
-  }
-  if (!readJson(STORAGE_KEYS.settings, null)) {
-    writeJson(STORAGE_KEYS.settings, DEFAULT_SETTINGS, { silent: true });
-  }
-  if (!readJson(STORAGE_KEYS.customers, null)) {
-    writeJson(STORAGE_KEYS.customers, { records: DEMO_CUSTOMERS, status: {} }, { silent: true });
-  }
-  if (!Array.isArray(readJson(STORAGE_KEYS.inventory, null))) {
-    writeJson(STORAGE_KEYS.inventory, [], { silent: true });
-  }
+  // Catalog, settings, and coupons now live in the API.
 }
 
-export function resetDemoData({ clearOrders = false } = {}) {
-  removeStorageKey(STORAGE_KEYS.products);
-  removeStorageKey(STORAGE_KEYS.stock);
-  writeJson(STORAGE_KEYS.categories, categorySeed(), { silent: true });
-  writeJson(STORAGE_KEYS.coupons, DEMO_COUPONS, { silent: true });
-  writeJson(STORAGE_KEYS.settings, DEFAULT_SETTINGS, { silent: true });
-  writeJson(STORAGE_KEYS.customers, { records: DEMO_CUSTOMERS, status: {} }, { silent: true });
-  writeJson(STORAGE_KEYS.inventory, [], { silent: true });
-  if (clearOrders) writeJson(STORAGE_KEYS.orders, []);
-  window.dispatchEvent(new CustomEvent("wasooli-data", { detail: { key: STORAGE_KEYS.products } }));
-  window.dispatchEvent(new CustomEvent("wasooli-data", { detail: { key: STORAGE_KEYS.stock } }));
-  window.dispatchEvent(new CustomEvent("wasooli-data", { detail: { key: STORAGE_KEYS.orders } }));
-  return { ok: true };
+export function resetDemoData() {
+  return { ok: false, message: "Demo reset is disabled while using the live API database." };
 }
 
 export function exportOrdersCsv(orders) {
@@ -930,4 +560,117 @@ export function exportOrdersCsv(orders) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function placeOrderApi(payload) {
+  return apiRequest("/api/orders", {
+    method: "POST",
+    kind: "customer",
+    body: payload,
+  });
+}
+
+export async function fetchMyOrders() {
+  return apiRequest("/api/orders/mine", { kind: "customer" });
+}
+
+export async function fetchPublicSettings() {
+  const settings = await apiRequest("/api/settings");
+  cache.settings = { ...cache.settings, ...settings };
+  return getSettings();
+}
+
+export async function fetchSavedAddress() {
+  return apiRequest("/api/me/address", { kind: "customer" });
+}
+
+export async function saveSavedAddress(address) {
+  return apiRequest("/api/me/address", {
+    method: "PUT",
+    kind: "customer",
+    body: {
+      fullName: address.fullName,
+      phone: address.phone,
+      province: address.province,
+      city: address.city,
+      address: address.address,
+      landmark: address.landmark,
+      instructions: address.instructions,
+      preferredDeliveryMethod: address.delivery || address.preferredDeliveryMethod || "standard",
+    },
+  });
+}
+
+export async function fetchCartApi() {
+  return apiRequest("/api/cart", { kind: "customer" });
+}
+
+export async function replaceCartApi(items) {
+  return apiRequest("/api/cart", {
+    method: "PUT",
+    kind: "customer",
+    body: {
+      items: (items || []).map((item) => ({
+        productId: Number(item.id ?? item.productId),
+        quantity: Number(item.quantity) || 1,
+      })),
+    },
+  });
+}
+
+export async function clearCartApi() {
+  return apiRequest("/api/cart", { method: "DELETE", kind: "customer" });
+}
+
+export async function fetchWishlistApi() {
+  return apiRequest("/api/wishlist", { kind: "customer" });
+}
+
+export async function addWishlistApi(productId) {
+  return apiRequest(`/api/wishlist/${productId}`, { method: "POST", kind: "customer" });
+}
+
+export async function removeWishlistApi(productId) {
+  return apiRequest(`/api/wishlist/${productId}`, { method: "DELETE", kind: "customer" });
+}
+
+export async function fetchNotificationsApi() {
+  return apiRequest("/api/notifications", { kind: "customer" });
+}
+
+export async function markNotificationReadApi(id) {
+  return apiRequest(`/api/notifications/${id}/read`, { method: "POST", kind: "customer" });
+}
+
+export async function markAllNotificationsReadApi() {
+  return apiRequest("/api/notifications/read-all", { method: "POST", kind: "customer" });
+}
+
+export async function validateCouponApi(code, subtotal) {
+  return apiRequest("/api/coupons/validate", {
+    method: "POST",
+    kind: "customer",
+    body: { code, subtotal },
+  });
+}
+
+export async function uploadImage(file, kind = "product") {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiRequest(`/api/uploads?kind=${encodeURIComponent(kind)}`, {
+    method: "POST",
+    kind: "admin",
+    formData,
+  });
+}
+
+// Unused local helpers kept for import compatibility.
+export function readProductState() {
+  return { overrides: {}, created: [], deletedIds: [] };
+}
+export function readStockMap() {
+  return {};
+}
+export function applyLiveStock(product) {
+  return product;
 }

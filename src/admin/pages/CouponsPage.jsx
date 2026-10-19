@@ -26,23 +26,35 @@ export default function CouponsPage() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    if (!form) return;
-    const result = saveCoupon(form);
+    if (!form || saving) return;
+    setSaving(true);
+    const result = await saveCoupon(form);
+    setSaving(false);
     if (!result.ok) {
       setError(result.message);
       return;
     }
-    toast.success("Coupon saved. Checkout does not apply it yet.");
+    toast.success("Coupon saved.");
     setForm(null);
   }
 
-  function handleDelete() {
-    // The dialog can call this while nothing is selected, so guard against null.
+  async function handleToggle(coupon) {
+    const result = await saveCoupon({ ...coupon, active: !coupon.active });
+    if (!result.ok) toast.error(result.message);
+    else toast.success("Coupon updated.");
+  }
+
+  async function handleDelete() {
     if (!pending) return;
-    deleteCoupon(pending.id);
+    const result = await deleteCoupon(pending.id);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
     toast.success("Coupon deleted.");
     setPending(null);
   }
@@ -52,7 +64,7 @@ export default function CouponsPage() {
       <PageHeader
         crumbs={[{ label: "Coupons & Discounts" }]}
         title="Coupons & Discounts"
-        detail="Create demo coupons here. The shop checkout does not redeem them until that step is added."
+        detail="Manage coupons stored in the API. Customers can redeem active codes at checkout."
         actions={<button type="button" onClick={() => { setError(""); setForm(EMPTY); }} className={buttonClass}>Add coupon</button>}
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -73,7 +85,7 @@ export default function CouponsPage() {
               render: (coupon) => (
                 <span className="flex justify-end gap-3">
                   <button type="button" onClick={() => { setError(""); setForm({ ...coupon, value: String(coupon.value), minOrder: String(coupon.minOrder), usageLimit: String(coupon.usageLimit), used: String(coupon.used) }); }} className="cursor-pointer text-xs font-semibold text-brand-600">Edit</button>
-                  <button type="button" onClick={() => { const result = saveCoupon({ ...coupon, active: !coupon.active }); if (!result.ok) toast.error(result.message); else toast.success("Coupon updated."); }} className="cursor-pointer text-xs font-semibold text-slate-500">{coupon.active ? "Disable" : "Enable"}</button>
+                  <button type="button" onClick={() => handleToggle(coupon)} className="cursor-pointer text-xs font-semibold text-slate-500">{coupon.active ? "Disable" : "Enable"}</button>
                   <button type="button" onClick={() => setPending(coupon)} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
                 </span>
               ),
@@ -113,14 +125,14 @@ export default function CouponsPage() {
               Active
             </label>
             {error ? <p className="text-sm font-medium text-red-600 sm:col-span-2">{error}</p> : null}
-            <button type="submit" className={`${buttonClass} sm:col-span-2`}>Save coupon</button>
+            <button type="submit" disabled={saving} className={`${buttonClass} sm:col-span-2`}>{saving ? "Saving…" : "Save coupon"}</button>
           </form>
         )}
       </AdminModal>
       <ConfirmDialog
         open={Boolean(pending)}
         title="Delete coupon?"
-        message="This removes the demo coupon from admin. It was not connected to checkout."
+        message="This permanently removes the coupon from the store."
         confirmLabel="Delete"
         onClose={() => setPending(null)}
         onConfirm={handleDelete}

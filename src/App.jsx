@@ -26,6 +26,7 @@ const CustomersPage = lazy(() => import("./admin/pages/CustomersPage"));
 const CustomerDetailsPage = lazy(() => import("./admin/pages/CustomerDetailsPage"));
 const ReportsPage = lazy(() => import("./admin/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./admin/pages/SettingsPage"));
+const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
 
 function RootRedirect() {
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="customers/:key" element={<CustomerDetailsPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="coupons" element={<CouponsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />

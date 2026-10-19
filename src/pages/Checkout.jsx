@@ -16,11 +16,13 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
-import { getSettings } from "../services/storage/adminDataService";
-import { writeJson } from "../services/storage/storageService";
-
-const ADDRESS_KEY = "wasooli_address";
-const ORDERS_KEY = "wasooli_orders";
+import {
+  fetchPublicSettings,
+  fetchSavedAddress,
+  placeOrderApi,
+  saveSavedAddress,
+  validateCouponApi,
+} from "../services/storage/adminDataService";
 
 const PROVINCES = [
   "Punjab",
@@ -68,12 +70,16 @@ const DELIVERY_OPTIONS = [
   },
 ];
 
-function deliveryChoices() {
-  const fee = Number(getSettings().shippingFee);
-  const standardFee = Number.isFinite(fee) && fee >= 0 ? fee : DELIVERY_OPTIONS[0].fee;
-  return DELIVERY_OPTIONS.map((option) => (
-    option.id === "standard" ? { ...option, fee: standardFee } : option
-  ));
+function deliveryChoices(shippingFee, expressShippingFee) {
+  const standard = Number(shippingFee);
+  const express = Number(expressShippingFee);
+  const standardFee = Number.isFinite(standard) && standard >= 0 ? standard : DELIVERY_OPTIONS[0].fee;
+  const expressFee = Number.isFinite(express) && express >= 0 ? express : DELIVERY_OPTIONS[1].fee;
+  return DELIVERY_OPTIONS.map((option) => {
+    if (option.id === "standard") return { ...option, fee: standardFee };
+    if (option.id === "express") return { ...option, fee: expressFee };
+    return option;
+  });
 }
 
 const EMPTY_FORM = {
@@ -88,15 +94,6 @@ const EMPTY_FORM = {
   payment: "cod",
   transactionRef: "",
 };
-
-function readSavedAddress() {
-  try {
-    const saved = localStorage.getItem(ADDRESS_KEY);
-    return saved ? { ...EMPTY_FORM, ...JSON.parse(saved) } : null;
-  } catch {
-    return null;
-  }
-}
 
 function isValidPhone(value) {
   const digits = value.replace(/\D/g, "");
@@ -255,10 +252,51 @@ function FieldError({ id, message }) {
   );
 }
 
-  export default function Checkout() {
+export default function Checkout() {
   const { user } = useAuth();
   const location = useLocation();
   const { products, items, clearCart, deductStock } = useCart();
+  const [shippingFee, setShippingFee] = useState(DELIVERY_OPTIONS[0].fee);
+  const [expressShippingFee, setExpressShippingFee] = useState(DELIVERY_OPTIONS[1].fee);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
+
+  useEffect(() => {
+    fetchPublicSettings()
+      .then((settings) => {
+        const fee = Number(settings.shippingFee);
+        const express = Number(settings.expressShippingFee);
+        if (Number.isFinite(fee) && fee >= 0) setShippingFee(fee);
+        if (Number.isFinite(express) && express >= 0) setExpressShippingFee(express);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSavedAddress()
+      .then((saved) => {
+        if (cancelled || !saved) return;
+        setForm((current) => ({
+          ...current,
+          fullName: saved.fullName || current.fullName,
+          phone: saved.phone || "",
+          province: saved.province || "",
+          city: saved.city || "",
+          address: saved.address || "",
+          landmark: saved.landmark || "",
+          instructions: saved.instructions || "",
+          delivery: saved.preferredDeliveryMethod || saved.delivery || current.delivery,
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const rawBuyNowItem = readBuyNowItem(location.state);
   const buyNowItem = (() => {
     if (!rawBuyNowItem) return null;
@@ -274,14 +312,10 @@ function FieldError({ id, message }) {
     return { ...rawBuyNowItem, stock: liveStock, quantity };
   })();
   const orderItems = buyNowItem ? [buyNowItem] : items;
-  const [form, setForm] = useState(() => {
-    const saved = readSavedAddress();
-    return {
-      ...EMPTY_FORM,
-      fullName: user?.name || "",
-      ...saved,
-    };
-  });
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    fullName: user?.name || "",
+  }));
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [placing, setPlacing] = useState(false);
@@ -316,11 +350,11 @@ function FieldError({ id, message }) {
     (total, item) => total + item.price * item.quantity,
     0
   );
+  const choices = deliveryChoices(shippingFee, expressShippingFee);
   const deliveryOption =
-    deliveryChoices().find((option) => option.id === form.delivery) ||
-    deliveryChoices()[0];
+    choices.find((option) => option.id === form.delivery) || choices[0];
   const deliveryFee = orderItems.length ? deliveryOption.fee : 0;
-  const total = subtotal + deliveryFee;
+  const total = Math.max(0, subtotal + deliveryFee - couponDiscount);
   const paymentOption =
     PAYMENT_OPTIONS.find((option) => option.id === form.payment) ||
     PAYMENT_OPTIONS[0];
@@ -371,47 +405,28 @@ function FieldError({ id, message }) {
     setConfirmOpen(true);
   }
 
-  function placeOrder() {
+  async function applyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    if (!code || couponApplying) return;
+    setCouponApplying(true);
+    setCouponMessage("");
+    try {
+      const result = await validateCouponApi(code, subtotal);
+      setCouponCode(result.code || code);
+      setCouponDiscount(Number(result.discount) || 0);
+      setCouponMessage(`Coupon applied (−${formatPrice(result.discount)}).`);
+    } catch (error) {
+      setCouponDiscount(0);
+      setCouponMessage(error.message || "Invalid coupon.");
+    } finally {
+      setCouponApplying(false);
+    }
+  }
+
+  async function placeOrder() {
     if (placing || orderItems.length === 0) return;
 
     setPlacing(true);
-    const createdAt = new Date().toISOString();
-    const placed = {
-      id: `WS-${Date.now().toString().slice(-8)}-${crypto.randomUUID()}`,
-      items: orderItems,
-      customerEmail: user?.email || "",
-      delivery: {
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-        province: form.province,
-        city: form.city.trim(),
-        address: form.address.trim(),
-        landmark: form.landmark.trim(),
-        instructions: form.instructions.trim(),
-        method: deliveryOption,
-      },
-      subtotal,
-      deliveryFee,
-      total,
-      payment: {
-        method: form.payment,
-        label: paymentOption.title,
-        reference: form.payment === "bank" ? form.transactionRef.trim() : "",
-      },
-      adminStatus: "pending",
-      paymentStatus: form.payment === "bank" ? "paid" : "cod_pending",
-      courier: "Wasooli Express",
-      trackingNumber: "",
-      statusHistory: [
-        {
-          status: "pending",
-          note: "Order placed by customer",
-          at: createdAt,
-        },
-      ],
-      createdAt,
-    };
-
     const addressToSave = {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
@@ -422,23 +437,38 @@ function FieldError({ id, message }) {
       instructions: form.instructions.trim(),
       delivery: form.delivery,
     };
-    localStorage.setItem(ADDRESS_KEY, JSON.stringify(addressToSave));
 
-    const previous = (() => {
-      try {
-        return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-      } catch {
-        return [];
-      }
-    })();
-    writeJson(ORDERS_KEY, [placed, ...previous]);
-
-    deductStock(orderItems);
-    setOrder(placed);
-    if (!buyNowItem) clearCart();
-    setConfirmOpen(false);
-    setPlacing(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      await saveSavedAddress(addressToSave).catch(() => {});
+      const placed = await placeOrderApi({
+        items: orderItems.map((item) => ({
+          productId: Number(item.id),
+          quantity: Number(item.quantity) || 1,
+        })),
+        delivery: {
+          fullName: form.fullName.trim(),
+          phone: form.phone.trim(),
+          province: form.province,
+          city: form.city.trim(),
+          address: form.address.trim(),
+          landmark: form.landmark.trim(),
+          instructions: form.instructions.trim(),
+          method: deliveryOption.id,
+        },
+        paymentMethod: form.payment,
+        bankReference: form.payment === "bank" ? form.transactionRef.trim() : null,
+        couponCode: couponCode.trim() || null,
+      });
+      await deductStock();
+      setOrder(placed);
+      if (!buyNowItem) clearCart();
+      setConfirmOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      window.alert(error.message || "Could not place order.");
+    } finally {
+      setPlacing(false);
+    }
   }
 
   const inputClass = (name) =>
@@ -758,7 +788,7 @@ function FieldError({ id, message }) {
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {deliveryChoices().map((option) => {
+                {choices.map((option) => {
                   const selected = form.delivery === option.id;
                   return (
                     <label
@@ -928,7 +958,39 @@ function FieldError({ id, message }) {
               ))}
             </ul>
 
-            <dl className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm">
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <label htmlFor="couponCode" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                Coupon code <span className="font-normal text-slate-400">(optional)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="couponCode"
+                  value={couponCode}
+                  onChange={(event) => {
+                    setCouponCode(event.target.value.toUpperCase());
+                    setCouponDiscount(0);
+                    setCouponMessage("");
+                  }}
+                  placeholder="WASOOLI10"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={couponApplying || !couponCode.trim()}
+                  className="shrink-0 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  {couponApplying ? "…" : "Apply"}
+                </button>
+              </div>
+              {couponMessage ? (
+                <p className={`mt-1.5 text-xs font-medium ${couponDiscount > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {couponMessage}
+                </p>
+              ) : null}
+            </div>
+
+            <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between text-slate-500">
                 <dt>Subtotal</dt>
                 <dd>{formatPrice(subtotal)}</dd>
@@ -937,6 +999,12 @@ function FieldError({ id, message }) {
                 <dt>Delivery</dt>
                 <dd>{formatPrice(deliveryFee)}</dd>
               </div>
+              {couponDiscount > 0 ? (
+                <div className="flex justify-between text-emerald-600">
+                  <dt>Discount</dt>
+                  <dd>−{formatPrice(couponDiscount)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between text-base font-bold text-slate-900">
                 <dt>Total</dt>
                 <dd>{formatPrice(total)}</dd>

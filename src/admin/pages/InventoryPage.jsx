@@ -42,10 +42,10 @@ export default function InventoryPage() {
     setCustomReason("");
   }
 
-  function saveAdjustment(event) {
+  async function saveAdjustment(event) {
     event.preventDefault();
     if (!selected) return;
-    const result = setProductStock(selected.id, Number(nextStock), reason === "Other" ? customReason : reason);
+    const result = await setProductStock(selected.id, Number(nextStock), reason === "Other" ? customReason : reason);
     if (!result.ok) {
       toast.error(result.message);
       return;

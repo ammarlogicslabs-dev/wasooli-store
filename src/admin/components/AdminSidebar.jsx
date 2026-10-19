@@ -21,7 +21,7 @@ const MAIN = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
   { to: "/admin/customers", label: "Customers", icon: Users },
-  // { to: "/admin/coupons", label: "Coupons & Discounts", icon: BadgePercent },
+  { to: "/admin/coupons", label: "Coupons & Discounts", icon: BadgePercent },
   { to: "/admin/reports", label: "Reports & Payments", icon: BarChart3 },
 ];
 
