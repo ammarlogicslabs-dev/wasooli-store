@@ -202,8 +202,17 @@ export async function updateOrder(orderId, changes) {
   }
 }
 
+const DUMMY_CUSTOMER_KEYS = new Set(["ayesha", "bilal", "sara"]);
+
+function isDummyCustomer(customer) {
+  if (!customer) return false;
+  const key = String(customer.key || "").trim().toLowerCase();
+  const email = String(customer.email || "").trim().toLowerCase();
+  return DUMMY_CUSTOMER_KEYS.has(key) || email.endsWith("@example.com");
+}
+
 export function listCustomers() {
-  return cache.customers.slice();
+  return cache.customers.filter((customer) => !isDummyCustomer(customer));
 }
 
 export async function setCustomerStatus(key, status) {
@@ -339,6 +348,12 @@ export async function archiveProduct(id) {
   } catch (error) {
     return { ok: false, message: error.message || "Product not found." };
   }
+}
+
+export async function activateProduct(id) {
+  const product = getProduct(id);
+  if (!product) return { ok: false, message: "Product not found." };
+  return saveProduct({ ...product, status: "active" });
 }
 
 export async function deleteProduct(id) {

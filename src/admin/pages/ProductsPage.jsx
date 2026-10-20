@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatPrice } from "../../data/product";
-import { archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
+import { activateProduct, archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
 import AdminPagination from "../components/AdminPagination";
 import AdminTable from "../components/AdminTable";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -13,6 +13,31 @@ import { paginate, useAdminData } from "../hooks/useAdminData";
 
 const PAGE_SIZE = 8;
 
+// One place for everything that depends on the action, so mode names can never drift apart.
+const ACTIONS = {
+  delete: {
+    run: deleteProduct,
+    title: "Delete product?",
+    message: "The product will leave the storefront. Past orders keep their saved item names.",
+    confirmLabel: "Delete",
+    success: "Product deleted.",
+  },
+  activate: {
+    run: activateProduct,
+    title: "Activate product?",
+    message: "The product will be visible in the shop again.",
+    confirmLabel: "Activate",
+    success: "Product activated.",
+  },
+  archive: {
+    run: archiveProduct,
+    title: "Archive product?",
+    message: "Archived products stay in admin but are hidden from the shop.",
+    confirmLabel: "Archive",
+    success: "Product archived.",
+  },
+};
+
 export default function ProductsPage() {
   const { products, categories } = useAdminData();
   const navigate = useNavigate();
@@ -22,34 +47,46 @@ export default function ProductsPage() {
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
   const [pending, setPending] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const result = products.filter((product) => {
-      const matchesQuery = !needle || [product.title, product.sku, product.category, product.brand].join(" ").toLowerCase().includes(needle);
+    const result = (products || []).filter(Boolean).filter((product) => {
+      const searchable = [product.title, product.sku, product.category, product.brand]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesQuery = !needle || searchable.includes(needle);
       const matchesCategory = category === "all" || product.category === category;
       const matchesStatus = status === "all" || product.status === status;
       return matchesQuery && matchesCategory && matchesStatus;
     });
     result.sort((a, b) => {
-      if (sort === "price-asc") return a.price - b.price;
-      if (sort === "price-desc") return b.price - a.price;
-      if (sort === "stock") return a.stock - b.stock;
-      return a.title.localeCompare(b.title);
+      if (sort === "price-asc") return (a.price || 0) - (b.price || 0);
+      if (sort === "price-desc") return (b.price || 0) - (a.price || 0);
+      if (sort === "stock") return (a.stock || 0) - (b.stock || 0);
+      return String(a.title || "").localeCompare(String(b.title || ""));
     });
     return result;
   }, [products, query, category, status, sort]);
 
   const view = paginate(filtered, page, PAGE_SIZE);
 
+  const action = pending ? ACTIONS[pending.mode] : null;
+
   async function confirmAction() {
-    if (!pending) return;
-    const result = pending.mode === "delete"
-      ? await deleteProduct(pending.product.id)
-      : await archiveProduct(pending.product.id);
-    if (!result.ok) toast.error(result.message || "Could not update the product.");
-    else toast.success(pending.mode === "delete" ? "Product deleted." : "Product archived.");
-    setPending(null);
+    if (!pending || !action || busy) return;
+    setBusy(true);
+    try {
+      const result = await action.run(pending.product.id);
+      if (result?.ok === false) toast.error(result.message || "Could not update the product.");
+      else toast.success(action.success);
+    } catch {
+      toast.error("Could not update the product.");
+    } finally {
+      setBusy(false);
+      setPending(null);
+    }
   }
 
   return (
@@ -65,7 +102,7 @@ export default function ProductsPage() {
           <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search name or SKU" className={inputClass} />
           <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className={inputClass}>
             <option value="all">All categories</option>
-            {categories.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
+            {(categories || []).filter(Boolean).map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
           </select>
           <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} className={inputClass}>
             <option value="all">All statuses</option>
@@ -73,7 +110,7 @@ export default function ProductsPage() {
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>
-          <select value={sort} onChange={(event) => setSort(event.target.value)} className={inputClass}>
+          <select value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }} className={inputClass}>
             <option value="name">Name</option>
             <option value="price-asc">Price: low to high</option>
             <option value="price-desc">Price: high to low</option>
@@ -107,12 +144,24 @@ export default function ProductsPage() {
               {
                 key: "actions",
                 label: "",
-                render: (product) => (
-                  <span className="flex justify-end gap-2">
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setPending({ product, mode: "archive" }); }} className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600">Archive</button>
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setPending({ product, mode: "delete" }); }} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
-                  </span>
-                ),
+                render: (product) => {
+                  const isArchived = product.status === "archived";
+                  return (
+                    <span className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPending({ product, mode: isArchived ? "activate" : "archive" });
+                        }}
+                        className={`cursor-pointer text-xs font-semibold ${isArchived ? "text-brand-600 hover:text-brand-700" : "text-slate-500 hover:text-brand-600"}`}
+                      >
+                        {isArchived ? "Activate" : "Archive"}
+                      </button>
+                      <button type="button" onClick={(event) => { event.stopPropagation(); setPending({ product, mode: "delete" }); }} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
+                    </span>
+                  );
+                },
               },
             ]}
           />
@@ -121,11 +170,9 @@ export default function ProductsPage() {
       </section>
       <ConfirmDialog
         open={Boolean(pending)}
-        title={pending?.mode === "delete" ? "Delete product?" : "Archive product?"}
-        message={pending?.mode === "delete"
-          ? "The product will leave the storefront. Past orders keep their saved item names."
-          : "Archived products stay in admin but are hidden from the shop."}
-        confirmLabel={pending?.mode === "delete" ? "Delete" : "Archive"}
+        title={action?.title ?? ""}
+        message={action?.message ?? ""}
+        confirmLabel={action?.confirmLabel ?? "Confirm"}
         onClose={() => setPending(null)}
         onConfirm={confirmAction}
       />
