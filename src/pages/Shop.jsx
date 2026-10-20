@@ -306,80 +306,128 @@ export default function Shop() {
   const [minPriceLimit, setMinPriceLimit] = useState(minPrice);
   const [priceLimit, setPriceLimit] = useState(maxPrice);
 
-  const categories = useMemo(
-    () => ["All", ...new Set(products.map((product) => product.category))],
-    [products]
-  );
-
-  const categoryCounts = useMemo(() => {
-    const counts = { All: products.length };
-    products.forEach((p) => {
-      counts[p.category] = (counts[p.category] || 0) + 1;
-    });
-    return counts;
-  }, [products]);
-
-  const categoryProducts = useMemo(
-    () =>
-      category === "All"
-        ? products
-        : products.filter((product) => product.category === category),
-    [category, products]
-  );
-
-  const brands = useMemo(
-    () => ["All", ...new Set(categoryProducts.map((product) => product.brand))],
-    [categoryProducts]
-  );
-
-  const brandCounts = useMemo(() => {
-    const counts = { All: categoryProducts.length };
-    categoryProducts.forEach((p) => {
-      counts[p.brand] = (counts[p.brand] || 0) + 1;
-    });
-    return counts;
-  }, [categoryProducts]);
-
-  const availabilityOptions = useMemo(() => {
-    const options = ["All"];
-    if (categoryProducts.some((product) => product.stock > 0)) {
-      options.push("In stock");
-    }
-    if (categoryProducts.some((product) => product.stock <= 0)) {
-      options.push("Out of stock");
-    }
-    return options;
-  }, [categoryProducts]);
-
-  const availabilityCounts = useMemo(() => {
-    const inStock = categoryProducts.filter((product) => product.stock > 0).length;
+  const priceBounds = useMemo(() => {
+    const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
+    const rawMax = priceLimit === "" ? maxPrice : Number(priceLimit);
     return {
-      All: categoryProducts.length,
-      "In stock": inStock,
-      "Out of stock": categoryProducts.length - inStock,
+      min: Math.min(rawMin, rawMax),
+      max: Math.max(rawMin, rawMax),
     };
-  }, [categoryProducts]);
+  }, [minPriceLimit, priceLimit, minPrice, maxPrice]);
 
-  const portTypes = useMemo(
-    () => ["All", ...new Set(categoryProducts.map((product) => product.portType))],
-    [categoryProducts]
-  );
+  const searchQuery = debouncedSearch.trim().toLowerCase();
 
-  const portTypeCounts = useMemo(() => {
-    const counts = { All: categoryProducts.length };
-    categoryProducts.forEach((p) => {
-      counts[p.portType] = (counts[p.portType] || 0) + 1;
-    });
-    return counts;
-  }, [categoryProducts]);
+  // Faceted pool: apply every filter except the one being counted.
+  const facetPool = useMemo(() => {
+    function matchesSearch(product) {
+      if (!searchQuery) return true;
+      return (
+        product.title.toLowerCase().includes(searchQuery) ||
+        product.category.toLowerCase().includes(searchQuery) ||
+        product.brand.toLowerCase().includes(searchQuery) ||
+        product.portType.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    function matchesPrice(product) {
+      const price = Number(product.price);
+      return price >= priceBounds.min && price <= priceBounds.max;
+    }
+
+    function matchesAvailabilityValue(product, value) {
+      if (value === "All") return true;
+      return value === "In stock" ? product.stock > 0 : product.stock <= 0;
+    }
+
+    function pool(ignore) {
+      return products.filter((product) => {
+        if (!matchesSearch(product) || !matchesPrice(product)) return false;
+        if (ignore !== "category" && category !== "All" && product.category !== category) return false;
+        if (ignore !== "brand" && brand !== "All" && product.brand !== brand) return false;
+        if (ignore !== "availability" && !matchesAvailabilityValue(product, availability)) return false;
+        if (ignore !== "portType" && portType !== "All" && product.portType !== portType) return false;
+        return true;
+      });
+    }
+
+    function countBy(list, keyFn) {
+      const counts = { All: list.length };
+      list.forEach((item) => {
+        const key = keyFn(item);
+        if (!key) return;
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return counts;
+    }
+
+    function optionsFromCounts(counts, selected) {
+      return [
+        "All",
+        ...Object.keys(counts)
+          .filter((key) => key !== "All" && (counts[key] > 0 || key === selected))
+          .sort((a, b) => a.localeCompare(b)),
+      ];
+    }
+
+    const forCategory = pool("category");
+    const forBrand = pool("brand");
+    const forAvailability = pool("availability");
+    const forPort = pool("portType");
+
+    const categoryCounts = countBy(forCategory, (product) => product.category);
+    const brandCounts = countBy(forBrand, (product) => product.brand);
+    const portTypeCounts = countBy(forPort, (product) => product.portType);
+
+    const inStock = forAvailability.filter((product) => product.stock > 0).length;
+    const availabilityCounts = {
+      All: forAvailability.length,
+      "In stock": inStock,
+      "Out of stock": forAvailability.length - inStock,
+    };
+
+    return {
+      categories: optionsFromCounts(categoryCounts, category),
+      categoryCounts,
+      brands: optionsFromCounts(brandCounts, brand),
+      brandCounts,
+      availabilityOptions: [
+        "All",
+        ...(availabilityCounts["In stock"] > 0 || availability === "In stock" ? ["In stock"] : []),
+        ...(availabilityCounts["Out of stock"] > 0 || availability === "Out of stock" ? ["Out of stock"] : []),
+      ],
+      availabilityCounts,
+      portTypes: optionsFromCounts(portTypeCounts, portType),
+      portTypeCounts,
+    };
+  }, [
+    products,
+    searchQuery,
+    priceBounds,
+    category,
+    brand,
+    availability,
+    portType,
+  ]);
+
+  const {
+    categories,
+    categoryCounts,
+    brands,
+    brandCounts,
+    availabilityOptions,
+    availabilityCounts,
+    portTypes,
+    portTypeCounts,
+  } = facetPool;
 
   useEffect(() => {
+    if (category !== "All" && !categories.includes(category)) setCategory("All");
     if (brand !== "All" && !brands.includes(brand)) setBrand("All");
     if (availability !== "All" && !availabilityOptions.includes(availability)) {
       setAvailability("All");
     }
     if (portType !== "All" && !portTypes.includes(portType)) setPortType("All");
-  }, [brand, brands, availability, availabilityOptions, portType, portTypes]);
+  }, [category, categories, brand, brands, availability, availabilityOptions, portType, portTypes]);
 
   const filteredProducts = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
