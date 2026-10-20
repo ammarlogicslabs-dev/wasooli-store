@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatPrice } from "../../data/product";
@@ -20,6 +20,14 @@ export default function OrderDetailsPage() {
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || "");
   const [paymentStatus, setPaymentStatus] = useState(order ? paymentBucket(order) : "cod_pending");
 
+  useEffect(() => {
+    if (!order) return;
+    setStatus(order.adminStatus || "pending");
+    setCourier(order.courier || "Wasooli Express");
+    setTrackingNumber(order.trackingNumber || "");
+    setPaymentStatus(paymentBucket(order));
+  }, [order?.id, order?.adminStatus, order?.courier, order?.trackingNumber, order?.paymentStatus, order?.payment?.method]);
+
   if (!order) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
@@ -29,25 +37,51 @@ export default function OrderDetailsPage() {
     );
   }
 
+  const isCancelled = order.adminStatus === "cancelled";
+  const isRefunded = paymentBucket(order) === "refunded";
+
   async function apply(changes, success) {
     const updates = { ...changes };
-  
+
     if (
       Object.prototype.hasOwnProperty.call(changes, "adminStatus") &&
       changes.adminStatus !== order.adminStatus
     ) {
       updates.adminStatusUpdatedAt = new Date().toISOString();
     }
-  
+
     const result = await updateOrder(order.id, updates);
-  
+
     if (!result.ok) {
       toast.error(result.message);
-    } else {
-      toast.success(success);
+      return false;
     }
+    toast.success(success);
+    return true;
   }
 
+  function requireCancelBeforeRefund() {
+    if (isRefunded) {
+      toast.info("This order is already refunded.");
+      return false;
+    }
+    if (!isCancelled) {
+      toast.error("Cancel the order first, then record the refund.");
+      return false;
+    }
+    return true;
+  }
+
+  async function handleUpdatePayment() {
+    if (paymentStatus === "refunded" && !requireCancelBeforeRefund()) return;
+    await apply({ paymentStatus }, "Payment status updated.");
+  }
+
+  async function handleRecordRefund() {
+    if (!requireCancelBeforeRefund()) return;
+    setPaymentStatus("refunded");
+    await apply({ paymentStatus: "refunded", note }, "Refund recorded.");
+  }
 
   const history = [...(order.statusHistory || [])].reverse();
 
@@ -136,11 +170,41 @@ export default function OrderDetailsPage() {
           <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Payment</h2>
             <p className="text-sm text-slate-500">{order.payment?.label || "Payment"} {order.payment?.reference ? `· ${order.payment.reference}` : ""}</p>
-            <select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)} className={inputClass}>
-              {Object.entries(PAYMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            {/* {isRefunded ? (
+              <p className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                Refund recorded. Payment details are read-only.
+              </p>
+            ) : !isCancelled ? (
+              <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Cancel the order first before recording a refund.
+              </p>
+            ) : null} */}
+            <select
+              value={paymentStatus}
+              onChange={(event) => setPaymentStatus(event.target.value)}
+              disabled={isRefunded}
+              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70`}
+            >
+              {Object.entries(PAYMENT_LABELS).map(([value, label]) => (
+                <option key={value} value={value} disabled={value === "refunded" && !isCancelled && !isRefunded}>
+                  {label}
+                </option>
+              ))}
             </select>
-            <button type="button" className={quietButtonClass} onClick={() => apply({ paymentStatus }, "Payment status updated.")}>Update payment</button>
-            <button type="button" className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-rose-200 px-4 text-sm font-semibold text-rose-700" onClick={() => apply({ paymentStatus: "refunded", note }, "Refund recorded in the demo only.")}>
+            <button
+              type="button"
+              className={quietButtonClass}
+              disabled={isRefunded}
+              onClick={handleUpdatePayment}
+            >
+              Update payment
+            </button>
+            <button
+              type="button"
+              disabled={isRefunded}
+              className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-rose-200 px-4 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleRecordRefund}
+            >
               Record refund
             </button>
           </section>
