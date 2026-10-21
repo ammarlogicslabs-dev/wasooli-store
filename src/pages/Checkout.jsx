@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
@@ -466,7 +467,7 @@ export default function Checkout() {
       setConfirmOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      window.alert(error.message || "Could not place order.");
+      toast.error(error.message || "Could not place order.");
     } finally {
       setPlacing(false);
     }
