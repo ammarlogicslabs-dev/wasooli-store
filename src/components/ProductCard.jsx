@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Bot, ShoppingBag, Star } from "lucide-react";
 import { formatPrice } from "../data/product";
 import { useCart } from "../cart/CartContext";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 import ProductBotModal from "./ProductBotModal";
 
 export default function ProductCard({ product }) {
@@ -30,7 +31,7 @@ export default function ProductCard({ product }) {
           )}
 
           <img
-            src={product.image}
+            src={resolveMediaUrl(product.image)}
             alt={product.title}
             loading="lazy"
             onError={(e) => {

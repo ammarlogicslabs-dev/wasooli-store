@@ -24,6 +24,7 @@ import ProductCard from "../components/ProductCard";
 import ProductBotModal from "../components/ProductBotModal";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 const STORE_NAME = "Wasooli Store";
 
@@ -241,7 +242,7 @@ export default function ProductDetail() {
                 {images.map((image, index) => (
                   <div key={image} className="h-full w-full shrink-0 overflow-hidden">
                     <img
-                      src={image}
+                      src={resolveMediaUrl(image)}
                       alt={index === 0 ? product.title : `${product.title} view ${index + 1}`}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
                     />
@@ -267,7 +268,7 @@ export default function ProductDetail() {
                   }`}
                 >
                   <img
-                    src={image}
+                    src={resolveMediaUrl(image)}
                     alt={`${product.title} view ${index + 1}`}
                     className="aspect-square w-full object-cover"
                   />

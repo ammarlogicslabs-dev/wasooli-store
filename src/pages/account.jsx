@@ -29,6 +29,7 @@ import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
 import { fetchMyOrders } from "../services/storage/adminDataService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 const TRACKING_STEPS = [
   {
@@ -515,7 +516,7 @@ export default function Account() {
                               to={`/products/${notif.slug}`}
                               className="size-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
                             >
-                              <img src={notif.image} alt="" className="h-full w-full object-cover" />
+                              <img src={resolveMediaUrl(notif.image)} alt="" className="h-full w-full object-cover" />
                             </Link>
                           )}
                           <div className="min-w-0 flex-1">
@@ -885,7 +886,7 @@ export default function Account() {
                           to={`/products/${item.slug}`}
                           className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
                         >
-                          <img src={item.image} alt="" className="h-full w-full object-cover" />
+                          <img src={resolveMediaUrl(item.image)} alt="" className="h-full w-full object-cover" />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <Link
@@ -963,7 +964,7 @@ export default function Account() {
                             to={`/products/${item.slug}`}
                             className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
                           >
-                            <img src={item.image} alt="" className="h-full w-full object-cover" />
+                            <img src={resolveMediaUrl(item.image)} alt="" className="h-full w-full object-cover" />
                           </Link>
                           <div className="min-w-0 flex-1">
                             <Link

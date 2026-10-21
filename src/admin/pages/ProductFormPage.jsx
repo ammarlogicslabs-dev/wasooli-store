@@ -8,6 +8,7 @@ import {
   normalizeBotInstructions,
 } from "../../data/productInstructions";
 import { getProduct, saveProduct, uploadImage } from "../../services/storage/adminDataService";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
@@ -61,7 +62,7 @@ function toForm(product) {
 export default function ProductFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { categories, products } = useAdminData();
+  const { categories, products, loading } = useAdminData();
   const existing = id ? products.find((item) => Number(item.id) === Number(id)) || getProduct(id) : null;
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
@@ -69,9 +70,20 @@ export default function ProductFormPage() {
   const extraInputRef = useRef(null);
 
   useEffect(() => {
-    setForm(toForm(id ? getProduct(id) : null));
+    if (id && loading) return;
+    setForm(toForm(existing));
     setErrors({});
-  }, [id]);
+    // Re-run when the edit target finishes loading from the admin cache.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- existing object identity changes; id + loading + existing?.id are enough
+  }, [id, loading, existing?.id]);
+
+  if (id && loading) {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
+        <p className="font-semibold text-slate-900">Loading product...</p>
+      </div>
+    );
+  }
 
   if (id && !existing) {
     return (
@@ -227,7 +239,7 @@ export default function ProductFormPage() {
             <ul className="grid grid-cols-4 gap-2">
               {form.extraImages.map((src, index) => (
                 <li key={`${src.slice(0, 24)}-${index}`} className="relative">
-                  <img src={src} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                  <img src={resolveMediaUrl(src)} alt="" className="aspect-square w-full rounded-xl object-cover" />
                   <button
                     type="button"
                     aria-label="Remove extra image"

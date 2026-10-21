@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { deleteCategory, saveCategory } from "../../services/storage/adminDataService";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import AdminModal from "../components/AdminModal";
 import AdminTable from "../components/AdminTable";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -66,7 +67,7 @@ export default function CategoriesPage() {
               label: "Category",
               render: (category) => (
                 <span className="flex items-center gap-3">
-                  {category.image ? <img src={category.image} alt="" className="size-12 rounded-xl object-cover" /> : <span className="grid size-12 place-items-center rounded-xl bg-slate-100 text-xs text-slate-400">None</span>}
+                  {category.image ? <img src={resolveMediaUrl(category.image)} alt="" className="size-12 rounded-xl object-cover" /> : <span className="grid size-12 place-items-center rounded-xl bg-slate-100 text-xs text-slate-400">None</span>}
                   <span>
                     <span className="block font-semibold text-slate-900">{category.name}</span>
                     {/* <span className="text-xs text-slate-500">{category.slug}</span> */}

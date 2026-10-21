@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatPrice } from "../../data/product";
 import { archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import AdminPagination from "../components/AdminPagination";
 import AdminTable from "../components/AdminTable";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -92,7 +93,7 @@ export default function ProductsPage() {
                 label: "Product",
                 render: (product) => (
                   <span className="flex items-center gap-3">
-                    <img src={product.image} alt="" className="size-12 rounded-xl border border-slate-100 object-cover" />
+                    <img src={resolveMediaUrl(product.image)} alt="" className="size-12 rounded-xl border border-slate-100 object-cover" />
                     <span>
                       <span className="block font-semibold text-slate-900">{product.title}</span>
                       <span className="text-xs text-slate-500">{product.sku}</span>

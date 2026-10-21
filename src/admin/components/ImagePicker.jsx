@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import { toast } from "react-toastify";
-import { API_BASE_URL } from "../../services/api/client";
 import { uploadImage } from "../../services/storage/adminDataService";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export default function ImagePicker({
   value,
@@ -17,7 +17,7 @@ export default function ImagePicker({
   const inputRef = useRef(null);
   const [reading, setReading] = useState(false);
   const kind = maxEdge && maxEdge <= 400 ? "avatar" : "product";
-  const previewSrc = value?.startsWith("/uploads/") ? `${API_BASE_URL}${value}` : value;
+  const previewSrc = resolveMediaUrl(value);
 
   async function handleFile(event) {
     const file = event.target.files?.[0];

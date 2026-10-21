@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Heart, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, User, X } from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 const STORE_NAME = "Wasooli Store";
 const STORE_PHONE = "0300 1234567";
@@ -48,7 +49,7 @@ function WishlistItem({ item, onView, onRemove }) {
         onClick={onView}
         className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
       >
-        <img src={item.image} alt="" className="h-full w-full object-cover" />
+        <img src={resolveMediaUrl(item.image)} alt="" className="h-full w-full object-cover" />
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -95,7 +96,7 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
         onClick={onNavigate}
         className="size-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
       >
-        <img src={item.image} alt="" className="h-full w-full object-cover" />
+        <img src={resolveMediaUrl(item.image)} alt="" className="h-full w-full object-cover" />
       </Link>
 
       <div className="min-w-0 flex-1">

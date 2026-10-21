@@ -21,6 +21,7 @@ import {
 import { getProductInstructions, generateBotResponse } from "../data/productInstructions";
 import { formatPrice } from "../data/product";
 import { useCart } from "../cart/CartContext";
+import { resolveMediaUrl } from "../utils/mediaUrl";
   
 export default function ProductBotModal({ product, isOpen, onClose }) {
   const { addItem, openCart } = useCart();
@@ -195,7 +196,7 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 rounded-2xl">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <img
-                    src={product.image}
+                    src={resolveMediaUrl(product.image)}
                     alt={product.title}
                     className="size-14 rounded-xl object-cover shrink-0"
                   />

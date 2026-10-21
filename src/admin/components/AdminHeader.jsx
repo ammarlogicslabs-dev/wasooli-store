@@ -1,12 +1,13 @@
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAdminAuth } from "../auth/AdminAuthContext";
 import { useAdminData } from "../hooks/useAdminData";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export default function AdminHeader({ collapsed, onToggleCollapse, onOpenMobile }) {
   const { admin } = useAdminAuth();
   const { settings } = useAdminData();
   const initial = (admin?.name || "A").charAt(0).toUpperCase();
-  const avatarUrl = settings.avatarUrl;
+  const avatarUrl = resolveMediaUrl(settings.avatarUrl);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">

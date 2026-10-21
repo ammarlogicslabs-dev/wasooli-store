@@ -23,6 +23,7 @@ import {
   saveSavedAddress,
   validateCouponApi,
 } from "../services/storage/adminDataService";
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 const PROVINCES = [
   "Punjab",
@@ -941,7 +942,7 @@ export default function Checkout() {
               {orderItems.map((item) => (
                 <li key={item.id} className="flex gap-3">
                   <img
-                    src={item.image}
+                    src={resolveMediaUrl(item.image)}
                     alt=""
                     className="size-14 shrink-0 rounded-xl border border-slate-100 object-cover"
                   />
