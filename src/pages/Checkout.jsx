@@ -25,6 +25,7 @@ import {
   validateCouponApi,
 } from "../services/storage/adminDataService";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { getUnitPrice, normalizePriceTiers, tierLabelForQty } from "../utils/priceTiers";
 
 const PROVINCES = [
   "Punjab",
@@ -148,22 +149,43 @@ function readBuyNowItem(state) {
   const product = buyNow?.product;
   if (!product || product.id == null || !product.title) return null;
 
-  const price = Number(product.price);
-  if (!Number.isFinite(price)) return null;
+  const basePrice = Number(product.price);
+  if (!Number.isFinite(basePrice)) return null;
 
   const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : null;
   const requested = Math.max(1, Number(buyNow.quantity) || 1);
   const quantity = stock === null ? requested : Math.min(stock, requested);
   if (quantity <= 0) return null;
 
+  const priceTiers = normalizePriceTiers(product.priceTiers);
+  const unitPrice = getUnitPrice({ price: basePrice, priceTiers }, quantity);
+
   return {
     id: product.id,
     slug: product.slug,
     title: product.title,
     image: product.image,
-    price,
+    price: unitPrice,
+    basePrice,
+    priceTiers,
     stock,
     quantity,
+  };
+}
+
+function resolveOrderLine(item, catalog) {
+  const live = catalog.find((product) => Number(product.id) === Number(item.id));
+  const source = {
+    price: live?.price ?? item.basePrice ?? item.price,
+    priceTiers: live?.priceTiers ?? item.priceTiers,
+  };
+  const unitPrice = getUnitPrice(source, item.quantity);
+  return {
+    ...item,
+    price: unitPrice,
+    basePrice: Number(source.price) || 0,
+    priceTiers: normalizePriceTiers(source.priceTiers),
+    tierLabel: tierLabelForQty(source, item.quantity),
   };
 }
 
@@ -180,7 +202,7 @@ function OrderSuccessMark() {
   const reduce = useReducedMotion();
 
   return (
-    <div className="relative mx-auto size-[6.5rem] lg:mx-0" aria-hidden="true">
+    <div className="relative mx-auto size-26 lg:mx-0" aria-hidden="true">
       {[0.15, 0.4].map((delay) => (
         <motion.span
           key={delay}
@@ -311,9 +333,11 @@ export default function Checkout() {
       liveStock === null
         ? rawBuyNowItem.quantity
         : Math.min(liveStock, rawBuyNowItem.quantity);
-    return { ...rawBuyNowItem, stock: liveStock, quantity };
+    return resolveOrderLine({ ...rawBuyNowItem, stock: liveStock, quantity }, products);
   })();
-  const orderItems = buyNowItem ? [buyNowItem] : items;
+  const orderItems = (buyNowItem ? [buyNowItem] : items).map((item) =>
+    resolveOrderLine(item, products)
+  );
   const [form, setForm] = useState(() => ({
     ...EMPTY_FORM,
     fullName: user?.name || "",
@@ -443,10 +467,22 @@ export default function Checkout() {
     try {
       await saveSavedAddress(addressToSave).catch(() => {});
       const placed = await placeOrderApi({
-        items: orderItems.map((item) => ({
-          productId: Number(item.id),
-          quantity: Number(item.quantity) || 1,
-        })),
+        items: orderItems.map((item) => {
+          const quantity = Number(item.quantity) || 1;
+          const unitPrice = getUnitPrice(
+            { price: item.basePrice ?? item.price, priceTiers: item.priceTiers },
+            quantity
+          );
+          return {
+            productId: Number(item.id),
+            quantity,
+            unitPrice,
+            tierLabel: item.tierLabel || tierLabelForQty(
+              { price: item.basePrice ?? item.price, priceTiers: item.priceTiers },
+              quantity
+            ),
+          };
+        }),
         delivery: {
           fullName: form.fullName.trim(),
           phone: form.phone.trim(),
@@ -951,7 +987,10 @@ export default function Checkout() {
                     <p className="line-clamp-2 text-sm font-semibold text-slate-900">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">Qty {item.quantity}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Qty {item.quantity} × {formatPrice(item.price)}
+                      {item.tierLabel ? ` · ${item.tierLabel}` : ""}
+                    </p>
                   </div>
                   <p className="text-sm font-semibold text-slate-900">
                     {formatPrice(item.price * item.quantity)}
@@ -1032,7 +1071,7 @@ export default function Checkout() {
       </main>
 
       {confirmOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-60 flex items-center justify-center px-4">
           <button
             type="button"
             aria-label="Cancel order confirmation"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import {
   ArrowLeft,
   Bot,
@@ -21,9 +22,18 @@ import { formatPrice } from "../data/product";
 import { getProductInstructions } from "../data/productInstructions";
 import ProductCard from "../components/ProductCard";
 import ProductBotModal from "../components/ProductBotModal";
+import QuantityStepper from "../components/QuantityStepper";
 import StoreHeader from "../components/StoreHeader";
+import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { pushRecentlyViewed } from "../utils/recentlyViewed";
+import {
+  formatTierRange,
+  getActiveTier,
+  getUnitPrice,
+  lineTotal,
+} from "../utils/priceTiers";
 
 const STORE_NAME = "Wasooli Store";
 
@@ -45,7 +55,8 @@ function Stars({ rating }) {
 
 export default function ProductDetail() {
   const { slug } = useParams();
-  const navigate = useNavigate();
+  const navigate = useSmoothNavigate();
+  const ensureLogin = useEnsureLogin("Please log in first to continue to checkout.");
   const { products, addItem, isWished, toggleWishlist } = useCart();
   const addedTimer = useRef(null);
 
@@ -69,6 +80,12 @@ export default function ProductDetail() {
     setOpenPolicy("shipping");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
+
+  useEffect(() => {
+    if (product?.id != null) {
+      pushRecentlyViewed(product.id);
+    }
+  }, [product?.id]);
 
   useEffect(() => {
     return () => {
@@ -122,10 +139,21 @@ export default function ProductDetail() {
   const outOfStock = stock !== null && stock === 0 || stock === null;
   const lowStock = stock !== null && stock <= 5 && stock > 0;
 
+  const priceTiers = getActiveTier(product);
+  const unitPrice = getUnitPrice(product, quantity);
   const hasDiscount = product.oldPrice > product.price;
   const discount = hasDiscount
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
+  const saveVsBase =
+    priceTiers.length > 0 && Number(product.price) > unitPrice
+      ? Number(product.price) - unitPrice
+      : 0;
+  const nextTier = priceTiers.find((tier) => quantity < tier.minQty);
+  const nextTierSave =
+    nextTier && Number(product.price) > nextTier.price
+      ? Number(product.price) - nextTier.price
+      : 0;
 
   const description = product.description || product.shortDescription;
   const hasFeatures = product.features?.length > 0;
@@ -152,21 +180,23 @@ export default function ProductDetail() {
   function handleBuyNow() {
     if (outOfStock) return;
 
-    navigate("/checkout", {
-      state: {
-        buyNow: {
-          product: {
-            id: product.id,
-            slug: product.slug,
-            title: product.title,
-            image: product.image,
-            price: product.price,
-            stock: product.stock,
-          },
-          quantity,
+    const buyNowState = {
+      buyNow: {
+        product: {
+          id: product.id,
+          slug: product.slug,
+          title: product.title,
+          image: product.image,
+          price: product.price,
+          priceTiers: product.priceTiers || [],
+          stock: product.stock,
         },
+        quantity,
       },
-    });
+    };
+
+    if (!ensureLogin(undefined, { pathname: "/checkout", state: buyNowState })) return;
+    navigate("/checkout", { state: buyNowState });
   }
 
   const cartLabel = outOfStock ? "Out of Stock" : added ? "Added to Cart!" : "Add to Cart";
@@ -202,7 +232,7 @@ export default function ProductDetail() {
         </Link>
       </div>
 
-      <section className="mx-auto grid max-w-8xl 2xl:max-w-[1536px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
+      <section className="mx-auto grid max-w-8xl 2xl:max-w-384 gap-8 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-10">
         {/* Gallery */}
         <div className="lg:top-24 lg:self-start">
           <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
@@ -322,8 +352,9 @@ export default function ProductDetail() {
           <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-5">
             <div className="flex flex-wrap items-end gap-3">
               <span className="text-2xl font-bold text-slate-900">
-                {formatPrice(product.price)}
+                {formatPrice(unitPrice)}
               </span>
+              <span className="pb-1 text-sm text-slate-500">/ unit</span>
 
               {hasDiscount && (
                 <>
@@ -337,12 +368,53 @@ export default function ProductDetail() {
               )}
             </div>
 
+            {saveVsBase > 0 ? (
+              <p className="mt-2 text-sm font-medium text-emerald-700">
+                Bulk price — you save {formatPrice(saveVsBase)} per unit vs list price
+              </p>
+            ) : null}
+
             {hasDiscount && (
               <p className="mt-2 text-sm text-emerald-700">
                 You save {formatPrice(product.oldPrice - product.price)} on this
                 item
               </p>
             )}
+
+            {nextTier && nextTierSave > 0 ? (
+              <p className="mt-2 text-sm text-brand-700">
+                Buy {nextTier.minQty}+ and save {formatPrice(nextTierSave)} per unit
+              </p>
+            ) : null}
+
+            {priceTiers.length > 0 ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-3 py-2">Qty</th>
+                      <th className="px-3 py-2">Unit price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {priceTiers.map((tier) => {
+                      const active =
+                        quantity >= tier.minQty &&
+                        (tier.maxQty == null || quantity <= tier.maxQty);
+                      return (
+                        <tr
+                          key={formatTierRange(tier)}
+                          className={`border-t border-slate-100 ${active ? "bg-brand-50/70 font-semibold text-brand-800" : "text-slate-700"}`}
+                        >
+                          <td className="px-3 py-2">{formatTierRange(tier)}</td>
+                          <td className="px-3 py-2">{formatPrice(tier.price)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
 
             {lowStock && (
               <p className="mt-2 text-sm font-medium text-amber-600">
@@ -362,42 +434,15 @@ export default function ProductDetail() {
               Quantity
             </p>
             <div className="product-buy-row flex items-center gap-1.5 sm:gap-3">
-              <div className="flex h-11 shrink-0 items-center rounded-3xl border border-slate-200 bg-white sm:h-13">
-                <button
-                  type="button"
-                  disabled={quantity <= 1}
-                  onClick={() =>
-                    setQuantity((current) => Math.max(1, current - 1))
-                  }
-                  aria-label="Decrease quantity"
-                  className="grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
-                >
-                  <Minus size={16} />
-                </button>
-
-                <span
-                  className="min-w-5 text-center text-sm font-semibold text-slate-900 sm:min-w-8"
-                  aria-live="polite"
-                >
-                  {quantity}
-                </span>
-
-                <button
-                  type="button"
-                  disabled={stock !== null && quantity >= stock}
-                  onClick={() =>
-                    setQuantity((current) =>
-                      stock === null
-                        ? current + 1
-                        : Math.min(stock, current + 1)
-                    )
-                  }
-                  aria-label="Increase quantity"
-                  className="grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
+              <QuantityStepper
+                size="lg"
+                value={quantity}
+                min={1}
+                max={stock === null ? Infinity : stock}
+                disabled={outOfStock}
+                onChange={setQuantity}
+                label="Quantity"
+              />
 
               <button
                 type="button"
@@ -425,9 +470,9 @@ export default function ProductDetail() {
             </div>
 
             <p className="mt-3 text-sm text-slate-500">
-              Total:{" "}
+              {quantity} × {formatPrice(unitPrice)} ={" "}
               <span className="font-semibold text-slate-900">
-                {formatPrice(product.price * quantity)}
+                {formatPrice(lineTotal(product, quantity))}
               </span>
             </p>
           </div>
@@ -677,25 +722,9 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-100">
-                {[
-                  "The cable matches the listing and the connection has stayed stable.",
-                  "It arrived sealed and was simple to connect to the router.",
-                  "Solid build for the price. I would order another length from Wasooli Store.",
-                ].map((note) => (
-                  <li key={note} className="px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Stars rating={product.rating} />
-                      <span className="text-xs font-semibold text-slate-500">
-                        Verified buyer
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      {note}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                Written reviews are not available yet. Rating count above comes from the store catalog.
+              </p>
             </div>
           )}
 

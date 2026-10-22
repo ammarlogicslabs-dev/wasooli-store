@@ -13,16 +13,15 @@ import {
   KeyRound,
   LogOut,
   MapPin,
-  Minus,
   Navigation,
   Package,
   PackageCheck,
   Phone,
-  Plus,
   ShoppingBag,
   Trash2,
   Truck,
 } from "lucide-react";
+import QuantityStepper from "../components/QuantityStepper";
 import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
@@ -36,40 +35,40 @@ const TRACKING_STEPS = [
     key: "confirmed",
     title: "Order Confirmed",
     shortLabel: "Confirmed",
-    location: "Wasooli Store HQ · Karachi",
-    description: "Your order has been verified and confirmed by Wasooli Store.",
+    location: "Wasooli Store",
+    description: "Your order has been verified and confirmed.",
     icon: CheckCircle2,
   },
   {
     key: "packed",
     title: "Order Packed",
     shortLabel: "Packed",
-    location: "Fulfillment Warehouse · Karachi",
-    description: "Items have been quality-checked, sealed, and packed for dispatch.",
+    location: "Fulfillment",
+    description: "Items have been packed and are ready for dispatch.",
     icon: Box,
   },
   {
     key: "handover",
     title: "Handed Over to Delivery Partner",
     shortLabel: "Handed Over",
-    location: "Wasooli Express Sortation Hub",
-    description: "Package has been handed over to our courier partner and scanned at the sorting facility.",
+    location: "Courier partner",
+    description: "Package has been handed over to the delivery partner.",
     icon: Truck,
   },
   {
     key: "rider",
-    title: "Rider Will Arrive Soon",
+    title: "Out for Delivery",
     shortLabel: "Out for Delivery",
-    location: "Local Delivery Hub",
-    description: "Rider Muhammad Ahmed (0300-4829104) is on the way to your address. Keep your phone reachable.",
+    location: "Local delivery",
+    description: "Your order is out for delivery. Keep your phone reachable.",
     icon: Navigation,
   },
   {
     key: "delivered",
     title: "Delivered",
     shortLabel: "Delivered",
-    location: "Customer Address",
-    description: "Package has been delivered successfully and signed off at the destination.",
+    location: "Delivered",
+    description: "Package has been delivered successfully.",
     icon: PackageCheck,
   },
 ];
@@ -338,7 +337,7 @@ export default function Account() {
           type="button"
           aria-label="Close logout confirmation"
           onClick={dismissLogoutPrompt}
-          className="fixed inset-0 z-[9998] cursor-default bg-slate-900/50"
+          className="fixed inset-0 z-9998 cursor-default bg-slate-900/50"
         />
       )}
 
@@ -698,28 +697,6 @@ export default function Account() {
                                 ) : null}
                               </div>
 
-                              <div className="flex items-center gap-1.5">
-                                {/* {!isDelivered && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setLiveSimulating(false);
-                                      updateOrderStage(order.id, stageIndex + 1);
-                                    }}
-                                    className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
-                                  >
-                                    Next step
-                                  </button>
-                                )} */}
-                                {/* <button
-                                  type="button"
-                                  onClick={() => replayOrderTracking(order.id)}
-                                  className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-brand-500 hover:text-brand-600"
-                                >
-                                  <RotateCcw size={11} />
-                                  Replay live
-                                </button> */}
-                              </div>
                             </div>
 
                             {/* Horizontal Daraz-style Stepper */}
@@ -781,7 +758,7 @@ export default function Account() {
                                   return (
                                     <li key={step.key} className="relative">
                                       <span
-                                        className={`absolute -left-[24px] top-1 grid size-3.5 place-items-center rounded-full border-2 ${
+                                        className={`absolute -left-6 top-1 grid size-3.5 place-items-center rounded-full border-2 ${
                                           current
                                             ? "border-brand-500 bg-brand-500 ring-4 ring-brand-100"
                                             : reached
@@ -975,29 +952,14 @@ export default function Account() {
                             </Link>
                             <p className="mt-1 text-xs text-slate-500">{formatPrice(item.price)} each</p>
                             <div className="mt-2 flex items-center justify-between gap-2">
-                              <div className="flex h-8 items-center rounded-lg border border-slate-200 bg-white">
-                                <button
-                                  type="button"
-                                  disabled={item.quantity <= 1}
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  aria-label={`Decrease quantity of ${item.title}`}
-                                  className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
-                                >
-                                  <Minus size={14} />
-                                </button>
-                                <span className="min-w-6 text-center text-sm font-semibold text-slate-900">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={item.quantity >= maxQuantity}
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  aria-label={`Increase quantity of ${item.title}`}
-                                  className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
-                                >
-                                  <Plus size={14} />
-                                </button>
-                              </div>
+                              <QuantityStepper
+                                size="sm"
+                                value={item.quantity}
+                                min={1}
+                                max={maxQuantity}
+                                onChange={(next) => updateQuantity(item.id, next)}
+                                label={`quantity of ${item.title}`}
+                              />
                               <p className="text-sm font-semibold text-slate-900">
                                 {formatPrice(item.price * item.quantity)}
                               </p>

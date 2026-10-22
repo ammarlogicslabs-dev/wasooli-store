@@ -116,7 +116,7 @@ export default function OrderDetailsPage() {
           </section>
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Tracking timeline</h2>
-            {history.length === 0 ? <p className="mt-3 text-sm text-slate-500">No admin updates yet. The customer page is still using the timed demo timeline.</p> : (
+            {history.length === 0 ? <p className="mt-3 text-sm text-slate-500">No status updates yet for this order.</p> : (
               <ol className="mt-4 space-y-4 border-l border-slate-200 pl-4">
                 {history.map((event, index) => (
                   <li key={`${event.at}-${index}`}>

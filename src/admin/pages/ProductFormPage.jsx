@@ -12,8 +12,10 @@ import { resolveMediaUrl } from "../../utils/mediaUrl";
 import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
+import PriceTiersEditor from "../components/PriceTiersEditor";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
+import { normalizePriceTiers } from "../../utils/priceTiers";
 
 const EMPTY = {
   title: "",
@@ -32,6 +34,7 @@ const EMPTY = {
   description: "",
   featuresText: "",
   specificationsText: "",
+  priceTiers: [],
   botInstructions: { ...EMPTY_BOT_INSTRUCTIONS },
 };
 
@@ -41,6 +44,14 @@ function instructionsForForm(product) {
   if (!product) return { ...EMPTY_BOT_INSTRUCTIONS };
   if (product.botInstructions) return normalizeBotInstructions(product.botInstructions);
   return buildDefaultInstructions(product);
+}
+
+function tiersToForm(tiers) {
+  return normalizePriceTiers(tiers).map((tier) => ({
+    minQty: String(tier.minQty),
+    maxQty: tier.maxQty == null ? "" : String(tier.maxQty),
+    price: String(tier.price),
+  }));
 }
 
 function toForm(product) {
@@ -55,6 +66,7 @@ function toForm(product) {
     extraImages: extras,
     featuresText: (product.features || []).join("\n"),
     specificationsText: (product.specifications || []).map((item) => `${item.label} | ${item.value}`).join("\n"),
+    priceTiers: tiersToForm(product.priceTiers),
     botInstructions: instructionsForForm(product),
   };
 }
@@ -267,6 +279,13 @@ export default function ProductFormPage() {
           </div>
         </aside>
       </div>
+
+      <PriceTiersEditor
+        value={form.priceTiers}
+        onChange={(priceTiers) => update("priceTiers", priceTiers)}
+        basePrice={form.price}
+        error={errors.priceTiers}
+      />
 
       <BotInstructionsEditor
         value={form.botInstructions}

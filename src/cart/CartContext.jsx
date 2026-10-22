@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { useLoginPrompt } from "../auth/LoginPromptContext";
 import {
   addWishlistApi,
   clearCartApi,
-  ensureAdminSeed,
   fetchCartApi,
   fetchNotificationsApi,
   fetchWishlistApi,
@@ -15,6 +15,9 @@ import {
 } from "../services/storage/adminDataService";
 import { DATA_EVENT } from "../services/storage/storageService";
 import { getToken } from "../services/api/client";
+import { getUnitPrice, hydrateProductList, normalizePriceTiers } from "../utils/priceTiers";
+
+const WISHLIST_LOGIN_MESSAGE = "Please log in first to save items to your wishlist.";
 
 const CartContext = createContext(null);
 const STOCK_KEY = "wasooli_stock";
@@ -30,6 +33,7 @@ function readStorage(key, fallback) {
 
 export function CartProvider({ children }) {
   const { user } = useAuth();
+  const { requestLogin } = useLoginPrompt();
   const [items, setItems] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -43,7 +47,7 @@ export function CartProvider({ children }) {
   itemsRef.current = items;
 
   const products = useMemo(() => {
-    const list = apiProducts.length ? apiProducts : getStorefrontProducts();
+    const list = hydrateProductList(apiProducts.length ? apiProducts : getStorefrontProducts());
     return list.map((product) => {
       const override = stockMap?.[product.id];
       return Number.isFinite(Number(override))
@@ -77,10 +81,6 @@ export function CartProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    ensureAdminSeed();
   }, []);
 
   useEffect(() => {
@@ -168,6 +168,8 @@ export function CartProvider({ children }) {
     (product, quantity = 1) => {
       const requested = Math.max(1, Number(quantity) || 1);
       const stock = Number.isFinite(product.stock) ? product.stock : null;
+      const tiers = normalizePriceTiers(product.priceTiers);
+      const basePrice = Number(product.price) || 0;
 
       setItems((current) => {
         const existing = current.find((item) => item.id === product.id);
@@ -179,10 +181,18 @@ export function CartProvider({ children }) {
 
         if (nextQty <= 0) return current;
 
+        const unitPrice = getUnitPrice(product, nextQty);
         const next = existing
           ? current.map((item) =>
               item.id === product.id
-                ? { ...item, quantity: nextQty, stock }
+                ? {
+                    ...item,
+                    quantity: nextQty,
+                    stock,
+                    price: unitPrice,
+                    basePrice,
+                    priceTiers: tiers,
+                  }
                 : item
             )
           : [
@@ -192,7 +202,9 @@ export function CartProvider({ children }) {
                 slug: product.slug,
                 title: product.title,
                 image: product.image,
-                price: product.price,
+                price: unitPrice,
+                basePrice,
+                priceTiers: tiers,
                 stock,
                 quantity: nextQty,
               },
@@ -213,13 +225,26 @@ export function CartProvider({ children }) {
           const stock = Number.isFinite(item.stock) ? item.stock : null;
           const nextQty = Math.max(1, Number(quantity) || 1);
           const capped = stock === null ? nextQty : Math.min(stock, nextQty);
-          return [{ ...item, quantity: capped }];
+          const catalog = products.find((product) => Number(product.id) === Number(id));
+          const source = {
+            price: catalog?.price ?? item.basePrice ?? item.price,
+            priceTiers: catalog?.priceTiers ?? item.priceTiers,
+          };
+          return [
+            {
+              ...item,
+              quantity: capped,
+              price: getUnitPrice(source, capped),
+              basePrice: Number(source.price) || 0,
+              priceTiers: normalizePriceTiers(source.priceTiers),
+            },
+          ];
         });
         void persistCart(next);
         return next;
       });
     },
-    [persistCart]
+    [persistCart, products]
   );
 
   const removeItem = useCallback(
@@ -239,6 +264,8 @@ export function CartProvider({ children }) {
   }, []);
 
   const toggleWishlist = useCallback(async (id) => {
+    if (!requestLogin(undefined, WISHLIST_LOGIN_MESSAGE)) return;
+
     const productId = Number(id);
     const exists = wishlist.some((entry) => entry.id === productId);
     setWishlist((current) => {
@@ -265,7 +292,7 @@ export function CartProvider({ children }) {
         /* ignore */
       }
     }
-  }, [wishlist]);
+  }, [wishlist, requestLogin]);
 
   const isWished = useCallback(
     (id) => wishlist.some((entry) => entry.id === Number(id)),
@@ -299,13 +326,31 @@ export function CartProvider({ children }) {
     }
   }, []);
 
-  const cartCount = items.reduce((total, item) => total + item.quantity, 0);
+  const pricedItems = useMemo(
+    () =>
+      items.map((item) => {
+        const catalog = products.find((product) => Number(product.id) === Number(item.id));
+        const source = {
+          price: catalog?.price ?? item.basePrice ?? item.price,
+          priceTiers: catalog?.priceTiers ?? item.priceTiers,
+        };
+        return {
+          ...item,
+          price: getUnitPrice(source, item.quantity),
+          basePrice: Number(source.price) || 0,
+          priceTiers: normalizePriceTiers(source.priceTiers),
+        };
+      }),
+    [items, products]
+  );
+
+  const cartCount = pricedItems.reduce((total, item) => total + item.quantity, 0);
   const notificationCount = notifications.filter((item) => !item.read).length;
 
   const value = useMemo(
     () => ({
       products,
-      items,
+      items: pricedItems,
       cartCount,
       ready,
       addItem,
@@ -327,7 +372,7 @@ export function CartProvider({ children }) {
     }),
     [
       products,
-      items,
+      pricedItems,
       cartCount,
       ready,
       addItem,

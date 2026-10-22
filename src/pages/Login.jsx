@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { isAdminIdentifier, useAdminAuth } from "../admin/auth/AdminAuthContext";
 import { useAuth } from "../auth/AuthContext";
+import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import {
   AlertCircle,
   ArrowRight,
@@ -50,10 +51,12 @@ function validate({ identifier, password }) {
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const { login: adminLogin, isAuthenticated: isAdminAuthenticated } = useAdminAuth();
-  const navigate = useNavigate();
+  const navigate = useSmoothNavigate();
   const location = useLocation();
-  const redirectPath = location.state?.from?.pathname;
+  const fromLocation = location.state?.from;
+  const redirectPath = fromLocation?.pathname || (typeof fromLocation === "string" ? fromLocation : "");
   const from = redirectPath || "/shop";
+  const fromState = fromLocation && typeof fromLocation === "object" ? fromLocation.state : undefined;
   const wantsAdmin = Boolean(redirectPath && redirectPath.startsWith("/admin"));
   const loginTimer = useRef(null);
 
@@ -74,9 +77,9 @@ export default function Login() {
       return;
     }
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      navigate(from, { replace: true, state: fromState });
     }
-  }, [isAuthenticated, isAdminAuthenticated, from, navigate, redirectPath, wantsAdmin]);
+  }, [isAuthenticated, isAdminAuthenticated, from, fromState, navigate, redirectPath, wantsAdmin]);
 
   useEffect(() => {
     return () => {
@@ -119,7 +122,7 @@ export default function Login() {
       const nextPath = signingInAsAdmin
         ? (wantsAdmin ? from : "/admin")
         : (wantsAdmin ? "/shop" : from);
-      navigate(nextPath, { replace: true });
+      navigate(nextPath, { replace: true, state: signingInAsAdmin ? undefined : fromState });
     } else {
       setAuthError(result.message);
     }
@@ -135,7 +138,7 @@ export default function Login() {
 
   return (
     <main className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 lg:flex lg:flex-col lg:justify-start lg:gap-18 xl:gap-20 lg:p-12 xl:p-16">
+      <aside className="relative hidden overflow-hidden bg-linear-to-br from-brand-600 via-brand-500 to-brand-700 lg:flex lg:flex-col lg:justify-start lg:gap-18 xl:gap-20 lg:p-12 xl:p-16">
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
 

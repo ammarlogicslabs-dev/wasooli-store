@@ -29,7 +29,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader crumbs={[{ label: "Customers" }]} title="Customers" detail="Demo customers and people from saved orders. Inactive keeps the record." />
+      <PageHeader crumbs={[{ label: "Customers" }]} title="Customers" detail="Customers from the API. Inactive keeps the record." />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-2">
           <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search name, phone, or city" className={inputClass} />

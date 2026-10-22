@@ -32,7 +32,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader crumbs={[{ label: "Admin Profile" }]} title="Admin Profile" detail="Display details for the demo admin. The password stays admin123." />
+      <PageHeader crumbs={[{ label: "Admin Profile" }]} title="Admin Profile" detail="Your admin profile details." />
       <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <p className="mb-1.5 text-sm font-semibold text-slate-900">Avatar</p>

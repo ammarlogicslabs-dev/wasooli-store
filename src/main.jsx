@@ -6,6 +6,7 @@ import '@fontsource-variable/inter'
 import App from './App.jsx'
 import { AdminAuthProvider } from './admin/auth/AdminAuthContext.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
+import { LoginPromptProvider } from './auth/LoginPromptContext.jsx'
 import { CartProvider } from './cart/CartContext.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -13,9 +14,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <AdminAuthProvider>
-          <CartProvider>
-            <App />
-          </CartProvider>
+          <LoginPromptProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </LoginPromptProvider>
         </AdminAuthProvider>
       </AuthProvider>
     </BrowserRouter>

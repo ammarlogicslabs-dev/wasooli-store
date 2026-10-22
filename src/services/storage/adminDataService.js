@@ -1,4 +1,11 @@
 import { normalizeBotInstructions } from "../../data/productInstructions";
+import {
+  hydrateProductList,
+  hydrateProductPriceTiers,
+  normalizePriceTiers,
+  PRICE_TIERS_BOT_KEY,
+  validatePriceTiers,
+} from "../../utils/priceTiers";
 import { apiRequest } from "../api/client";
 import { ORDER_FLOW, paymentBucket } from "./orderStatus";
 
@@ -64,7 +71,7 @@ export async function refreshAdminData() {
     apiRequest("/api/settings"),
     apiRequest("/api/admin/coupons", { kind: "admin" }),
   ]);
-  cache.products = Array.isArray(products) ? products : [];
+  cache.products = hydrateProductList(Array.isArray(products) ? products : []);
   cache.categories = Array.isArray(categories) ? categories : [];
   cache.orders = Array.isArray(orders) ? orders : [];
   cache.customers = Array.isArray(customers) ? customers : [];
@@ -79,7 +86,7 @@ export async function refreshAdminData() {
 
 export async function refreshStorefrontProducts() {
   const result = await apiRequest("/api/products?pageSize=100");
-  cache.storefront = Array.isArray(result?.items) ? result.items : [];
+  cache.storefront = hydrateProductList(Array.isArray(result?.items) ? result.items : []);
   emit(STORAGE_KEYS.products);
   return cache.storefront;
 }
@@ -97,7 +104,9 @@ function snapshot() {
 }
 
 export function listProducts() {
-  return cache.products.slice().sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  return hydrateProductList(cache.products)
+    .slice()
+    .sort((a, b) => String(a.title).localeCompare(String(b.title)));
 }
 
 export function getCatalog() {
@@ -105,13 +114,15 @@ export function getCatalog() {
 }
 
 export function getStorefrontProducts() {
-  return cache.storefront.length
+  const list = cache.storefront.length
     ? cache.storefront
     : cache.products.filter((product) => product.status === "active");
+  return hydrateProductList(list);
 }
 
 export function getProduct(id) {
-  return listProducts().find((product) => Number(product.id) === Number(id)) || null;
+  const found = listProducts().find((product) => Number(product.id) === Number(id)) || null;
+  return found ? hydrateProductPriceTiers(found) : null;
 }
 
 export function listCategories() {
@@ -260,6 +271,9 @@ export function validateProduct(input, products = listProducts()) {
   if (!Number.isInteger(stock) || stock < 0) errors.stock = "Stock must be a whole number.";
   if (!["active", "draft", "archived"].includes(input.status)) errors.status = "Choose a valid status.";
 
+  const tierError = validatePriceTiers(input.priceTiers);
+  if (tierError) errors.priceTiers = tierError;
+
   const skuTaken = products.some((product) => product.sku.toLowerCase() === sku.toLowerCase() && Number(product.id) !== Number(input.id));
   if (sku && skuTaken) errors.sku = "This SKU is already used.";
   const slugTaken = products.some((product) => product.slug === slug && Number(product.id) !== Number(input.id));
@@ -286,6 +300,15 @@ function toProductPayload(input) {
 
   const botInstructions = normalizeBotInstructions(input.botInstructions);
   const hasBotContent = Object.values(botInstructions).some((value) => Array.isArray(value) && value.length > 0);
+  const priceTiers = normalizePriceTiers(input.priceTiers);
+  // Persist tiers inside botInstructions JSON until the API gains a real priceTiers field.
+  const botPayload =
+    hasBotContent || priceTiers.length
+      ? {
+          ...botInstructions,
+          ...(priceTiers.length ? { [PRICE_TIERS_BOT_KEY]: priceTiers } : {}),
+        }
+      : null;
 
   return {
     title: String(input.title).trim(),
@@ -304,7 +327,7 @@ function toProductPayload(input) {
     description: String(input.description || "").trim(),
     features: Array.isArray(input.features) ? input.features : linesToList(input.featuresText),
     specifications: specs,
-    botInstructions: hasBotContent ? botInstructions : null,
+    botInstructions: botPayload,
     rating: Number(input.rating) || 0,
     reviews: Number(input.reviews) || 0,
   };
@@ -542,14 +565,6 @@ export function getReports(days = 30, source = null) {
     categories: [...categorySales.values()].sort((a, b) => b.revenue - a.revenue),
     refunds: orders.filter((order) => order.paymentStatus === "refunded"),
   };
-}
-
-export function ensureAdminSeed() {
-  // Catalog, settings, and coupons now live in the API.
-}
-
-export function resetDemoData() {
-  return { ok: false, message: "Demo reset is disabled while using the live API database." };
 }
 
 export function exportOrdersCsv(orders) {

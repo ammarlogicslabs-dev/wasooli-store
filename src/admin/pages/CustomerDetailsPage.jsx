@@ -62,7 +62,7 @@ export default function CustomerDetailsPage() {
           <h2 className="text-base font-semibold text-slate-900">Order history</h2>
           <p className="text-sm font-semibold text-slate-900">{formatPrice(customer.spent || 0)} spent</p>
         </div>
-        {orders.length === 0 ? <p className="mt-4 text-sm text-slate-500">This demo customer has no saved orders yet.</p> : (
+        {orders.length === 0 ? <p className="mt-4 text-sm text-slate-500">This customer has no saved orders yet.</p> : (
           <ul className="mt-3 divide-y divide-slate-100">
             {orders.map((order) => (
               <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-3">

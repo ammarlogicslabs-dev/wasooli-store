@@ -4,10 +4,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAdminAuth } from "./admin/auth/AdminAuthContext";
 import AdminLayout from "./admin/layouts/AdminLayout";
-import { useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ScrollToTop from "./layout/ScrollToTop";
+import RequireLogin from "./components/RequireLogin";
+import NavigationProgress from "./components/NavigationProgress";
 import PageLoader from "./components/PageLoader";
+import PageTransition from "./layout/PageTransition";
+import ScrollToTop from "./layout/ScrollToTop";
 
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetails"));
@@ -30,8 +32,7 @@ const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
 
 function RootRedirect() {
-  const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? "/shop" : "/login"} replace />;
+  return <Navigate to="/shop" replace />;
 }
 
 function RequireAdmin({ children }) {
@@ -48,16 +49,26 @@ function RequireAdmin({ children }) {
 export default function App() {
   return (
     <>
-    <ScrollToTop />
+      <ScrollToTop />
+      <NavigationProgress />
       <Suspense fallback={<PageLoader />}>
-        
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
-          <Route path="/products/:slug" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+
+          <Route element={<PageTransition />}>
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/products/:slug" element={<ProductDetail />} />
+            <Route
+              path="/checkout"
+              element={
+                <RequireLogin message="Please log in first to continue to checkout.">
+                  <Checkout />
+                </RequireLogin>
+              }
+            />
+            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          </Route>
 
           <Route
             path="/admin"
@@ -67,21 +78,23 @@ export default function App() {
               </RequireAdmin>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route path="products/new" element={<ProductFormPage />} />
-            <Route path="products/:id/edit" element={<ProductFormPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="orders/:id" element={<OrderDetailsPage />} />
-            <Route path="inventory" element={<InventoryPage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            <Route path="customers/:key" element={<CustomerDetailsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="coupons" element={<CouponsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="*" element={<Navigate to="/admin" replace />} />
+            <Route element={<PageTransition />}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="products/new" element={<ProductFormPage />} />
+              <Route path="products/:id/edit" element={<ProductFormPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="orders/:id" element={<OrderDetailsPage />} />
+              <Route path="inventory" element={<InventoryPage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="customers/:key" element={<CustomerDetailsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="coupons" element={<CouponsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/shop" replace />} />

@@ -1,10 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, Mail, MapPin, Minus, Phone, Plus, ShoppingBag, Trash2, User, X } from "lucide-react";
+import { Heart, LogIn, Mail, MapPin, Phone, ShoppingBag, Trash2, User, X } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
+import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import QuantityStepper from "./QuantityStepper";
 
 const STORE_NAME = "Wasooli Store";
 const STORE_PHONE = "0300 1234567";
@@ -112,32 +116,14 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
         </p>
 
         <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="flex h-8 items-center rounded-lg border border-slate-200 bg-white">
-            <button
-              type="button"
-              disabled={item.quantity <= 1}
-              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
-              aria-label={`Decrease quantity of ${item.title}`}
-              className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              <Minus size={14} />
-            </button>
-            <span
-              className="min-w-6 text-center text-sm font-semibold text-slate-900"
-              aria-live="polite"
-            >
-              {item.quantity}
-            </span>
-            <button
-              type="button"
-              disabled={item.quantity >= maxQuantity}
-              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
-              aria-label={`Increase quantity of ${item.title}`}
-              className="grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          <QuantityStepper
+            size="sm"
+            value={item.quantity}
+            min={1}
+            max={maxQuantity}
+            onChange={(next) => onQuantityChange(item.id, next)}
+            label={`quantity of ${item.title}`}
+          />
           <p className="text-sm font-semibold text-slate-900">
             {formatPrice(item.price * item.quantity)}
           </p>
@@ -168,6 +154,9 @@ export default function StoreHeader() {
     notificationCount = 0,
     subscribeCartOpen,
   } = useCart();
+  const { isAuthenticated } = useAuth();
+  const ensureLogin = useEnsureLogin("Please log in first to continue to checkout.");
+  const navigate = useSmoothNavigate();
   const location = useLocation();
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -365,7 +354,7 @@ export default function StoreHeader() {
         </motion.div>
 
         <div ref={navRef} className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/shop" className="flex min-w-0 items-center gap-2.5">
+          <Link to="/shop" viewTransition className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white">
               <img
                 src="/wasooli.png"
@@ -419,27 +408,40 @@ export default function StoreHeader() {
               )}
             </button>
 
-            <Link
-              to="/account"
-              aria-label={
-                notificationCount > 0
-                  ? `My account, ${notificationCount} ${notificationCount === 1 ? "notification" : "notifications"}`
-                  : "My account"
-              }
-              aria-current={location.pathname === "/account" ? "page" : undefined}
-              className={`relative grid size-10 place-items-center rounded-xl border transition ${
-                location.pathname === "/account"
-                  ? "border-brand-500 bg-brand-50 text-brand-600"
-                  : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
-              }`}
-            >
-              <User size={18} />
-              {notificationCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              )}
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/account"
+                viewTransition
+                aria-label={
+                  notificationCount > 0
+                    ? `My account, ${notificationCount} ${notificationCount === 1 ? "notification" : "notifications"}`
+                    : "My account"
+                }
+                aria-current={location.pathname === "/account" ? "page" : undefined}
+                className={`relative grid size-10 place-items-center rounded-xl border transition ${
+                  location.pathname === "/account"
+                    ? "border-brand-500 bg-brand-50 text-brand-600"
+                    : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                }`}
+              >
+                <User size={18} />
+                {notificationCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                    {notificationCount > 99 ? "99+" : notificationCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                viewTransition
+                state={{ from: location }}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-brand-500 bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600 sm:px-4 sm:text-sm"
+              >
+                <LogIn size={16} aria-hidden="true" />
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </motion.header>
@@ -503,6 +505,7 @@ export default function StoreHeader() {
                 </p>
                 <Link
                   to="/shop"
+                  viewTransition
                   onClick={closeCart}
                   className="mt-5 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600"
                 >
@@ -538,18 +541,23 @@ export default function StoreHeader() {
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <Link
                   to="/shop"
+                  viewTransition
                   onClick={closeCart}
                   className="flex h-11 items-center justify-center rounded-xl border border-slate-200 px-2 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600 sm:text-sm"
                 >
                   Continue shopping
                 </Link>
-                <Link
-                  to="/checkout"
-                  onClick={closeCart}
-                  className="flex h-11 items-center justify-center rounded-xl bg-brand-500 px-2 text-center text-xs font-semibold text-white transition hover:bg-brand-600 sm:text-sm"
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeCart();
+                    if (!ensureLogin(undefined, { pathname: "/checkout" })) return;
+                    navigate("/checkout");
+                  }}
+                  className="flex h-11 cursor-pointer items-center justify-center rounded-xl bg-brand-500 px-2 text-center text-xs font-semibold text-white transition hover:bg-brand-600 sm:text-sm"
                 >
                   Checkout
-                </Link>
+                </button>
               </div>
             </div>
           )}

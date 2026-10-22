@@ -19,7 +19,7 @@ export default function ReportsPage() {
       <PageHeader
         crumbs={[{ label: "Reports & Payments" }]}
         title="Reports & Payments"
-        detail="Figures come from saved demo orders. Refunds only change the mock status."
+        detail="Figures come from live orders in the API."
         actions={(
           <>
             {RANGES.map((range) => (

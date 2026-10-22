@@ -14,7 +14,11 @@ export default function AdminLayout() {
 
   function handleLogout() {
     logout();
-    navigate("/login", { replace: true, state: { from: { pathname: "/admin" } } });
+    navigate("/login", {
+      replace: true,
+      state: { from: { pathname: "/admin" } },
+      viewTransition: typeof document !== "undefined" && "startViewTransition" in document,
+    });
   }
 
   return (

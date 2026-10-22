@@ -224,6 +224,90 @@ img {
     }
 }
 
+@keyframes shop-trust-marquee {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        transform: translate3d(-50%, 0, 0);
+    }
+}
+
+.shop-trust-marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 3%,
+        #000 97%,
+        transparent
+    );
+}
+
+.shop-trust-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    backface-visibility: hidden;
+    animation: shop-trust-marquee 36s linear infinite;
+}
+
+.shop-trust-set {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.shop-trust-marquee:hover .shop-trust-track {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-trust-track {
+        animation: none;
+        will-change: auto;
+    }
+}
+
+/* Professional cross-fade when React Router viewTransition is enabled */
+@supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.32s;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    ::view-transition-old(root) {
+        animation-name: wasooli-vt-fade-out;
+    }
+
+    ::view-transition-new(root) {
+        animation-name: wasooli-vt-fade-in;
+    }
+}
+
+@keyframes wasooli-vt-fade-out {
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes wasooli-vt-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
+
 @utility scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
