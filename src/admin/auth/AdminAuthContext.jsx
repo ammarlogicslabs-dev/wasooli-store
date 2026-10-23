@@ -3,12 +3,6 @@ import { apiRequest, getToken, setToken } from "../../services/api/client";
 
 export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
-const DEMO_ADMIN_IDENTIFIERS = ["admin@wasooli.store", "admin"];
-
-export function isAdminIdentifier(value) {
-  return DEMO_ADMIN_IDENTIFIERS.includes(String(value || "").trim().toLowerCase());
-}
-
 const AdminAuthContext = createContext(null);
 
 function readSession() {

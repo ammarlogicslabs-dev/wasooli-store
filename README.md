@@ -1,6 +1,6 @@
 # Wasooli Store
 
-A React storefront and admin panel for networking equipment. Shopping, checkout, account, and store management all run in the browser with demo logins and `localStorage`. There is no backend.
+React storefront and admin panel for Wasooli networking products. The UI talks to the **Wasooli Store API** over HTTP; catalog, orders, cart, and auth live on the backend (not in browser storage).
 
 ## Stack
 
@@ -9,6 +9,20 @@ A React storefront and admin panel for networking equipment. Shopping, checkout,
 - Tailwind CSS v4
 - Framer Motion, Lucide, and React Toastify
 
+## Configure the API
+
+Copy `.env.example` to `.env` and set the backend base URL (no trailing slash):
+
+```bash
+# Production API
+VITE_API_URL=https://wasoolistoreapi.wasooli.pk
+
+# Local API (WasooliStore.Api default launch URL)
+# VITE_API_URL=http://localhost:5248
+```
+
+If `VITE_API_URL` is unset, the client defaults to the production API host.
+
 ## Run locally
 
 ```bash
@@ -16,25 +30,25 @@ npm install
 npm run dev
 ```
 
-The app opens at `http://localhost:5173`.
+The app opens at `http://localhost:5173`. Point `VITE_API_URL` at a running API instance.
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Start the dev server |
+| `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build |
 | `npm run preview` | Preview the production build |
 | `npm run lint` | Run ESLint |
 
-## Demo login
+## Deploy
 
-Customer and admin both sign in on `/login`. The identifier decides which session starts.
+- **Frontend:** build with Vite (`npm run build`) and host the `dist/` output (e.g. Vercel). Set `VITE_API_URL` in the host’s environment for that deployment.
+- **Backend:** deploy [wasooli-store_api](https://github.com/MIkki008/wasooli-store_api) separately (IIS or equivalent) and allow the storefront origin in API CORS.
 
-| Role | Username or email | Password | Lands on |
-| --- | --- | --- | --- |
-| Customer | `Wasooli` or `wasooli123@gmail.com` | `wasooli123` | `/shop` |
-| Admin | `admin` or `admin@wasooli.store` | `admin123` | `/admin` |
+## Sign-in
 
-Customer session is stored in `localStorage` as `wasooli_user`. Admin session uses `wasooli_demo_admin_session`. Cart, wishlist, stock, and orders stay in the same browser storage so the shop and admin stay in sync.
+Customer and admin use the same `/login` page. After a successful API login, routing follows the user **role** (`Customer` → shop, `Admin` → `/admin`), not a hard-coded email list.
+
+Seed / demo credentials come from the API configuration (see the API repo), not from this frontend.
 
 ## Storefront routes
 
@@ -63,7 +77,7 @@ Admin pages require an admin session. Opening `/admin` without one sends you to 
 | `/admin/orders` | Orders |
 | `/admin/orders/:id` | Order details and fulfillment |
 | `/admin/inventory` | Stock and history |
-| `/admin/customers` | Customers from saved orders |
+| `/admin/customers` | Customers |
 | `/admin/customers/:key` | Customer details |
 | `/admin/reports` | Sales and payment reports |
 | `/admin/settings` | Store settings |
@@ -73,19 +87,13 @@ Admin pages require an admin session. Opening `/admin` without one sends you to 
 
 **Storefront**
 
-- Search, filter by category and price, and sort the catalog
-- Open a product for description, features, specifications, and shipping notes
-- Add items from the product card or the product page; the cart drawer opens from the bag button
-- Save items to the wishlist and open them from the header
-- Check out with standard or express delivery, cash on delivery, or bank transfer
+- Browse the catalog (paged from the API), filter, and sort
+- Add items to cart and wishlist (synced when signed in)
+- Check out with delivery and payment options handled by the API
 - Track orders from the account page
 
 **Admin**
 
-- See orders, sales, stock alerts, and recent activity on the dashboard
-- Add, edit, archive, or delete products; those changes show on the shop
-- Adjust inventory; checkout deducts stock and cancelled orders restore it
-- Update order status, payment, courier, and tracking
-- Review customers created from placed orders
+- Dashboard metrics and sales chart from `/api/admin/dashboard`
+- Manage products (including bulk `priceTiers`), categories, inventory, orders, customers, and coupons
 - Export order reports as CSV
-- Reset demo catalog data from store settings

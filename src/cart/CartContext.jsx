@@ -20,16 +20,6 @@ import { getUnitPrice, hydrateProductList, normalizePriceTiers } from "../utils/
 const WISHLIST_LOGIN_MESSAGE = "Please log in first to save items to your wishlist.";
 
 const CartContext = createContext(null);
-const STOCK_KEY = "wasooli_stock";
-
-function readStorage(key, fallback) {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 export function CartProvider({ children }) {
   const { user } = useAuth();
@@ -38,7 +28,6 @@ export function CartProvider({ children }) {
   const [wishlist, setWishlist] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [catalogTick, setCatalogTick] = useState(0);
-  const [stockMap, setStockMap] = useState(() => readStorage(STOCK_KEY, {}));
   const [apiProducts, setApiProducts] = useState([]);
   const [ready, setReady] = useState(false);
   const cartListeners = useRef(new Set());
@@ -47,14 +36,8 @@ export function CartProvider({ children }) {
   itemsRef.current = items;
 
   const products = useMemo(() => {
-    const list = hydrateProductList(apiProducts.length ? apiProducts : getStorefrontProducts());
-    return list.map((product) => {
-      const override = stockMap?.[product.id];
-      return Number.isFinite(Number(override))
-        ? { ...product, stock: Math.max(0, Number(override)) }
-        : product;
-    });
-  }, [apiProducts, stockMap, catalogTick]);
+    return hydrateProductList(apiProducts.length ? apiProducts : getStorefrontProducts());
+  }, [apiProducts, catalogTick]);
 
   const persistCart = useCallback(async (nextItems) => {
     if (!getToken("customer")) return;
@@ -130,7 +113,6 @@ export function CartProvider({ children }) {
   useEffect(() => {
     function handleStorage(event) {
       const key = event.key || event.detail?.key;
-      if (!key || key === STOCK_KEY) setStockMap(readStorage(STOCK_KEY, {}));
       if (!key || key === "wasooli_admin_products_v1") {
         setApiProducts(getStorefrontProducts());
         setCatalogTick((tick) => tick + 1);
@@ -148,8 +130,6 @@ export function CartProvider({ children }) {
     try {
       const list = await refreshStorefrontProducts();
       setApiProducts(list);
-      localStorage.removeItem(STOCK_KEY);
-      setStockMap({});
     } catch {
       // Keep current catalog if refresh fails.
     }

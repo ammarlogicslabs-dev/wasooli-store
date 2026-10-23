@@ -56,6 +56,9 @@ export function AuthProvider({ children }) {
         method: "POST",
         body: { identifier, password },
       });
+      if (result.user?.role === "Admin") {
+        return { success: false, role: "Admin" };
+      }
       if (result.user?.role !== "Customer") {
         return { success: false, message: "Invalid username, email, or password." };
       }
@@ -68,7 +71,7 @@ export function AuthProvider({ children }) {
       };
       localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
       setUser(loggedInUser);
-      return { success: true };
+      return { success: true, role: "Customer" };
     } catch (error) {
       return { success: false, message: error.message || "Invalid username, email, or password." };
     }

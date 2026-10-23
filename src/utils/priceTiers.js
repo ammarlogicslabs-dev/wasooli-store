@@ -1,7 +1,6 @@
 /**
- * API currently has no dedicated priceTiers column — we persist tiers inside
- * botInstructions.priceTiers (JSON already supported) and hydrate them back
- * onto the product for admin + shop.
+ * Bulk price tiers: send/read top-level `priceTiers` (including [] when cleared).
+ * Nested `botInstructions.priceTiers` remains a fallback for older bot payloads.
  */
 export const PRICE_TIERS_BOT_KEY = "priceTiers";
 
@@ -120,10 +119,10 @@ export function lineTotal(product, quantity) {
   return getUnitPrice(product, qty) * qty;
 }
 
-/** Pull tiers from root or botInstructions payload. */
+/** Pull tiers from root (preferred, including empty) or botInstructions payload. */
 export function extractPriceTiers(product) {
   if (!product || typeof product !== "object") return [];
-  if (Array.isArray(product.priceTiers) && product.priceTiers.length) {
+  if (Array.isArray(product.priceTiers)) {
     return normalizePriceTiers(product.priceTiers);
   }
   const nested = product.botInstructions?.[PRICE_TIERS_BOT_KEY];
@@ -137,7 +136,8 @@ export function hydrateProductPriceTiers(product) {
   const bot = product.botInstructions;
   let botInstructions = bot;
   if (bot && typeof bot === "object" && PRICE_TIERS_BOT_KEY in bot) {
-    const { [PRICE_TIERS_BOT_KEY]: _removed, ...rest } = bot;
+    const rest = { ...bot };
+    delete rest[PRICE_TIERS_BOT_KEY];
     botInstructions = rest;
   }
   return {

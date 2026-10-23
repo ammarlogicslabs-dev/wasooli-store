@@ -17,7 +17,6 @@ export const STORAGE_KEYS = {
   coupons: "wasooli_admin_coupons_v1",
   settings: "wasooli_admin_settings_v1",
   customers: "wasooli_admin_customers_v1",
-  stock: "wasooli_stock",
   notifications: "wasooli_notifications",
   wishlist: "wasooli_wishlist",
 };
@@ -85,8 +84,19 @@ export async function refreshAdminData() {
 }
 
 export async function refreshStorefrontProducts() {
-  const result = await apiRequest("/api/products?pageSize=100");
-  cache.storefront = hydrateProductList(Array.isArray(result?.items) ? result.items : []);
+  const pageSize = 100;
+  const items = [];
+  let page = 1;
+
+  for (;;) {
+    const result = await apiRequest(`/api/products?page=${page}&pageSize=${pageSize}`);
+    const batch = Array.isArray(result?.items) ? result.items : [];
+    items.push(...batch);
+    if (batch.length < pageSize) break;
+    page += 1;
+  }
+
+  cache.storefront = hydrateProductList(items);
   emit(STORAGE_KEYS.products);
   return cache.storefront;
 }
@@ -301,13 +311,14 @@ function toProductPayload(input) {
   const botInstructions = normalizeBotInstructions(input.botInstructions);
   const hasBotContent = Object.values(botInstructions).some((value) => Array.isArray(value) && value.length > 0);
   const priceTiers = normalizePriceTiers(input.priceTiers);
-  // Persist tiers inside botInstructions JSON until the API gains a real priceTiers field.
-  const botPayload =
-    hasBotContent || priceTiers.length
-      ? {
-          ...botInstructions,
-          ...(priceTiers.length ? { [PRICE_TIERS_BOT_KEY]: priceTiers } : {}),
-        }
+  // Top-level priceTiers is primary (including [] when cleared). Nest under botInstructions for older bots.
+  const botPayload = hasBotContent
+    ? {
+        ...botInstructions,
+        ...(priceTiers.length ? { [PRICE_TIERS_BOT_KEY]: priceTiers } : {}),
+      }
+    : priceTiers.length
+      ? { [PRICE_TIERS_BOT_KEY]: priceTiers }
       : null;
 
   return {
@@ -328,6 +339,7 @@ function toProductPayload(input) {
     features: Array.isArray(input.features) ? input.features : linesToList(input.featuresText),
     specifications: specs,
     botInstructions: botPayload,
+    priceTiers,
     rating: Number(input.rating) || 0,
     reviews: Number(input.reviews) || 0,
   };

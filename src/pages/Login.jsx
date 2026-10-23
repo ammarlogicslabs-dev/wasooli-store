@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { isAdminIdentifier, useAdminAuth } from "../admin/auth/AdminAuthContext";
+import { useAdminAuth } from "../admin/auth/AdminAuthContext";
 import { useAuth } from "../auth/AuthContext";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import {
@@ -111,10 +111,15 @@ export default function Login() {
     setLoading(true);
     setAuthError("");
 
-    const signingInAsAdmin = isAdminIdentifier(form.identifier);
-    const result = signingInAsAdmin
-      ? await adminLogin(form.identifier, form.password)
-      : await login(form.identifier, form.password);
+    // Route by API role: try customer login first; Admin role hands off to admin session.
+    let result = await login(form.identifier, form.password);
+    let signingInAsAdmin = false;
+
+    if (!result.success && result.role === "Admin") {
+      result = await adminLogin(form.identifier, form.password);
+      signingInAsAdmin = Boolean(result.success);
+    }
+
     setLoading(false);
 
     if (result.success) {
@@ -124,7 +129,7 @@ export default function Login() {
         : (wantsAdmin ? "/shop" : from);
       navigate(nextPath, { replace: true, state: signingInAsAdmin ? undefined : fromState });
     } else {
-      setAuthError(result.message);
+      setAuthError(result.message || "Invalid username, email, or password.");
     }
   }
 

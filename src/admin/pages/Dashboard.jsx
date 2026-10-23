@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -12,7 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { formatPrice } from "../../data/product";
-import { getDashboard } from "../../services/storage/adminDataService";
+import { fetchDashboard, getDashboard } from "../../services/storage/adminDataService";
 import { paymentBucket, PAYMENT_LABELS, statusLabel } from "../../services/storage/orderStatus";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
@@ -137,9 +137,39 @@ export default function Dashboard() {
   const data = useAdminData();
   const navigate = useNavigate();
   const [days, setDays] = useState(30);
-  const dashboard = getDashboard(days, data);
+  const localDashboard = getDashboard(days, data);
+  const [apiDashboard, setApiDashboard] = useState(null);
+  const [apiKey, setApiKey] = useState("");
 
-  const attention = dashboard.lowStock.length + dashboard.outOfStock.length;
+  useEffect(() => {
+    let cancelled = false;
+    const key = `${days}:${data.tick}`;
+    fetchDashboard(days)
+      .then((result) => {
+        if (cancelled || !result || typeof result !== "object") return;
+        setApiDashboard(result);
+        setApiKey(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setApiDashboard(null);
+        setApiKey(key);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [days, data.tick]);
+
+  const dashboard =
+    apiKey === `${days}:${data.tick}` && apiDashboard
+      ? {
+          ...localDashboard,
+          ...apiDashboard,
+          chart: Array.isArray(apiDashboard.chart) ? apiDashboard.chart : localDashboard.chart,
+        }
+      : localDashboard;
+
+  const attention = (dashboard.lowStock?.length || 0) + (dashboard.outOfStock?.length || 0);
   const cards = [
     {
       label: "Orders",
@@ -173,13 +203,16 @@ export default function Dashboard() {
     },
   ];
 
-  const chartTotal = dashboard.chart.reduce((sum, point) => sum + point.total, 0);
-  const chartAverage = dashboard.chart.length ? chartTotal / dashboard.chart.length : 0;
-  const bestPoint = dashboard.chart.reduce((best, point) => (point.total > (best?.total ?? 0) ? point : best), null);
-  const noSales = dashboard.chart.every((point) => point.total === 0);
+  const chart = Array.isArray(dashboard.chart) ? dashboard.chart : [];
+  const chartTotal = chart.reduce((sum, point) => sum + point.total, 0);
+  const chartAverage = chart.length ? chartTotal / chart.length : 0;
+  const bestPoint = chart.reduce((best, point) => (point.total > (best?.total ?? 0) ? point : best), null);
+  const noSales = chart.length === 0 || chart.every((point) => point.total === 0);
 
-  const statusTotal = dashboard.statusCounts.reduce((sum, status) => sum + status.count, 0);
-  const topMax = Math.max(...dashboard.top.map((item) => item.quantity), 1);
+  const statusCounts = Array.isArray(dashboard.statusCounts) ? dashboard.statusCounts : [];
+  const top = Array.isArray(dashboard.top) ? dashboard.top : [];
+  const statusTotal = statusCounts.reduce((sum, status) => sum + status.count, 0);
+  const topMax = Math.max(...top.map((item) => item.quantity), 1);
 
   return (
     <div className="space-y-6">
@@ -258,7 +291,7 @@ export default function Dashboard() {
                   <p className="mt-0.5 truncate text-sm font-bold text-slate-900 sm:text-base">{bestPoint?.label || "-"}</p>
                 </div>
               </div>
-              <SalesChart points={dashboard.chart} />
+              <SalesChart points={chart} />
             </>
           )}
         </Card>
@@ -268,7 +301,7 @@ export default function Dashboard() {
             <EmptyState icon={ClipboardList}>Orders will be grouped by status here.</EmptyState>
           ) : (
             <ul className="space-y-1">
-              {dashboard.statusCounts.map((status) => {
+              {statusCounts.map((status) => {
                 const share = statusTotal ? (status.count / statusTotal) * 100 : 0;
                 return (
                   <li key={status.id}>
@@ -309,11 +342,11 @@ export default function Dashboard() {
             </Link>
           }
         >
-          {dashboard.recent.length === 0 ? (
+          {(dashboard.recent || []).length === 0 ? (
             <EmptyState>No orders yet.</EmptyState>
           ) : (
             <ul className="-my-1 divide-y divide-slate-100">
-              {dashboard.recent.map((order) => {
+              {(dashboard.recent || []).map((order) => {
                 const name = order.delivery?.fullName || "Customer";
                 return (
                   <li key={order.id}>
@@ -348,11 +381,11 @@ export default function Dashboard() {
 
         <div className="space-y-4">
           <Card title="Top-selling products">
-            {dashboard.top.length === 0 ? (
+            {top.length === 0 ? (
               <EmptyState icon={Package}>Sales will appear after orders are placed.</EmptyState>
             ) : (
               <ul className="space-y-4">
-                {dashboard.top.map((item, index) => (
+                {top.map((item, index) => (
                   <li key={item.title} className="flex items-center gap-3">
                     <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
                       {index + 1}
@@ -392,7 +425,7 @@ export default function Dashboard() {
                     <AlertTriangle size={18} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xl font-bold text-amber-800">{dashboard.lowStock.length}</span>
+                    <span className="block text-xl font-bold text-amber-800">{dashboard.lowStock?.length || 0}</span>
                     <span className="block text-xs font-semibold text-amber-800">Low stock</span>
                   </span>
                   <ArrowRight size={16} className="text-amber-700 transition group-hover:translate-x-0.5" />
@@ -406,7 +439,7 @@ export default function Dashboard() {
                     <PackageX size={18} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xl font-bold text-red-700">{dashboard.outOfStock.length}</span>
+                    <span className="block text-xl font-bold text-red-700">{dashboard.outOfStock?.length || 0}</span>
                     <span className="block text-xs font-semibold text-red-700">Out of stock</span>
                   </span>
                   <ArrowRight size={16} className="text-red-700 transition group-hover:translate-x-0.5" />
