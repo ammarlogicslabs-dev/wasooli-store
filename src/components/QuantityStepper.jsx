@@ -3,13 +3,13 @@ import { Minus, Plus } from "lucide-react";
 
 const SIZES = {
   sm: {
-    wrap: "flex h-8 items-center rounded-lg border border-slate-200 bg-white",
+    wrap: "inline-flex h-8 w-fit items-center rounded-lg border border-slate-200 bg-white",
     btn: "grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30",
     input: "w-10 min-w-0 border-0 bg-transparent p-0 text-center text-sm font-semibold text-slate-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
     icon: 14,
   },
   lg: {
-    wrap: "flex h-11 shrink-0 items-center rounded-3xl border border-slate-200 bg-white sm:h-13",
+    wrap: "inline-flex h-11 w-fit shrink-0 items-center rounded-3xl border border-slate-200 bg-white sm:h-13",
     btn: "grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11",
     input: "w-12 min-w-0 border-0 bg-transparent p-0 text-center text-sm font-semibold text-slate-900 outline-none sm:w-14 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
     icon: 16,

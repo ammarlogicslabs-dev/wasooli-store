@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   List,
   Phone,
+  Check,
 } from "lucide-react";
 import { formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
@@ -29,7 +30,6 @@ const PAGE_SIZE = 12;
 const VIEW_STORAGE_KEY = "wasooli-shop-view";
 
 const SORT_OPTIONS = [
-  // { value: "featured", label: "Featured" },
   { value: "popular", label: "Most popular" },
   { value: "rating", label: "Top rated" },
   { value: "low", label: "Price: Low to High" },
@@ -46,9 +46,68 @@ const TRUST = [
   { icon: BadgePercent, title: "Bulk Pricing", text: "Save on volume" },
 ];
 
-function FilterGroup({ title, options, value, counts, onChange, defaultOpen = true }) {
+const FILTER_VISIBLE = 6;
+
+function FilterGroup({
+  title,
+  options,
+  value,
+  counts,
+  onChange,
+  defaultOpen = true,
+  searchable = false,
+  multiple = false,
+  showCheckbox = false,
+}) {
   const [open, setOpen] = useState(defaultOpen);
-  const activeCount = options.filter((item) => item !== "All" && value === item).length;
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const selected = multiple
+    ? Array.isArray(value)
+      ? value
+      : []
+    : value;
+
+  const listOptions = useMemo(() => {
+    if (!multiple) return options;
+    return options.filter((item) => item !== "All");
+  }, [options, multiple]);
+
+  const activeCount = multiple
+    ? selected.length
+    : listOptions.filter((item) => item !== "All" && selected === item).length;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return listOptions;
+    return listOptions.filter(
+      (item) => item === "All" || item.toLowerCase().includes(q)
+    );
+  }, [listOptions, query]);
+
+  const visible = expanded ? filtered : filtered.slice(0, FILTER_VISIBLE);
+  const hiddenCount = Math.max(filtered.length - FILTER_VISIBLE, 0);
+
+  function handleSelect(item) {
+    if (!multiple) {
+      onChange(item);
+      return;
+    }
+    if (item === "All") {
+      onChange([]);
+      return;
+    }
+    const next = selected.includes(item)
+      ? selected.filter((entry) => entry !== item)
+      : [...selected, item];
+    onChange(next);
+  }
+
+  function isActive(item) {
+    if (multiple) return selected.includes(item);
+    return selected === item;
+  }
 
   return (
     <div className="border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
@@ -74,35 +133,85 @@ function FilterGroup({ title, options, value, counts, onChange, defaultOpen = tr
         />
       </button>
       {open ? (
-        <ul className="mt-3 space-y-1">
-          {options.map((item) => {
-            const active = value === item;
-            return (
-              <li key={item}>
-                <button
-                  type="button"
-                  onClick={() => onChange(item)}
-                  className={`shop-filter-item flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-1.5 transition ${
-                    active
-                      ? "bg-brand-50 font-semibold text-brand-700"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  }`}
-                >
-                  <span className="truncate pr-2">{item}</span>
-                  <span
-                    className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px ${
+        <div className="mt-3">
+          {searchable && listOptions.length > FILTER_VISIBLE ? (
+            <div className="relative mb-2.5">
+              <Search
+                size={13}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setExpanded(true);
+                }}
+                placeholder={`Search ${title.toLowerCase()}…`}
+                aria-label={`Search ${title}`}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-2 text-xs text-slate-700 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100"
+              />
+            </div>
+          ) : null}
+
+          <ul className="space-y-0.5">
+            {visible.map((item) => {
+              const active = isActive(item);
+              const count = counts[item] || 0;
+              return (
+                <li key={item}>
+                  <button
+                    type="button"
+                    role={showCheckbox ? "checkbox" : undefined}
+                    aria-checked={showCheckbox ? active : undefined}
+                    onClick={() => handleSelect(item)}
+                    className={`shop-filter-item flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
                       active
-                        ? "bg-brand-500 text-white"
-                        : "bg-slate-100 text-slate-500"
+                        ? "bg-brand-50 font-semibold text-brand-700"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    {counts[item] || 0}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                    {showCheckbox ? (
+                      <span
+                        className={`grid size-4 shrink-0 place-items-center rounded border transition ${
+                          active
+                            ? "border-brand-500 bg-brand-500 text-white"
+                            : "border-slate-300 bg-white"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {active ? <Check size={10} strokeWidth={3} /> : null}
+                      </span>
+                    ) : null}
+                    <span className="min-w-0 flex-1 truncate text-[13px]">{item}</span>
+                    <span
+                      className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px tabular-nums ${
+                        active
+                          ? "bg-brand-500 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            {filtered.length === 0 ? (
+              <li className="px-2 py-2 text-xs text-slate-400">No matches</li>
+            ) : null}
+          </ul>
+
+          {hiddenCount > 0 && !query.trim() ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((current) => !current)}
+              className="mt-2 text-xs font-semibold text-brand-600 transition hover:text-brand-700"
+            >
+              {expanded ? "Show less" : `Show ${hiddenCount} more`}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -199,14 +308,32 @@ function FilterPanel({
   const maxPercent = ((Math.max(sliderMax, sliderMin) - minPrice) / priceSpan) * 100;
   const minOnTop = sliderMin > maxPrice - priceSpan * 0.1;
 
+  const pricePresets = useMemo(() => {
+    if (maxPrice <= minPrice) return [];
+    const span = maxPrice - minPrice;
+    const low = Math.round(minPrice + span * 0.33);
+    const mid = Math.round(minPrice + span * 0.66);
+    return [
+      { key: "under", label: `Under ${formatPrice(low)}`, min: minPrice, max: low },
+      { key: "mid", label: `${formatPrice(low)} – ${formatPrice(mid)}`, min: low, max: mid },
+      { key: "high", label: `${formatPrice(mid)}+`, min: mid, max: maxPrice },
+      { key: "all", label: "Any price", min: minPrice, max: maxPrice },
+    ];
+  }, [minPrice, maxPrice]);
+
+  function isPresetActive(preset) {
+    return Number(sliderMin) === preset.min && Number(sliderMax) === preset.max;
+  }
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-5">
       <AppliedFilters filters={activeFilters} onClearAll={onClearAll} />
       <FilterGroup
         title="Categories"
         options={categories}
         value={category}
         counts={categoryCounts}
+        searchable
         defaultOpen
         onChange={(item) => {
           setCategory(item);
@@ -218,6 +345,9 @@ function FilterPanel({
         options={brands}
         value={brand}
         counts={brandCounts}
+        searchable
+        multiple
+        showCheckbox
         onChange={setBrand}
       />
       <FilterGroup
@@ -225,6 +355,8 @@ function FilterPanel({
         options={availabilityOptions}
         value={availability}
         counts={availabilityCounts}
+        multiple
+        showCheckbox
         onChange={setAvailability}
       />
       <FilterGroup
@@ -232,6 +364,9 @@ function FilterPanel({
         options={portTypes}
         value={portType}
         counts={portTypeCounts}
+        searchable
+        multiple
+        showCheckbox
         onChange={setPortType}
       />
 
@@ -239,7 +374,33 @@ function FilterPanel({
         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
           Price Range
         </h3>
-        <div className="mt-3 sm:mt-4 px-1">
+
+        {pricePresets.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {pricePresets.map((preset) => {
+              const active = isPresetActive(preset);
+              return (
+                <button
+                  key={preset.key}
+                  type="button"
+                  onClick={() => {
+                    setMinPriceLimit(preset.min);
+                    setPriceLimit(preset.max);
+                  }}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                    active
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        <div className="mt-3 px-1 sm:mt-4">
           <div className="relative h-5">
             <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-slate-200" />
             <div
@@ -294,7 +455,7 @@ function FilterPanel({
               />
             </div>
 
-            <span className="text-slate-400 font-medium">to</span>
+            <span className="font-medium text-slate-400">to</span>
 
             <div className="flex flex-1 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
               <span className="text-[11px] font-medium text-slate-400">Rs</span>
@@ -326,9 +487,9 @@ export default function Shop() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [category, setCategory] = useState("All");
-  const [brand, setBrand] = useState("All");
-  const [availability, setAvailability] = useState("All");
-  const [portType, setPortType] = useState("All");
+  const [brand, setBrand] = useState([]);
+  const [availability, setAvailability] = useState([]);
+  const [portType, setPortType] = useState([]);
   const [sort, setSort] = useState("featured");
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -391,18 +552,35 @@ export default function Shop() {
       return price >= priceBounds.min && price <= priceBounds.max;
     }
 
-    function matchesAvailabilityValue(product, value) {
-      if (value === "All") return true;
-      return value === "In stock" ? product.stock > 0 : product.stock <= 0;
+    function matchesAvailabilitySelected(product, selected) {
+      if (!selected.length) return true;
+      return selected.some((value) =>
+        value === "In stock" ? product.stock > 0 : product.stock <= 0
+      );
     }
 
     function pool(ignore) {
       return products.filter((product) => {
         if (!matchesSearch(product) || !matchesPrice(product)) return false;
-        if (ignore !== "category" && category !== "All" && product.category !== category) return false;
-        if (ignore !== "brand" && brand !== "All" && product.brand !== brand) return false;
-        if (ignore !== "availability" && !matchesAvailabilityValue(product, availability)) return false;
-        if (ignore !== "portType" && portType !== "All" && product.portType !== portType) return false;
+        if (ignore !== "category" && category !== "All" && product.category !== category) {
+          return false;
+        }
+        if (ignore !== "brand" && brand.length > 0 && !brand.includes(product.brand)) {
+          return false;
+        }
+        if (
+          ignore !== "availability" &&
+          !matchesAvailabilitySelected(product, availability)
+        ) {
+          return false;
+        }
+        if (
+          ignore !== "portType" &&
+          portType.length > 0 &&
+          !portType.includes(product.portType)
+        ) {
+          return false;
+        }
         return true;
       });
     }
@@ -418,10 +596,18 @@ export default function Shop() {
     }
 
     function optionsFromCounts(counts, selected) {
+      const selectedList = Array.isArray(selected)
+        ? selected
+        : selected && selected !== "All"
+          ? [selected]
+          : [];
       return [
         "All",
         ...Object.keys(counts)
-          .filter((key) => key !== "All" && (counts[key] > 0 || key === selected))
+          .filter(
+            (key) =>
+              key !== "All" && (counts[key] > 0 || selectedList.includes(key))
+          )
           .sort((a, b) => a.localeCompare(b)),
       ];
     }
@@ -449,8 +635,13 @@ export default function Shop() {
       brandCounts,
       availabilityOptions: [
         "All",
-        ...(availabilityCounts["In stock"] > 0 || availability === "In stock" ? ["In stock"] : []),
-        ...(availabilityCounts["Out of stock"] > 0 || availability === "Out of stock" ? ["Out of stock"] : []),
+        ...(availabilityCounts["In stock"] > 0 || availability.includes("In stock")
+          ? ["In stock"]
+          : []),
+        ...(availabilityCounts["Out of stock"] > 0 ||
+        availability.includes("Out of stock")
+          ? ["Out of stock"]
+          : []),
       ],
       availabilityCounts,
       portTypes: optionsFromCounts(portTypeCounts, portType),
@@ -479,12 +670,19 @@ export default function Shop() {
 
   useEffect(() => {
     if (category !== "All" && !categories.includes(category)) setCategory("All");
-    if (brand !== "All" && !brands.includes(brand)) setBrand("All");
-    if (availability !== "All" && !availabilityOptions.includes(availability)) {
-      setAvailability("All");
-    }
-    if (portType !== "All" && !portTypes.includes(portType)) setPortType("All");
-  }, [category, categories, brand, brands, availability, availabilityOptions, portType, portTypes]);
+    setBrand((current) => {
+      const next = current.filter((item) => brands.includes(item));
+      return next.length === current.length ? current : next;
+    });
+    setAvailability((current) => {
+      const next = current.filter((item) => availabilityOptions.includes(item));
+      return next.length === current.length ? current : next;
+    });
+    setPortType((current) => {
+      const next = current.filter((item) => portTypes.includes(item));
+      return next.length === current.length ? current : next;
+    });
+  }, [category, categories, brands, availabilityOptions, portTypes]);
 
   const filteredProducts = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
@@ -502,14 +700,15 @@ export default function Shop() {
 
       const matchesCategory =
         category === "All" || product.category === category;
-      const matchesBrand = brand === "All" || product.brand === brand;
+      const matchesBrand =
+        brand.length === 0 || brand.includes(product.brand);
       const matchesAvailability =
-        availability === "All" ||
-        (availability === "In stock"
-          ? product.stock > 0
-          : product.stock <= 0);
+        availability.length === 0 ||
+        availability.some((value) =>
+          value === "In stock" ? product.stock > 0 : product.stock <= 0
+        );
       const matchesPort =
-        portType === "All" || product.portType === portType;
+        portType.length === 0 || portType.includes(product.portType);
 
       const price = Number(product.price);
       const matchesPrice = price >= min && price <= max;
@@ -646,21 +845,23 @@ export default function Shop() {
       label: category,
       clear: () => setCategory("All"),
     },
-    brand !== "All" && {
-      key: "brand",
-      label: brand,
-      clear: () => setBrand("All"),
-    },
-    availability !== "All" && {
-      key: "availability",
-      label: availability,
-      clear: () => setAvailability("All"),
-    },
-    portType !== "All" && {
-      key: "port",
-      label: portType,
-      clear: () => setPortType("All"),
-    },
+    ...brand.map((item) => ({
+      key: `brand-${item}`,
+      label: item,
+      clear: () => setBrand((current) => current.filter((entry) => entry !== item)),
+    })),
+    ...availability.map((item) => ({
+      key: `availability-${item}`,
+      label: item,
+      clear: () =>
+        setAvailability((current) => current.filter((entry) => entry !== item)),
+    })),
+    ...portType.map((item) => ({
+      key: `port-${item}`,
+      label: item,
+      clear: () =>
+        setPortType((current) => current.filter((entry) => entry !== item)),
+    })),
     priceActive && {
       key: "price",
       label:
@@ -678,9 +879,9 @@ export default function Shop() {
 
   const clearFilters = () => {
     setCategory("All");
-    setBrand("All");
-    setAvailability("All");
-    setPortType("All");
+    setBrand([]);
+    setAvailability([]);
+    setPortType([]);
     setMinPriceLimit(minPrice);
     setPriceLimit(maxPrice);
   };
