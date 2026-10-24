@@ -248,7 +248,7 @@ export default function Account() {
               onClick={() => {
                 closeToast();
                 logout();
-                navigate("/shop");
+                navigate("/");
               }}
               className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
             >
@@ -345,7 +345,7 @@ export default function Account() {
 
       <div className="page-offset mx-auto max-w-8xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-10">
         <nav aria-label="Breadcrumb" className="page-crumb">
-          <Link to="/shop">Home</Link>
+          <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">Account</span>
         </nav>
@@ -551,7 +551,7 @@ export default function Account() {
                             type="button"
                             onClick={() => removeNotification?.(notif.id)}
                             aria-label="Remove notification"
-                            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 size={15} />
                           </button>
@@ -903,7 +903,7 @@ export default function Account() {
                           type="button"
                           onClick={() => toggleWishlist(item.id)}
                           aria-label={`Remove ${item.title} from wishlist`}
-                          className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                          className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -971,7 +971,7 @@ export default function Account() {
                             type="button"
                             onClick={() => removeItem(item.id)}
                             aria-label={`Remove ${item.title} from cart`}
-                            className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                            className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 size={16} />
                           </button>

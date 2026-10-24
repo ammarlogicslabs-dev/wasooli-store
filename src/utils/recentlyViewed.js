@@ -7,6 +7,7 @@ export function getRecentlyViewedIds() {
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
   } catch {
+    console.warn("Failed to retrieve recently viewed items from localStorage.");
     return [];
   }
 }
@@ -21,7 +22,7 @@ export function pushRecentlyViewed(productId) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
-    /* ignore quota / private mode */
+    console.warn("Failed to save recently viewed items to localStorage.");
   }
   return next;
 }

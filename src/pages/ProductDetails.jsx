@@ -343,7 +343,7 @@ export default function ProductDetail() {
       <div className="border-b border-slate-200/80 bg-white">
         <nav
           aria-label="Breadcrumb"
-          className="page-crumb page-offset mx-auto flex max-w-8xl flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8 2xl:max-w-[1536px]"
+          className="page-crumb page-offset mx-auto flex max-w-8xl flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8 2xl:max-w-384"
         >
           <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>
@@ -351,13 +351,13 @@ export default function ProductDetail() {
           <span aria-hidden="true">/</span>
           <Link to="/shop">{product.category}</Link>
           <span aria-hidden="true">/</span>
-          <span aria-current="page" className="max-w-[12rem] truncate sm:max-w-md">
+          <span aria-current="page" className="max-w-48 truncate sm:max-w-md">
             {product.title}
           </span>
         </nav>
       </div>
 
-      <div className="mx-auto max-w-8xl px-4 pt-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+      <div className="mx-auto max-w-8xl px-4 pt-4 sm:px-6 lg:px-8 2xl:max-w-384">
         <Link
           to="/shop"
           className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-brand-600"
@@ -368,12 +368,12 @@ export default function ProductDetail() {
       </div>
 
       {/* Main grid: gallery + info + sticky buy box */}
-      <section className="mx-auto grid max-w-8xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8 lg:px-8 lg:py-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.85fr)_300px] xl:gap-8 2xl:max-w-[1536px]">
+      <section className="mx-auto grid max-w-8xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8 lg:px-8 lg:py-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.85fr)_300px] xl:gap-8 2xl:max-w-384">
         {/* Gallery */}
         <div className="lg:sticky lg:top-[calc(var(--store-header-height,72px)+1rem)] lg:self-start">
           <div className="flex gap-3">
             {images.length > 1 ? (
-              <div className="custom-scrollbar hidden max-h-[420px] w-16 shrink-0 flex-col gap-2 overflow-y-auto sm:flex lg:max-h-[520px]">
+              <div className="custom-scrollbar hidden max-h-105 w-16 shrink-0 flex-col gap-2 overflow-y-auto sm:flex lg:max-h-130">
                 {images.map((image, index) => (
                   <button
                     key={image}

@@ -9,6 +9,7 @@ import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import QuantityStepper from "./QuantityStepper";
+import { PROGRAMMATIC_SCROLL_EVENT } from "../utils/smoothScroll";
 
 const STORE_NAME = "Wasooli Store";
 const STORE_PHONE = "0300 1234567";
@@ -21,6 +22,7 @@ const TOP_THRESHOLD = 18; // px from top where everything is shown again
 const SCROLL_DELTA = 2; // ignore tiny scroll movements
 const NAV_HIDE_AFTER = 80; // extra px scrolled down (after headline hides) before the nav hides
 const MOTION_EASE = [0.22, 1, 0.36, 1];
+const DEFAULT_PROGRAMMATIC_MS = 1600;
 
 function formatWishlistDate(value, emptyLabel = "Saved earlier") {
   if (!value) return emptyLabel;
@@ -81,7 +83,7 @@ function WishlistItem({ item, onView, onRemove }) {
         type="button"
         onClick={() => onRemove(item.id)}
         aria-label={`Remove ${item.title} from wishlist`}
-        className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+        className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
       >
         <Trash2 size={16} />
       </button>
@@ -134,7 +136,7 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
         type="button"
         onClick={() => onRemove(item.id)}
         aria-label={`Remove ${item.title} from cart`}
-        className="grid size-8 shrink-0 place-items-center self-start rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+        className="grid size-8 shrink-0 place-items-center self-start rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
       >
         <Trash2 size={16} />
       </button>
@@ -222,16 +224,34 @@ export default function StoreHeader() {
    *  - scrolling on    : after NAV_HIDE_AFTER more px, the nav bar hides too
    *  - scroll up       : only the nav bar comes back (headline stays hidden)
    *  - back at top     : headline is restored as well
+   * Programmatic smooth scrolls (Explore Categories, shop filters, etc.) pause
+   * auto-hide so the bar does not disappear mid-scroll and force a second click.
    */
   useEffect(() => {
     let lastY = window.scrollY;
     let downDistance = 0; // px scrolled down since the last upward scroll
     let headlineIsHidden = false;
+    let ignoreUntil = 0;
+
+    function onProgrammaticScroll(event) {
+      const duration = Number(event.detail?.durationMs);
+      ignoreUntil =
+        Date.now() +
+        (Number.isFinite(duration) ? duration : DEFAULT_PROGRAMMATIC_MS);
+      // Keep the current header visible so scroll-margin stays stable.
+      setNavHidden(false);
+      lastY = window.scrollY;
+      downDistance = 0;
+    }
 
     function onScroll() {
       const y = window.scrollY;
       const delta = y - lastY;
       lastY = y;
+
+      if (Date.now() < ignoreUntil) {
+        return;
+      }
 
       if (y <= TOP_THRESHOLD) {
         downDistance = 0;
@@ -261,8 +281,12 @@ export default function StoreHeader() {
       }
     }
 
+    window.addEventListener(PROGRAMMATIC_SCROLL_EVENT, onProgrammaticScroll);
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener(PROGRAMMATIC_SCROLL_EVENT, onProgrammaticScroll);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const wishlistItems = wishlist
@@ -356,7 +380,7 @@ export default function StoreHeader() {
         </motion.div>
 
         <div ref={navRef} className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/shop" viewTransition className="flex min-w-0 items-center gap-2.5">
+          <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white">
               <img
                 src="/wasooli.png"

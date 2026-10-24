@@ -11,6 +11,7 @@ import PageLoader from "./components/PageLoader";
 import PageTransition from "./layout/PageTransition";
 import ScrollToTop from "./layout/ScrollToTop";
 
+const Home = lazy(() => import("./pages/Home"));
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetails"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -31,9 +32,6 @@ const SettingsPage = lazy(() => import("./admin/pages/SettingsPage"));
 const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
 
-function RootRedirect() {
-  return <Navigate to="/shop" replace />;
-}
 
 function RequireAdmin({ children }) {
   const { isAuthenticated } = useAdminAuth();
@@ -53,10 +51,10 @@ export default function App() {
       <NavigationProgress />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
 
           <Route element={<PageTransition />}>
+            <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/products/:slug" element={<ProductDetail />} />
             <Route
@@ -97,7 +95,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/shop" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
       <ToastContainer

@@ -4,13 +4,17 @@ import { Minus, Plus } from "lucide-react";
 const SIZES = {
   sm: {
     wrap: "inline-flex h-8 w-fit items-center rounded-lg border border-slate-200 bg-white",
-    btn: "grid size-8 place-items-center text-slate-600 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30",
+    btn: "grid size-8 place-items-center transition disabled:cursor-not-allowed disabled:opacity-30",
+    minus: "text-red-500 hover:bg-red-50 hover:text-red-600",
+    plus: "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
     input: "w-10 min-w-0 border-0 bg-transparent p-0 text-center text-sm font-semibold text-slate-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
     icon: 14,
   },
   lg: {
     wrap: "inline-flex h-11 w-fit shrink-0 items-center rounded-3xl border border-slate-200 bg-white sm:h-13",
-    btn: "grid size-9 cursor-pointer place-items-center text-slate-600 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-30 sm:size-11",
+    btn: "grid size-9 cursor-pointer place-items-center transition disabled:cursor-not-allowed disabled:opacity-30 sm:size-11",
+    minus: "text-red-500 hover:bg-red-50 hover:text-red-600",
+    plus: "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
     input: "w-12 min-w-0 border-0 bg-transparent p-0 text-center text-sm font-semibold text-slate-900 outline-none sm:w-14 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
     icon: 16,
   },
@@ -77,7 +81,7 @@ export default function QuantityStepper({
         disabled={disabled || value <= min}
         onClick={() => emit(clampQty(value - 1, min, safeMax))}
         aria-label={`Decrease ${label}`}
-        className={styles.btn}
+        className={`${styles.btn} ${styles.minus}`}
       >
         <Minus size={styles.icon} />
       </button>
@@ -101,7 +105,7 @@ export default function QuantityStepper({
         disabled={disabled || value >= safeMax}
         onClick={() => emit(clampQty(value + 1, min, safeMax))}
         aria-label={`Increase ${label}`}
-        className={styles.btn}
+        className={`${styles.btn} ${styles.plus}`}
       >
         <Plus size={styles.icon} />
       </button>

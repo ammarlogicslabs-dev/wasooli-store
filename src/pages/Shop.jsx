@@ -24,6 +24,7 @@ import ShopProductRail from "../components/ShopProductRail";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
 import { getRecentlyViewedIds } from "../utils/recentlyViewed";
+import { smoothScrollTo } from "../utils/smoothScroll";
 
 const PAGE_SIZE = 12;
 const VIEW_STORAGE_KEY = "wasooli-shop-view";
@@ -57,6 +58,7 @@ function FilterGroup({
   searchable = false,
   multiple = false,
   showCheckbox = false,
+  showAll = false,
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState(false);
@@ -85,8 +87,11 @@ function FilterGroup({
     );
   }, [listOptions, query]);
 
-  const visible = expanded ? filtered : filtered.slice(0, FILTER_VISIBLE);
-  const hiddenCount = Math.max(filtered.length - FILTER_VISIBLE, 0);
+  const visible =
+    showAll || expanded ? filtered : filtered.slice(0, FILTER_VISIBLE);
+  const hiddenCount = showAll
+    ? 0
+    : Math.max(filtered.length - FILTER_VISIBLE, 0);
 
   function handleSelect(item) {
     if (!multiple) {
@@ -363,9 +368,9 @@ function FilterPanel({
         options={portTypes}
         value={portType}
         counts={portTypeCounts}
-        searchable
         multiple
         showCheckbox
+        showAll
         onChange={setPortType}
       />
 
@@ -1022,10 +1027,7 @@ export default function Shop() {
         active={category === "All" ? null : category}
         onSelect={(name) => {
           setCategory((current) => (current === name ? "All" : name));
-          document.getElementById("shop-browse")?.scrollIntoView({
-            behavior: reduceMotion ? "auto" : "smooth",
-            block: "start",
-          });
+          smoothScrollTo("shop-browse", { reduce: reduceMotion });
         }}
       />
 

@@ -54,7 +54,7 @@ export default function Login() {
   const location = useLocation();
   const fromLocation = location.state?.from;
   const redirectPath = fromLocation?.pathname || (typeof fromLocation === "string" ? fromLocation : "");
-  const from = redirectPath || "/shop";
+  const from = redirectPath || "/";
   const fromState = fromLocation && typeof fromLocation === "object" ? fromLocation.state : undefined;
   const wantsAdmin = Boolean(redirectPath && redirectPath.startsWith("/admin"));
   const loginTimer = useRef(null);
@@ -126,7 +126,7 @@ export default function Login() {
       toast.success("Logged in successfully");
       const nextPath = signingInAsAdmin
         ? (wantsAdmin ? from : "/admin")
-        : (wantsAdmin ? "/shop" : from);
+        : (wantsAdmin ? "/" : from);
       navigate(nextPath, { replace: true, state: signingInAsAdmin ? undefined : fromState });
     } else {
       setAuthError(result.message || "Invalid username, email, or password.");

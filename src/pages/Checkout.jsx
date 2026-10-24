@@ -627,7 +627,7 @@ export default function Checkout() {
       <StoreHeader />
       <main className="page-offset mx-auto max-w-8xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-10">
         <nav aria-label="Breadcrumb" className="page-crumb">
-          <Link to="/shop">Home</Link>
+          <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>
           <Link to="/shop">Shop</Link>
           <span aria-hidden="true">/</span>

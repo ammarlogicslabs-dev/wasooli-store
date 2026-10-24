@@ -5,9 +5,14 @@
 @theme {
     --color-brand-50: #eaf5ff;
     --color-brand-100: #d6ebff;
+    --color-brand-200: #b9dcff;
+    --color-brand-300: #7ec4ff;
+    --color-brand-400: #4eabff;
     --color-brand-500: #2c9aff;
     --color-brand-600: #1676d2;
     --color-brand-700: #125eaa;
+    --color-brand-800: #0e4a86;
+    --color-brand-900: #0c3a68;
     --color-brand-950: #0f172a;
     --font-sans: "Inter", sans-serif;
 }

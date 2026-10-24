@@ -1,7 +1,4 @@
-/**
- * Bulk price tiers: send/read top-level `priceTiers` (including [] when cleared).
- * Nested `botInstructions.priceTiers` remains a fallback for older bot payloads.
- */
+
 export const PRICE_TIERS_BOT_KEY = "priceTiers";
 
 /** Normalize bulk price tiers from API / form input. */
