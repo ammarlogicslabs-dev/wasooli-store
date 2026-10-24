@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatPrice } from "../../data/product";
@@ -8,6 +8,18 @@ import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
+
+function orderFormKey(order) {
+  if (!order) return "";
+  return [
+    order.id,
+    order.adminStatus,
+    order.courier,
+    order.trackingNumber,
+    order.paymentStatus,
+    order.payment?.method,
+  ].join("|");
+}
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
@@ -19,14 +31,16 @@ export default function OrderDetailsPage() {
   const [courier, setCourier] = useState(order?.courier || "Wasooli Express");
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || "");
   const [paymentStatus, setPaymentStatus] = useState(order ? paymentBucket(order) : "cod_pending");
+  const [syncedKey, setSyncedKey] = useState(() => orderFormKey(order));
 
-  useEffect(() => {
-    if (!order) return;
+  const nextKey = orderFormKey(order);
+  if (order && nextKey !== syncedKey) {
+    setSyncedKey(nextKey);
     setStatus(order.adminStatus || "pending");
     setCourier(order.courier || "Wasooli Express");
     setTrackingNumber(order.trackingNumber || "");
     setPaymentStatus(paymentBucket(order));
-  }, [order?.id, order?.adminStatus, order?.courier, order?.trackingNumber, order?.paymentStatus, order?.payment?.method]);
+  }
 
   if (!order) {
     return (

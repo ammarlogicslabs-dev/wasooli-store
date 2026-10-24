@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
@@ -24,7 +24,6 @@ import {
   Wrench,
   X,
   Zap,
-  ZoomIn,
 } from "lucide-react";
 import { formatPrice } from "../data/product";
 import { getProductInstructions } from "../data/productInstructions";
@@ -144,7 +143,7 @@ export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useSmoothNavigate();
   const ensureLogin = useEnsureLogin("Please log in first to continue to checkout.");
-  const { products, addItem, openCart, isWished, toggleWishlist, ready } = useCart();
+  const { products, addItem, openCart, isWished, toggleWishlist } = useCart();
   const addedTimer = useRef(null);
   const zoomRef = useRef(null);
 
@@ -159,17 +158,22 @@ export default function ProductDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoom, setZoom] = useState({ active: false, x: 50, y: 50 });
   const [copied, setCopied] = useState(false);
+  const [activeSlug, setActiveSlug] = useState(slug);
 
   const wished = product ? isWished(product.id) : false;
   const instructions = getProductInstructions(product);
 
-  useEffect(() => {
+  if (slug !== activeSlug) {
+    setActiveSlug(slug);
     setQuantity(1);
     setActiveImage(0);
     setAdded(false);
     setTab("overview");
     setOpenPolicy("shipping");
     setLightboxOpen(false);
+  }
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
 
@@ -190,13 +194,6 @@ export default function ProductDetail() {
       ? `${product.title} | ${STORE_NAME}`
       : `Product not found | ${STORE_NAME}`;
   }, [product]);
-
-  const recentProducts = useMemo(() => {
-    if (!product || !products.length) return [];
-    const ids = getRecentlyViewedIds().filter((id) => String(id) !== String(product.id));
-    const byId = new Map(products.map((item) => [String(item.id), item]));
-    return ids.map((id) => byId.get(id)).filter(Boolean).slice(0, 10);
-  }, [product, products, ready]);
 
   if (!product) {
     return (
@@ -261,6 +258,12 @@ export default function ProductDetail() {
   const relatedProducts = products
     .filter((item) => item.id !== product.id && item.category === product.category)
     .slice(0, 8);
+
+  const recentProducts = (() => {
+    const ids = getRecentlyViewedIds().filter((id) => String(id) !== String(product.id));
+    const byId = new Map(products.map((item) => [String(item.id), item]));
+    return ids.map((id) => byId.get(id)).filter(Boolean).slice(0, 10);
+  })();
 
   function handleAddToCart() {
     if (outOfStock) return;

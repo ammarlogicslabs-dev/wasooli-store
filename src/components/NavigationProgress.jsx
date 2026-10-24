@@ -6,15 +6,21 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 export default function NavigationProgress() {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
-  const [visible, setVisible] = useState(false);
-  const [width, setWidth] = useState(0);
+
+  if (reduceMotion) return null;
+
+  return (
+    <NavigationProgressBar
+      key={`${location.pathname}${location.search}`}
+    />
+  );
+}
+
+function NavigationProgressBar() {
+  const [visible, setVisible] = useState(true);
+  const [width, setWidth] = useState(18);
 
   useEffect(() => {
-    if (reduceMotion) return undefined;
-
-    setVisible(true);
-    setWidth(18);
-
     const tick = window.setTimeout(() => setWidth(72), 80);
     const almost = window.setTimeout(() => setWidth(92), 220);
     const done = window.setTimeout(() => {
@@ -30,7 +36,7 @@ export default function NavigationProgress() {
       window.clearTimeout(almost);
       window.clearTimeout(done);
     };
-  }, [location.pathname, location.search, reduceMotion]);
+  }, []);
 
   return (
     <AnimatePresence>

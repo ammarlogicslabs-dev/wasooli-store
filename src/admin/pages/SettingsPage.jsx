@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { saveSettings } from "../../services/storage/adminDataService";
 import PageHeader from "../components/PageHeader";
@@ -8,10 +8,12 @@ import { useAdminData } from "../hooks/useAdminData";
 export default function SettingsPage() {
   const { settings } = useAdminData();
   const [form, setForm] = useState(settings);
+  const [prevSettings, setPrevSettings] = useState(settings);
 
-  useEffect(() => {
+  if (settings !== prevSettings) {
+    setPrevSettings(settings);
     setForm(settings);
-  }, [settings]);
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();

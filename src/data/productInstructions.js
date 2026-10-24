@@ -78,12 +78,12 @@ export function buildDefaultInstructions(product) {
   const brand = product.brand || "Standard";
   const portType = product.portType || "Standard Interface";
 
-  let setupSteps = [];
-  let dosAndDonts = [];
-  let compatibilityList = [];
-  let speedTips = [];
-  let troubleshooting = [];
-  let quickFaqs = [];
+  let setupSteps;
+  let dosAndDonts;
+  let compatibilityList;
+  let speedTips;
+  let troubleshooting;
+  let quickFaqs;
 
   if (category.includes("cable")) {
     setupSteps = [

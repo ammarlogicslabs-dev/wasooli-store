@@ -32,10 +32,10 @@ export function CartProvider({ children }) {
   const [ready, setReady] = useState(false);
   const cartListeners = useRef(new Set());
   const syncingRef = useRef(false);
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
 
   const products = useMemo(() => {
+    // catalogTick forces a re-read of local storefront cache after DATA_EVENT.
+    void catalogTick;
     return hydrateProductList(apiProducts.length ? apiProducts : getStorefrontProducts());
   }, [apiProducts, catalogTick]);
 

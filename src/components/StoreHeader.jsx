@@ -167,6 +167,7 @@ export default function StoreHeader() {
   // Headline collapses first, then the nav bar slides away.
   const [headlineHidden, setHeadlineHidden] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
 
   const reduceMotion = useReducedMotion();
   const motionTransition = reduceMotion
@@ -177,17 +178,18 @@ export default function StoreHeader() {
   const closeWishlist = () => setWishlistOpen(false);
   const drawerOpen = cartOpen || wishlistOpen;
 
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
+    setCartOpen(false);
+    setWishlistOpen(false);
+  }
+
   useEffect(() => {
     return subscribeCartOpen(() => {
       setWishlistOpen(false);
       setCartOpen(true);
     });
   }, [subscribeCartOpen]);
-
-  useEffect(() => {
-    setCartOpen(false);
-    setWishlistOpen(false);
-  }, [location.pathname]);
 
   useLayoutEffect(() => {
     const measure = () => {

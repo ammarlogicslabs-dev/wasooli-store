@@ -84,9 +84,10 @@ export default function Login() {
   }, [isAuthenticated, isAdminAuthenticated, from, fromState, navigate, redirectPath, wantsAdmin]);
 
   useEffect(() => {
+    const timerRef = loginTimer;
     return () => {
-      if (loginTimer.current) {
-        window.clearTimeout(loginTimer.current);
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
       }
     };
   }, []);

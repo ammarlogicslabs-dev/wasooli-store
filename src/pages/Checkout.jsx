@@ -296,6 +296,18 @@ export default function Checkout() {
   const [couponMessage, setCouponMessage] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
 
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    fullName: user?.name || "",
+  }));
+  const [touched, setTouched] = useState({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [copiedField, setCopiedField] = useState("");
+  const confirmButtonRef = useRef(null);
+
   useEffect(() => {
     fetchPublicSettings()
       .then((settings) => {
@@ -353,17 +365,6 @@ export default function Checkout() {
   const orderItems = (buyNowItem ? [buyNowItem] : items).map((item) =>
     resolveOrderLine(item, products)
   );
-  const [form, setForm] = useState(() => ({
-    ...EMPTY_FORM,
-    fullName: user?.name || "",
-  }));
-  const [touched, setTouched] = useState({});
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [placing, setPlacing] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [order, setOrder] = useState(null);
-  const [copiedField, setCopiedField] = useState("");
-  const confirmButtonRef = useRef(null);
 
   useEffect(() => {
     document.title = order
@@ -396,9 +397,6 @@ export default function Checkout() {
     choices.find((option) => option.id === form.delivery) || choices[0];
   const deliveryFee = orderItems.length ? deliveryOption.fee : 0;
   const total = Math.max(0, subtotal + deliveryFee - couponDiscount);
-  const paymentOption =
-    PAYMENT_OPTIONS.find((option) => option.id === form.payment) ||
-    PAYMENT_OPTIONS[0];
 
   async function copyBankDetail(field, value) {
     try {

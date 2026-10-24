@@ -17,5 +17,20 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Context modules intentionally export Provider + hook from the same file.
+      'react-refresh/only-export-components': [
+        'error',
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            'useAuth',
+            'useLoginPrompt',
+            'useAdminAuth',
+            'useCart',
+          ],
+        },
+      ],
+    },
   },
 ])

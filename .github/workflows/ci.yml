@@ -20,9 +20,7 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Known pre-existing ESLint debt (~26 react-hooks/react-refresh errors). Soft-fail until cleaned separately.
       - name: Lint
-        continue-on-error: true
         run: npm run lint
 
       - name: Build

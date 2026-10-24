@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
@@ -80,14 +80,15 @@ export default function ProductFormPage() {
   const [errors, setErrors] = useState({});
   const [reading, setReading] = useState(false);
   const extraInputRef = useRef(null);
+  const skipSync = Boolean(id && loading);
+  const syncKey = skipSync ? null : `${id ?? "new"}:${existing?.id ?? "none"}`;
+  const [syncedKey, setSyncedKey] = useState(syncKey);
 
-  useEffect(() => {
-    if (id && loading) return;
+  if (!skipSync && syncKey !== syncedKey) {
+    setSyncedKey(syncKey);
     setForm(toForm(existing));
     setErrors({});
-    // Re-run when the edit target finishes loading from the admin cache.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- existing object identity changes; id + loading + existing?.id are enough
-  }, [id, loading, existing?.id]);
+  }
 
   if (id && loading) {
     return (

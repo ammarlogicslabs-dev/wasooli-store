@@ -23,29 +23,33 @@ import { formatPrice } from "../data/product";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
   
+function welcomeMessages(product) {
+  return [
+    {
+      id: "welcome",
+      sender: "bot",
+      text: `Salam! I am your Wasooli Smart Guide for ${product.title}.\n\nI can help you with setup instructions, speed optimization, compatibility, and troubleshooting for this item. How can I help you today?`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ];
+}
+
 export default function ProductBotModal({ product, isOpen, onClose }) {
   const { addItem, openCart } = useCart();
   const [activeTab, setActiveTab] = useState("instructions"); // "instructions" | "chat"
   const [copied, setCopied] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => (product ? welcomeMessages(product) : []));
+  const [chatProductId, setChatProductId] = useState(product?.id ?? null);
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef(null);
 
   const instructions = getProductInstructions(product);
 
-  // Initialize chat when opened or product changes
-  useEffect(() => {
-    if (!product) return;
-    setMessages([
-      {
-        id: "welcome",
-        sender: "bot",
-        text: `Salam! I am your Wasooli Smart Guide for ${product.title}.\n\nI can help you with setup instructions, speed optimization, compatibility, and troubleshooting for this item. How can I help you today?`,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]);
-  }, [product]);
+  if (product && product.id !== chatProductId) {
+    setChatProductId(product.id);
+    setMessages(welcomeMessages(product));
+  }
 
   useEffect(() => {
     if (activeTab === "chat") {

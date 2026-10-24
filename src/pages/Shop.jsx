@@ -14,7 +14,6 @@ import {
   ArrowUp,
   LayoutGrid,
   List,
-  Phone,
   Check,
 } from "lucide-react";
 import { formatPrice } from "../data/product";
@@ -517,12 +516,18 @@ export default function Shop() {
 
   const [minPriceLimit, setMinPriceLimit] = useState("");
   const [priceLimit, setPriceLimit] = useState("");
+  const priceRangeKey = `${products.length}:${minPrice}:${maxPrice}`;
+  const [syncedPriceRangeKey, setSyncedPriceRangeKey] = useState(priceRangeKey);
 
-  useEffect(() => {
-    if (!products.length || maxPrice <= 0) return;
+  if (
+    products.length &&
+    maxPrice > 0 &&
+    priceRangeKey !== syncedPriceRangeKey
+  ) {
+    setSyncedPriceRangeKey(priceRangeKey);
     setMinPriceLimit(minPrice);
     setPriceLimit(maxPrice);
-  }, [products.length, minPrice, maxPrice]);
+  }
 
   const priceBounds = useMemo(() => {
     const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
@@ -668,21 +673,22 @@ export default function Shop() {
     portTypeCounts,
   } = facetPool;
 
-  useEffect(() => {
-    if (category !== "All" && !categories.includes(category)) setCategory("All");
-    setBrand((current) => {
-      const next = current.filter((item) => brands.includes(item));
-      return next.length === current.length ? current : next;
-    });
-    setAvailability((current) => {
-      const next = current.filter((item) => availabilityOptions.includes(item));
-      return next.length === current.length ? current : next;
-    });
-    setPortType((current) => {
-      const next = current.filter((item) => portTypes.includes(item));
-      return next.length === current.length ? current : next;
-    });
-  }, [category, categories, brands, availabilityOptions, portTypes]);
+  if (category !== "All" && !categories.includes(category)) {
+    setCategory("All");
+  }
+
+  const nextBrand = brand.filter((item) => brands.includes(item));
+  if (nextBrand.length !== brand.length) setBrand(nextBrand);
+
+  const nextAvailability = availability.filter((item) =>
+    availabilityOptions.includes(item)
+  );
+  if (nextAvailability.length !== availability.length) {
+    setAvailability(nextAvailability);
+  }
+
+  const nextPortType = portType.filter((item) => portTypes.includes(item));
+  if (nextPortType.length !== portType.length) setPortType(nextPortType);
 
   const filteredProducts = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
@@ -764,14 +770,10 @@ export default function Shop() {
 
   useEffect(() => {
     const query = search.trim();
-    if (!query) {
-      setDebouncedSearch("");
-      return undefined;
-    }
-
+    const delay = query ? 500 : 0;
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
+      setDebouncedSearch(query ? search : "");
+    }, delay);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -779,18 +781,21 @@ export default function Shop() {
     document.title = "Shop | Wasooli Store";
   }, []);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [
+  const visibleResetKey = [
     debouncedSearch,
     category,
-    brand,
-    availability,
-    portType,
+    brand.join(","),
+    availability.join(","),
+    portType.join(","),
     sort,
     minPriceLimit,
     priceLimit,
-  ]);
+  ].join("|");
+  const [syncedVisibleKey, setSyncedVisibleKey] = useState(visibleResetKey);
+  if (visibleResetKey !== syncedVisibleKey) {
+    setSyncedVisibleKey(visibleResetKey);
+    setVisibleCount(PAGE_SIZE);
+  }
 
   useEffect(() => {
     document.body.style.overflow = filtersOpen ? "hidden" : "";
@@ -923,7 +928,7 @@ export default function Shop() {
     if (!ids.length || !products.length) return [];
     const byId = new Map(products.map((product) => [String(product.id), product]));
     return ids.map((id) => byId.get(id)).filter(Boolean).slice(0, 10);
-  }, [products, ready]);
+  }, [products]);
 
   const filterProps = {
     categories,
