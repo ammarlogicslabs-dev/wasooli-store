@@ -2,7 +2,18 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, LogIn, Mail, MapPin, Phone, ShoppingBag, Trash2, User, X } from "lucide-react";
+import {
+  ArrowRight,
+  Heart,
+  LogIn,
+  Mail,
+  MapPin,
+  Phone,
+  ShoppingBag,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
@@ -10,6 +21,18 @@ import { formatPrice } from "../data/product";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import QuantityStepper from "./QuantityStepper";
 import { PROGRAMMATIC_SCROLL_EVENT } from "../utils/smoothScroll";
+import {
+  AdaptersNicIcon,
+  CablingIcon,
+  NetworkSecurityIcon,
+  OpticalFiberIcon,
+  PoeIcon,
+  PowerRacksIcon,
+  RoutingIcon,
+  SwitchingIcon,
+  ToolsAccessoriesIcon,
+  WirelessIcon,
+} from "./NavIcons";
 
 const STORE_NAME = "Wasooli Store";
 const STORE_PHONE = "0300 1234567";
@@ -17,10 +40,42 @@ const STORE_EMAIL = "hello@wasooli.store";
 const STORE_HEADLINE =
   "Nationwide delivery on networking cables  ·  Orders packed in 1-2 working days  ·  Standard delivery in 3-5 days  ·  Express in 1-2 days";
 
+/** 10 Networking categories with large custom vector icons */
+const NAV_ICONS = [
+  { Icon: RoutingIcon, label: "Routers", category: "Routers & Wireless" },
+  { Icon: SwitchingIcon, label: "Switches", category: "Switches & Adapters" },
+  { Icon: WirelessIcon, label: "Wireless", category: "Wireless" },
+  { Icon: NetworkSecurityIcon, label: "Network Security", category: null },
+  { Icon: OpticalFiberIcon, label: "Optical & Fiber", category: "Outdoor & Industrial Cables" },
+  { Icon: CablingIcon, label: "Cabling & Connectivity", category: "Cat6 Cables" },
+  { Icon: PoeIcon, label: "PoE", category: null },
+  { Icon: AdaptersNicIcon, label: "Adapters & NICs", category: "Adapters & NICs" },
+  { Icon: PowerRacksIcon, label: "Power & Racks", category: null },
+  { Icon: ToolsAccessoriesIcon, label: "Tools & Accessories", category: null },
+];
+
+const LABEL_WIDTHS = {
+  "Routers": 68,
+  "Switches": 76,
+  "Wireless": 72,
+  "Network Security": 122,
+  "Optical & Fiber": 108,
+  "Cabling & Connectivity": 154,
+  "PoE": 46,
+  "Adapters & NICs": 114,
+  "Power & Racks": 104,
+  "Tools & Accessories": 144,
+};
+
+function navIconTo(category) {
+  if (!category) return "/shop";
+  return `/shop?category=${encodeURIComponent(category)}`;
+}
+
 // Scroll behaviour tuning
-const TOP_THRESHOLD = 18; // px from top where everything is shown again
-const SCROLL_DELTA = 2; // ignore tiny scroll movements
-const NAV_HIDE_AFTER = 80; // extra px scrolled down (after headline hides) before the nav hides
+const TOP_THRESHOLD = 18;
+const SCROLL_DELTA = 2;
+const NAV_HIDE_AFTER = 80;
 const MOTION_EASE = [0.22, 1, 0.36, 1];
 const DEFAULT_PROGRAMMATIC_MS = 1600;
 
@@ -162,6 +217,7 @@ export default function StoreHeader() {
   const location = useLocation();
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const headlineRef = useRef(null);
   const navRef = useRef(null);
   const [headlineHeight, setHeadlineHeight] = useState(0);
@@ -329,7 +385,8 @@ export default function StoreHeader() {
         initial={false}
         animate={{ y: navHidden ? "-100%" : "0%" }}
         transition={motionTransition}
-        className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur ${navHidden ? "pointer-events-none" : ""}`}
+        className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur ${navHidden ? "pointer-events-none" : ""
+          }`}
       >
         {/* Headline bar: height collapses smoothly (outer), natural height measured (inner) */}
         <motion.div
@@ -379,96 +436,205 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto flex max-w-8xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white">
-              <img
-                src="/wasooli.png"
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            </span>
-            <span className="truncate text-xl font-bold tracking-tight text-slate-900">
-              {STORE_NAME}
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setCartOpen(false);
-                setWishlistOpen(true);
-              }}
-              aria-label={`Open wishlist, ${wishlistItems.length} ${wishlistItems.length === 1 ? "item" : "items"
-                }`}
-              className="relative grid size-10 cursor-pointer place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-2.5 sm:px-6 sm:py-3 lg:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
+              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white sm:size-12 shadow-xs">
+                <img
+                  src="/wasooli.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </span>
+              <span className="truncate text-base font-bold tracking-tight text-slate-900 sm:text-xl">
+                {STORE_NAME}
+              </span>
+            </Link>
+            {/* Desktop: Vibrant 3D icon pods centered with leftward shift so right icons stay fixed */}
+            <nav
+              aria-label="Shop categories"
+              className="mx-2 hidden min-w-0 flex-1 items-center justify-center lg:flex overflow-visible"
             >
-              <Heart
-                size={18}
-                className={wishlistItems.length > 0 ? "text-red-500" : ""}
-                fill={wishlistItems.length > 0 ? "currentColor" : "none"}
-              />
-              {wishlistItems.length > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
-                  {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setWishlistOpen(false);
-                setCartOpen(true);
-              }}
-              aria-label={`Open cart, ${cartCount} ${cartCount === 1 ? "item" : "items"
-                }`}
-              className="relative grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
-            >
-              <ShoppingBag size={18} />
-              {cartCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
-            </button>
-
-            {isAuthenticated ? (
-              <Link
-                to="/account"
-                viewTransition
-                aria-label={
-                  notificationCount > 0
-                    ? `My account, ${notificationCount} ${notificationCount === 1 ? "notification" : "notifications"}`
-                    : "My account"
-                }
-                aria-current={location.pathname === "/account" ? "page" : undefined}
-                className={`relative grid size-10 place-items-center rounded-xl border transition ${
-                  location.pathname === "/account"
-                    ? "border-brand-500 bg-brand-50 text-brand-600"
-                    : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
-                }`}
+              <div
+                onMouseLeave={() => setHoveredIndex(null)}
+                className="flex max-w-full items-center justify-center gap-1.5 xl:gap-2 p-1 overflow-visible"
               >
-                <User size={18} />
-                {notificationCount > 0 && (
+                {NAV_ICONS.map(({ Icon, label, category }, index) => {
+                  const to = navIconTo(category);
+                  const active =
+                    location.pathname === "/shop" &&
+                    category &&
+                    new URLSearchParams(location.search).get("category") === category;
+                  const isHovered = hoveredIndex === index;
+                  const isLeftOfHovered = hoveredIndex !== null && index <= hoveredIndex;
+                  const currentShift =
+                    hoveredIndex !== null
+                      ? LABEL_WIDTHS[NAV_ICONS[hoveredIndex]?.label] || 80
+                      : 0;
+                  const labelWidth = LABEL_WIDTHS[label] || 80;
+
+                  return (
+                    <Link
+                      key={label}
+                      to={to}
+                      viewTransition
+                      aria-label={label}
+                      aria-current={active ? "page" : undefined}
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      style={{
+                        transform: isLeftOfHovered
+                          ? `translateX(-${currentShift}px)`
+                          : "translateX(0px)",
+                      }}
+                      className={`group relative flex shrink-0 items-center rounded-2xl p-1.5 transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${active
+                          ? "text-brand-700"
+                          : "text-slate-600 hover:text-slate-900"
+                        }`}
+                    >
+                      {/* Animated sliding active pill indicator across links */}
+                      {active && (
+                        <motion.span
+                          layoutId="activeCategoryPill"
+                          className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200/80 shadow-xs pointer-events-none"
+                          transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                        />
+                      )}
+
+                      {/* Smooth expanding pill highlight on hover */}
+                      <span
+                        className={`absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs pointer-events-none transition-all duration-300 ease-out ${isHovered && !active ? "opacity-100" : "opacity-0"
+                          }`}
+                        style={{
+                          width: isHovered ? `calc(100% + ${labelWidth}px)` : "100%",
+                        }}
+                      />
+
+                      {/* Icon container with depth & elevation on the LEFT (no zoom/scale on hover) */}
+                      <span className="relative z-10 grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-2xs transition-all duration-200 group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40">
+                        <Icon size={28} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
+                      </span>
+
+                      {/* Smooth expanding pill name on the RIGHT */}
+                      <span
+                        className="pointer-events-none absolute left-[46px] z-10 overflow-hidden transition-all duration-300 ease-out flex items-center"
+                        style={{
+                          width: isHovered ? `${labelWidth}px` : "0px",
+                          opacity: isHovered ? 1 : 0,
+                        }}
+                      >
+                        <span className="block whitespace-nowrap pl-2.5 pr-3 text-xs font-bold tracking-tight text-slate-800 group-hover:text-brand-600 transition-colors">
+                          {label}
+                        </span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+
+            <div className="flex items-center gap-1.5 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCartOpen(false);
+                  setWishlistOpen(true);
+                }}
+                aria-label={`Open wishlist, ${wishlistItems.length} items`}
+                className="relative grid size-10 cursor-pointer place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+              >
+                <Heart
+                  size={18}
+                  className={wishlistItems.length > 0 ? "text-red-500" : ""}
+                  fill={wishlistItems.length > 0 ? "currentColor" : "none"}
+                />
+                {wishlistItems.length > 0 && (
                   <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
-                    {notificationCount > 99 ? "99+" : notificationCount}
+                    {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
                   </span>
                 )}
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                viewTransition
-                state={{ from: location }}
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-brand-500 bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600 sm:px-4 sm:text-sm"
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWishlistOpen(false);
+                  setCartOpen(true);
+                }}
+                aria-label={`Open cart, ${cartCount} items`}
+                className="relative grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
               >
-                <LogIn size={16} aria-hidden="true" />
-                Login
-              </Link>
-            )}
+                <ShoppingBag size={18} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </button>
+
+              {isAuthenticated ? (
+                <Link
+                  to="/account"
+                  viewTransition
+                  aria-label="My account"
+                  className={`relative grid size-10 place-items-center rounded-xl border transition ${location.pathname === "/account"
+                      ? "border-brand-500 bg-brand-50 text-brand-600"
+                      : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                    }`}
+                >
+                  <User size={18} />
+                  {notificationCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                      {notificationCount > 99 ? "99+" : notificationCount}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  viewTransition
+                  state={{ from: location }}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-brand-500 bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600 sm:px-4 sm:text-sm"
+                >
+                  <LogIn size={16} aria-hidden="true" />
+                  Login
+                </Link>
+              )}
+            </div>
           </div>
+
+          {/* Mobile: Elevated 3D category cards */}
+          <nav
+            aria-label="Shop categories mobile"
+            className="mt-2.5 flex gap-2 overflow-x-auto pb-1 scrollbar-none lg:hidden"
+          >
+            {NAV_ICONS.map(({ Icon, label, category }) => {
+              const to = navIconTo(category);
+              const active =
+                location.pathname === "/shop" &&
+                category &&
+                new URLSearchParams(location.search).get("category") === category;
+              return (
+                <Link
+                  key={`m-${label}`}
+                  to={to}
+                  viewTransition
+                  aria-label={label}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${active
+                      ? "bg-brand-50 ring-1 ring-brand-300 shadow-xs"
+                      : "bg-white border border-slate-200/70 active:bg-slate-100 shadow-2xs"
+                    }`}
+                >
+                  <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-2xs">
+                    <Icon size={26} />
+                  </span>
+                  <span className="w-full truncate text-center text-[10px] font-bold text-slate-700">
+                    {label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </motion.header>
 

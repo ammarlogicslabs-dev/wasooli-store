@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "../data/product";
 import ProductCard from "../components/ProductCard";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import ShopCategoryStrip from "../components/ShopCategoryStrip";
 import ShopProductRail from "../components/ShopProductRail";
 import StoreHeader from "../components/StoreHeader";
@@ -487,10 +487,13 @@ function FilterPanel({
 export default function Shop() {
   const { products, ready } = useCart();
   const reduceMotion = useReducedMotion();
+  const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState(
+    () => searchParams.get("category") || "All"
+  );
   const [brand, setBrand] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [portType, setPortType] = useState([]);
@@ -786,6 +789,25 @@ export default function Shop() {
     document.title = "Shop | Wasooli Store";
   }, []);
 
+  useEffect(() => {
+    const fromUrl = searchParams.get("category");
+    setCategory(fromUrl && fromUrl.trim() ? fromUrl : "All");
+  }, [searchParams]);
+
+  function selectCategory(name) {
+    const next = typeof name === "function" ? name(category) : name;
+    setCategory(next);
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current);
+        if (!next || next === "All") params.delete("category");
+        else params.set("category", next);
+        return params;
+      },
+      { replace: true }
+    );
+  }
+
   const visibleResetKey = [
     debouncedSearch,
     category,
@@ -966,6 +988,7 @@ export default function Shop() {
     <main className="min-h-screen bg-slate-50">
       <StoreHeader />
 
+      {/* Top extra sections commented out - starting directly from sidebar & products
       <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
         <div className="page-offset relative mx-auto max-w-8xl px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-8 2xl:max-w-[1536px]">
@@ -1026,7 +1049,7 @@ export default function Shop() {
         items={categoryStripItems}
         active={category === "All" ? null : category}
         onSelect={(name) => {
-          setCategory((current) => (current === name ? "All" : name));
+          selectCategory((current) => (current === name ? "All" : name));
           smoothScrollTo("shop-browse", { reduce: reduceMotion });
         }}
       />
@@ -1050,6 +1073,7 @@ export default function Shop() {
         products={recentProducts}
         tone="light"
       />
+      */}
 
       <section
         id="shop-browse"
