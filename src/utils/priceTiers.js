@@ -74,7 +74,10 @@ export function validatePriceTiers(tiers) {
   return "";
 }
 
-/** Unit price for a quantity — uses matching tier, else product.price. */
+/**
+ * Display-only unit price for a quantity (matching tier, else product.price).
+ * Checkout place-order sends only { productId, quantity }; the API prices the order.
+ */
 export function getUnitPrice(product, quantity = 1) {
   const qty = Math.max(1, Math.floor(Number(quantity) || 1));
   const base = Number(product?.price);

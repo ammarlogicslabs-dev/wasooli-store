@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { apiRequest, getToken, setToken } from "../services/api/client";
+import { passwordPolicyError } from "../utils/passwordPolicy";
 
 const AuthContext = createContext(null);
 const USER_KEY = "wasooli_user";
@@ -85,8 +86,9 @@ export function AuthProvider({ children }) {
 
   const changePassword = useCallback(async (currentPassword, nextPassword) => {
     const next = String(nextPassword || "");
-    if (next.length < 6) {
-      return { success: false, message: "New password must be at least 6 characters." };
+    const policyError = passwordPolicyError(next);
+    if (policyError) {
+      return { success: false, message: policyError.replace(/^Password/, "New password") };
     }
     if (next === currentPassword) {
       return { success: false, message: "Choose a different password." };

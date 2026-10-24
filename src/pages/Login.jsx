@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useAdminAuth } from "../admin/auth/AdminAuthContext";
 import { useAuth } from "../auth/AuthContext";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
+import { passwordPolicyError } from "../utils/passwordPolicy";
 import {
   AlertCircle,
   ArrowRight,
@@ -41,8 +42,9 @@ function validate({ identifier, password }) {
 
   if (!password) {
     errors.password = "Enter your password.";
-  } else if (password.length < 6) {
-    errors.password = "Password must be at least 6 characters.";
+  } else {
+    const policyError = passwordPolicyError(password);
+    if (policyError) errors.password = policyError;
   }
 
   return errors;

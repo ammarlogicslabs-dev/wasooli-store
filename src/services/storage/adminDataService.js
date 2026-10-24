@@ -38,6 +38,10 @@ const cache = {
     notifyLowStock: true,
     notifyNewOrder: true,
     density: "comfortable",
+    bankName: "",
+    accountTitle: "",
+    accountNumber: "",
+    iban: "",
     adminName: "Wasooli Admin",
     adminEmail: "admin@wasooli.store",
     avatarUrl: "",
@@ -162,6 +166,10 @@ export async function saveSettings(patch) {
         notifyLowStock: patch.notifyLowStock,
         notifyNewOrder: patch.notifyNewOrder,
         density: patch.density,
+        bankName: patch.bankName ?? "",
+        accountTitle: patch.accountTitle ?? "",
+        accountNumber: patch.accountNumber ?? "",
+        iban: patch.iban ?? "",
       },
     });
     cache.settings = { ...cache.settings, ...(result.settings || {}) };

@@ -29,6 +29,7 @@ import { formatPrice } from "../data/product";
 import { fetchMyOrders } from "../services/storage/adminDataService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { PASSWORD_HINT, passwordPolicyError } from "../utils/passwordPolicy";
 
 const TRACKING_STEPS = [
   {
@@ -282,8 +283,9 @@ export default function Account() {
       setPasswordError("Fill in all password fields.");
       return;
     }
-    if (passwordForm.next.length < 6) {
-      setPasswordError("New password must be at least 6 characters.");
+    const policyError = passwordPolicyError(passwordForm.next);
+    if (policyError) {
+      setPasswordError(policyError.replace(/^Password/, "New password"));
       return;
     }
     if (passwordForm.next !== passwordForm.confirm) {
@@ -466,7 +468,7 @@ export default function Account() {
                 {passwordError ? (
                   <p className="text-sm font-medium text-red-600">{passwordError}</p>
                 ) : (
-                  <p className="text-xs text-slate-500">Use at least 6 characters.</p>
+                  <p className="text-xs text-slate-500">{PASSWORD_HINT}</p>
                 )}
                 <button
                   type="submit"

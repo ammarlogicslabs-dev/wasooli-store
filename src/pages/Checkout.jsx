@@ -37,13 +37,21 @@ const PROVINCES = [
   "Gilgit-Baltistan",
 ];
 
-
-const BANK_ACCOUNT = {
-  bank: "Meezan Bank",
-  title: "Wasooli Store",
-  accountNumber: "0123-4567890-01",
-  iban: "PK00MEZN0001234567890101",
+const EMPTY_BANK = {
+  bankName: "",
+  accountTitle: "",
+  accountNumber: "",
+  iban: "",
 };
+
+function hasBankDetails(bank) {
+  return Boolean(
+    String(bank?.bankName || "").trim() ||
+      String(bank?.accountTitle || "").trim() ||
+      String(bank?.accountNumber || "").trim() ||
+      String(bank?.iban || "").trim()
+  );
+}
 
 const PAYMENT_OPTIONS = [
   {
@@ -282,6 +290,7 @@ export default function Checkout() {
   const { products, items, clearCart, deductStock } = useCart();
   const [shippingFee, setShippingFee] = useState(DELIVERY_OPTIONS[0].fee);
   const [expressShippingFee, setExpressShippingFee] = useState(DELIVERY_OPTIONS[1].fee);
+  const [bankDetails, setBankDetails] = useState(EMPTY_BANK);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
@@ -294,6 +303,12 @@ export default function Checkout() {
         const express = Number(settings.expressShippingFee);
         if (Number.isFinite(fee) && fee >= 0) setShippingFee(fee);
         if (Number.isFinite(express) && express >= 0) setExpressShippingFee(express);
+        setBankDetails({
+          bankName: String(settings.bankName || "").trim(),
+          accountTitle: String(settings.accountTitle || "").trim(),
+          accountNumber: String(settings.accountNumber || "").trim(),
+          iban: String(settings.iban || "").trim(),
+        });
       })
       .catch(() => {});
   }, []);
@@ -467,22 +482,10 @@ export default function Checkout() {
     try {
       await saveSavedAddress(addressToSave).catch(() => {});
       const placed = await placeOrderApi({
-        items: orderItems.map((item) => {
-          const quantity = Number(item.quantity) || 1;
-          const unitPrice = getUnitPrice(
-            { price: item.basePrice ?? item.price, priceTiers: item.priceTiers },
-            quantity
-          );
-          return {
-            productId: Number(item.id),
-            quantity,
-            unitPrice,
-            tierLabel: item.tierLabel || tierLabelForQty(
-              { price: item.basePrice ?? item.price, priceTiers: item.priceTiers },
-              quantity
-            ),
-          };
-        }),
+        items: orderItems.map((item) => ({
+          productId: Number(item.id),
+          quantity: Number(item.quantity) || 1,
+        })),
         delivery: {
           fullName: form.fullName.trim(),
           phone: form.phone.trim(),
@@ -914,34 +917,44 @@ export default function Checkout() {
 
               {form.payment === "bank" && (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Transfer {formatPrice(total)} to this account
-                  </p>
-                  <dl className="mt-3 space-y-2 text-sm">
-                    {[
-                      ["Bank", BANK_ACCOUNT.bank, "bank", false],
-                      ["Account title", BANK_ACCOUNT.title, "title", false],
-                      ["Account number", BANK_ACCOUNT.accountNumber, "account", true],
-                      ["IBAN", BANK_ACCOUNT.iban, "iban", true],
-                    ].map(([label, value, field, canCopy]) => (
-                      <div key={field} className="flex items-center justify-between gap-3">
-                        <div>
-                          <dt className="text-xs text-slate-500">{label}</dt>
-                          <dd className="font-medium text-slate-900">{value}</dd>
-                        </div>
-                        {canCopy && (
-                          <button
-                            type="button"
-                            onClick={() => copyBankDetail(field, value)}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-white"
-                          >
-                            <Copy size={13} />
-                            {copiedField === field ? "Copied" : "Copy"}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </dl>
+                  {hasBankDetails(bankDetails) ? (
+                    <>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Transfer {formatPrice(total)} to this account
+                      </p>
+                      <dl className="mt-3 space-y-2 text-sm">
+                        {[
+                          ["Bank", bankDetails.bankName, "bank", false],
+                          ["Account title", bankDetails.accountTitle, "title", false],
+                          ["Account number", bankDetails.accountNumber, "account", true],
+                          ["IBAN", bankDetails.iban, "iban", true],
+                        ]
+                          .filter(([, value]) => String(value || "").trim())
+                          .map(([label, value, field, canCopy]) => (
+                            <div key={field} className="flex items-center justify-between gap-3">
+                              <div>
+                                <dt className="text-xs text-slate-500">{label}</dt>
+                                <dd className="font-medium text-slate-900">{value}</dd>
+                              </div>
+                              {canCopy && (
+                                <button
+                                  type="button"
+                                  onClick={() => copyBankDetail(field, value)}
+                                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-white"
+                                >
+                                  <Copy size={13} />
+                                  {copiedField === field ? "Copied" : "Copy"}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </dl>
+                    </>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-700">
+                      Bank transfer details are not published yet. Please contact the store for account information, then enter your transaction reference below.
+                    </p>
+                  )}
 
                   <div className="mt-4">
                     <label
