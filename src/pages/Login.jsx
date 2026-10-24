@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { useAdminAuth } from "../admin/auth/AdminAuthContext";
 import { useAuth } from "../auth/AuthContext";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
-import { passwordPolicyError } from "../utils/passwordPolicy";
 import {
   AlertCircle,
   ArrowRight,
@@ -40,11 +39,9 @@ function validate({ identifier, password }) {
     errors.identifier = "Username must be at least 3 characters.";
   }
 
+  // Skip complexity here: live accounts may still have legacy weak hashes; API decides credentials.
   if (!password) {
     errors.password = "Enter your password.";
-  } else {
-    const policyError = passwordPolicyError(password);
-    if (policyError) errors.password = policyError;
   }
 
   return errors;
