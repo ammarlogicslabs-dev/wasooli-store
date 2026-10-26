@@ -107,11 +107,11 @@ export default function AdminSidebar({
         rounded-full
         border border-blue-100
         bg-white
-        text-[#2C9AFF]
+        text-brand-500
         shadow-[0_2px_10px_rgba(44,154,255,0.16)]
         cursor-pointer
         transition-all duration-300 ease-out
-        hover:border-[#2C9AFF]
+        hover:border-brand-500
         hover:bg-blue-50
         hover:shadow-[0_4px_16px_rgba(44,154,255,0.28)]
         hover:scale-110
@@ -224,7 +224,7 @@ export default function AdminSidebar({
              ========================================= */}
           <div className="space-y-1">
             {!collapsed && (
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600">
                 Product Management
               </p>
             )}
@@ -419,7 +419,7 @@ export default function AdminSidebar({
              ========================================= */}
           <div className="space-y-1">
             {!collapsed && (
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600">
                 Order Management
               </p>
             )}
@@ -618,7 +618,7 @@ export default function AdminSidebar({
              ========================================= */}
           <div className="space-y-1">
             {!collapsed && (
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600">
                 User Management
               </p>
             )}

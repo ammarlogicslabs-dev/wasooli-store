@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FileSpreadsheet, Plus } from "lucide-react";
 import { formatPrice } from "../../data/product";
 import { archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import AdminPagination from "../components/AdminPagination";
 import AdminTable from "../components/AdminTable";
+import BulkProductModal from "../components/BulkProductModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
@@ -23,6 +25,7 @@ export default function ProductsPage() {
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
   const [pending, setPending] = useState(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -59,7 +62,22 @@ export default function ProductsPage() {
         crumbs={[{ label: "Products" }]}
         title="Products"
         detail="Search, filter, and manage the same catalog the storefront uses."
-        actions={<Link to="/admin/products/new" className={buttonClass}>Add product</Link>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:text-brand-700 sm:text-sm"
+            >
+              <FileSpreadsheet size={16} className="text-emerald-600" />
+              <span>Bulk Import</span>
+            </button>
+            <Link to="/admin/products/new" className={buttonClass}>
+              <Plus size={16} />
+              <span>Add product</span>
+            </Link>
+          </div>
+        }
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-4">
@@ -153,6 +171,10 @@ export default function ProductsPage() {
         confirmLabel={pending?.mode === "delete" ? "Delete" : "Archive"}
         onClose={() => setPending(null)}
         onConfirm={confirmAction}
+      />
+      <BulkProductModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
       />
     </div>
   );

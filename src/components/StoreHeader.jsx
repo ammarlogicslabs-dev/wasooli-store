@@ -56,16 +56,16 @@ const NAV_ICONS = [
 ];
 
 const LABEL_WIDTHS = {
-  "Routing": 58,
-  "Switching": 70,
-  "Wireless": 62,
-  "Network Security": 110,
-  "Optical & Fiber": 96,
-  "Cabling & Connectivity": 138,
-  "PoE": 38,
-  "Adapters & NICs": 104,
-  "Power & Racks": 98,
-  "Tools & Accessories": 124,
+  "Routing": 52,
+  "Switching": 63,
+  "Wireless": 55,
+  "Network Security": 103,
+  "Optical & Fiber": 90,
+  "Cabling & Connectivity": 132,
+  "PoE": 31,
+  "Adapters & NICs": 98,
+  "Power & Racks": 91,
+  "Tools & Accessories": 118,
 };
 
 function navIconTo(category) {
@@ -581,7 +581,7 @@ export default function StoreHeader() {
                           }}
                         >
                           <span
-                            className={`block whitespace-nowrap pl-2.5 pr-1.5 text-xs font-bold tracking-tight transition-colors ${
+                            className={`block whitespace-nowrap pl-1.5 pr-1 text-xs font-bold tracking-tight transition-colors ${
                               active ? "text-brand-700" : "text-slate-800 group-hover:text-brand-600"
                             }`}
                           >

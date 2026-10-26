@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { X } from "lucide-react";
+import { FileSpreadsheet, X } from "lucide-react";
+import BulkProductModal from "../components/BulkProductModal";
 import {
   buildDefaultInstructions,
   EMPTY_BOT_INSTRUCTIONS,
@@ -115,6 +116,7 @@ export default function ProductFormPage() {
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
   const [reading, setReading] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const extraInputRef = useRef(null);
   const skipSync = Boolean(id && loading);
   const syncKey = skipSync ? null : `${id ?? "new"}:${existing?.id ?? "none"}`;
@@ -268,6 +270,18 @@ export default function ProductFormPage() {
         crumbs={[{ label: "Products", to: "/admin/products" }, { label: existing ? "Edit" : "Add" }]}
         title={existing ? "Edit product" : "Add product"}
         detail="Draft products stay hidden on the shop until you mark them active. Bot instructions power the product assistant."
+        actions={
+          !existing ? (
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:text-brand-700 sm:text-sm"
+            >
+              <FileSpreadsheet size={16} className="text-emerald-600" />
+              <span>Bulk Import (CSV/Excel)</span>
+            </button>
+          ) : null
+        }
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -276,7 +290,7 @@ export default function ProductFormPage() {
             {field("sku", "SKU")}
             {field("slug", "Link slug", { placeholder: "Optional, generated from the name" })}
             <label className="block text-sm font-semibold text-slate-900">
-              Category
+              Category <span className="text-red-500">*</span>
               <select
                 value={form.category}
                 onChange={(event) => {
@@ -307,18 +321,6 @@ export default function ProductFormPage() {
                     {catName}
                   </option>
                 ))}
-                {categories
-                  .filter((c) => !CANONICAL_CATEGORIES.includes(c.name))
-                  .map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                {form.category &&
-                  !CANONICAL_CATEGORIES.includes(form.category) &&
-                  !categories.some((c) => c.name === form.category) && (
-                    <option value={form.category}>{form.category}</option>
-                  )}
               </select>
               {errors.category ? (
                 <span className="mt-1 block text-xs font-medium text-red-600">
@@ -329,7 +331,9 @@ export default function ProductFormPage() {
 
             <label className="block text-sm font-semibold text-slate-900">
               <span className="flex items-center justify-between">
-                <span>Subcategory</span>
+                <span>
+                  Subcategory <span className="text-red-500">*</span>
+                </span>
                 {/* {availableSubcategories.length > 0 && (
                   <span className="text-xs font-normal text-slate-500">
                     {availableSubcategories.length} available
@@ -344,7 +348,7 @@ export default function ProductFormPage() {
               >
                 <option value="">
                   {form.category
-                    ? `Select subcategory (optional)`
+                    ? "Select subcategory"
                     : "— First select a category —"}
                 </option>
                 {availableSubcategories.map((sub) => (
@@ -356,6 +360,11 @@ export default function ProductFormPage() {
                   <option value={form.subcategory}>{form.subcategory}</option>
                 )}
               </select>
+              {errors.subcategory ? (
+                <span className="mt-1 block text-xs font-medium text-red-600">
+                  {errors.subcategory}
+                </span>
+              ) : null}
             </label>
 
             {/* Dynamic Category & Condition Policy Banner */}
@@ -525,6 +534,11 @@ export default function ProductFormPage() {
         value={form.botInstructions}
         onChange={(botInstructions) => update("botInstructions", botInstructions)}
         onLoadTemplate={loadCategoryTemplate}
+      />
+
+      <BulkProductModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
       />
     </form>
   );

@@ -542,7 +542,11 @@ function AppliedFilters({ filters, onClearAll }) {
         <p className="text-xs font-semibold text-slate-800">Filter by</p>
         <button
           type="button"
-          onClick={onClearAll}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClearAll?.();
+          }}
           aria-label="Clear all filters"
           className="cursor-pointer rounded-full p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
         >
@@ -685,9 +689,9 @@ function FilterPanel({
         options={brands}
         value={brand}
         counts={brandCounts}
-        searchable
         multiple
         showCheckbox
+        showAll
         onChange={setBrand}
       />
       <FilterGroup
@@ -1365,13 +1369,24 @@ export default function Shop() {
   ].filter(Boolean);
 
   const clearFilters = () => {
-    selectCategory("All", "");
+    setCategory("All");
+    setSubcategory("");
     setBrand([]);
     setAvailability([]);
     setPortType([]);
-    handleConditionChange([]);
+    setCondition([]);
     setMinPriceLimit(minPrice);
     setPriceLimit(maxPrice);
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current);
+        params.delete("category");
+        params.delete("subcategory");
+        params.delete("condition");
+        return params;
+      },
+      { replace: true }
+    );
   };
 
   const clearAll = () => {
