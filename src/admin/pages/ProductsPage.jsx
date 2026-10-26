@@ -101,7 +101,31 @@ export default function ProductsPage() {
                   </span>
                 ),
               },
-              { key: "category", label: "Category" },
+              {
+                key: "category",
+                label: "Category",
+                render: (product) => (
+                  <div>
+                    <span className="block font-medium text-slate-900">{product.category}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      {product.subcategory && (
+                        <span className="text-xs text-slate-500">{product.subcategory}</span>
+                      )}
+                      {product.condition && (
+                        <span
+                          className={`rounded-full px-1.5 py-px text-[10px] font-semibold ${
+                            product.condition === "Used Product"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          {product.condition === "Used Product" ? "Used" : "New"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ),
+              },
               { key: "price", label: "Price", render: (product) => formatPrice(product.price) },
               { key: "stock", label: "Stock" },
               { key: "status", label: "Status", render: (product) => <StatusBadge status={product.status} /> },

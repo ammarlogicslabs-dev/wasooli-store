@@ -6,7 +6,7 @@ import PageLoader from "../components/PageLoader";
 const EASE = [0.22, 1, 0.36, 1];
 
 function locationKey(location) {
-  return `${location.pathname}${location.search}`;
+  return location.pathname;
 }
 
 /** Soft page enter + PageLoader only on real navigations (not F5 / first paint). */

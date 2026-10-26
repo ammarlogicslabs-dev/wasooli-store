@@ -5,6 +5,7 @@ import {
   SlidersHorizontal,
   X,
   ChevronDown,
+  ChevronRight,
   Truck,
   ShieldCheck,
   RotateCcw,
@@ -16,7 +17,12 @@ import {
   List,
   Check,
 } from "lucide-react";
-import { formatPrice } from "../data/product";
+import { formatPrice, getProductCondition } from "../data/product";
+import {
+  CANONICAL_CATEGORIES,
+  CATEGORY_SUBCATEGORIES,
+  normalizeCategory,
+} from "../data/categories";
 import ProductCard from "../components/ProductCard";
 import { Link, useSearchParams } from "react-router-dom";
 import ShopCategoryStrip from "../components/ShopCategoryStrip";
@@ -169,19 +175,17 @@ function FilterGroup({
                     role={showCheckbox ? "checkbox" : undefined}
                     aria-checked={showCheckbox ? active : undefined}
                     onClick={() => handleSelect(item)}
-                    className={`shop-filter-item flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
-                      active
+                    className={`shop-filter-item flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${active
                         ? "bg-brand-50 font-semibold text-brand-700"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     {showCheckbox ? (
                       <span
-                        className={`grid size-4 shrink-0 place-items-center rounded border transition ${
-                          active
+                        className={`grid size-4 shrink-0 place-items-center rounded border transition ${active
                             ? "border-brand-500 bg-brand-500 text-white"
                             : "border-slate-300 bg-white"
-                        }`}
+                          }`}
                         aria-hidden="true"
                       >
                         {active ? <Check size={10} strokeWidth={3} /> : null}
@@ -189,11 +193,10 @@ function FilterGroup({
                     ) : null}
                     <span className="min-w-0 flex-1 truncate text-[13px]">{item}</span>
                     <span
-                      className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px tabular-nums ${
-                        active
+                      className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px tabular-nums ${active
                           ? "bg-brand-500 text-white"
                           : "bg-slate-100 text-slate-500"
-                      }`}
+                        }`}
                     >
                       {count}
                     </span>
@@ -217,6 +220,315 @@ function FilterGroup({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export {
+  CANONICAL_CATEGORIES,
+  CATEGORY_SUBCATEGORIES,
+  normalizeCategory,
+};
+
+export { getProductCondition };
+
+function CategoryFilterGroup({
+  title = "Categories",
+  options = [],
+  value = "All",
+  counts = {},
+  subcategory = "",
+  onSelectCategory,
+  onSelectSubcategory,
+  products = [],
+  defaultOpen = true,
+  searchable = true,
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [query, setQuery] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState(() => {
+    return value && value !== "All" ? value : null;
+  });
+
+  const lastSyncedValueRef = useRef(value);
+
+  useEffect(() => {
+    if (value && value !== "All" && value !== lastSyncedValueRef.current) {
+      setExpandedCategory(value);
+    }
+    lastSyncedValueRef.current = value;
+  }, [value]);
+
+  function handleCategoryClick(item, hasSubcategories) {
+    if (hasSubcategories) {
+      const isCurrentlyOpen = expandedCategory === item;
+      if (isCurrentlyOpen) {
+        setExpandedCategory(null);
+      } else {
+        setExpandedCategory(item);
+        onSelectCategory(item);
+      }
+    } else {
+      setExpandedCategory(null);
+      onSelectCategory(item);
+    }
+  }
+
+  const subcategoriesMap = useMemo(() => {
+    const map = {};
+    options.forEach((cat) => {
+      if (cat === "All") return;
+      const dynamic = new Set();
+      (products || []).forEach((p) => {
+        if (
+          p.category === cat ||
+          normalizeCategory(p.category) === normalizeCategory(cat)
+        ) {
+          if (p.subcategory) dynamic.add(p.subcategory);
+        }
+      });
+      const predefined =
+        CATEGORY_SUBCATEGORIES[cat] ||
+        CATEGORY_SUBCATEGORIES[normalizeCategory(cat)] ||
+        [];
+      const list = Array.from(new Set([...predefined, ...dynamic]));
+      if (list.length > 0) {
+        map[cat] = list;
+      }
+    });
+    return map;
+  }, [options, products]);
+
+  const subcategoryCounts = useMemo(() => {
+    const countsMap = {};
+    Object.entries(subcategoriesMap).forEach(([cat, subs]) => {
+      subs.forEach((sub) => {
+        const key = `${cat}:::${sub}`;
+        const count = (products || []).filter((p) => {
+          if (
+            p.category !== cat &&
+            normalizeCategory(p.category) !== normalizeCategory(cat)
+          ) {
+            return false;
+          }
+          if (p.subcategory)
+            return p.subcategory.toLowerCase() === sub.toLowerCase();
+          const q = sub.toLowerCase();
+          return (
+            p.title?.toLowerCase().includes(q) ||
+            p.shortDescription?.toLowerCase().includes(q) ||
+            p.portType?.toLowerCase().includes(q)
+          );
+        }).length;
+        countsMap[key] = count;
+      });
+    });
+    return countsMap;
+  }, [subcategoriesMap, products]);
+
+  const filteredOptions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((cat) => {
+      if (cat === "All") return true;
+      if (cat.toLowerCase().includes(q)) return true;
+      const subs = subcategoriesMap[cat] || [];
+      return subs.some((sub) => sub.toLowerCase().includes(q));
+    });
+  }, [options, query, subcategoriesMap]);
+
+  return (
+    <div className="border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center justify-between gap-2 py-0.5 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-900">
+            {title}
+          </h3>
+          {value !== "All" ? (
+            <span className="rounded-full bg-brand-500 px-1.5 py-px text-[10px] font-bold text-white">
+              1
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="mt-3">
+          {/* {searchable && options.length > 5 && (
+            <div className="relative mb-2.5">
+              <Search
+                size={13}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search categories & subcategories…"
+                aria-label="Search categories"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-2 text-xs text-slate-700 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100"
+              />
+            </div>
+          )} */}
+
+          {/* All categories shown directly without any 'Show more' button */}
+          <ul className="space-y-1">
+            {filteredOptions.map((item) => {
+              const isAll = item === "All";
+              const isSelected = value === item && !subcategory;
+              const hasSelectedSub = value === item && Boolean(subcategory);
+              const count = counts[item] || 0;
+              const subcategories = subcategoriesMap[item] || [];
+              const hasSubcategories = !isAll && subcategories.length > 0;
+              const isExpanded = expandedCategory === item || Boolean(query.trim());
+
+              return (
+                <li key={item} className="flex flex-col">
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryClick(item, hasSubcategories)}
+                    className={`group flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left transition-all duration-200 ${isSelected
+                        ? "bg-brand-50/90 font-semibold text-brand-700 shadow-2xs ring-1 ring-brand-200/60"
+                        : hasSelectedSub
+                          ? "bg-slate-50 font-medium text-slate-900"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-medium tracking-tight">
+                        {item}
+                      </span>
+                      <span
+                        className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px text-[10px] tabular-nums transition-colors ${isSelected
+                            ? "bg-brand-500 text-white font-bold"
+                            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/80"
+                          }`}
+                      >
+                        {count}
+                      </span>
+                    </div>
+
+                    {hasSubcategories && (
+                      <div
+                        className={`pointer-events-none grid size-6 shrink-0 place-items-center rounded-md transition-all duration-200 ${isExpanded ? "text-brand-600 bg-brand-50/70" : "text-slate-400 group-hover:text-slate-700"
+                          }`}
+                      >
+                        <ChevronRight
+                          size={13}
+                          className={`transition-transform duration-200 ease-out ${isExpanded ? "rotate-90 text-brand-600" : ""
+                            }`}
+                        />
+                      </div>
+                    )}
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {hasSubcategories && isExpanded && (() => {
+                      const activeSubIndex =
+                        value === item && subcategory
+                          ? subcategories.indexOf(subcategory)
+                          : -1;
+                      const hasActiveSub = activeSubIndex !== -1;
+                      const fillPercent =
+                        hasActiveSub && subcategories.length > 1
+                          ? (activeSubIndex / (subcategories.length - 1)) * 100
+                          : 0;
+
+                      return (
+                        <motion.div
+                          key={`sub-${item}`}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden relative ml-3 pl-4 py-1.5"
+                        >
+                          {/* Vertical Tree Connector Guide Line with Dynamic Theme Fill */}
+                          <div className="absolute left-1.5 top-3.5 bottom-3.5 w-[1.5px] bg-slate-200 pointer-events-none">
+                            {/* Animated Active Filled Line according to selected subcategory */}
+                            <motion.div
+                              initial={false}
+                              animate={{
+                                height: hasActiveSub ? `${fillPercent}%` : "0%",
+                              }}
+                              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                              className="absolute top-0 left-05 w-full bg-brand-500 rounded-full shadow-[0_0_8px_rgba(44,154,255,0.45)]"
+                            />
+
+                            {/* Top Dot */}
+                            <span
+                              className={`absolute -top-1 -left-[3px] size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub || value === item
+                                  ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
+                                  : "bg-slate-300"
+                                }`}
+                            />
+
+                            {/* Bottom Dot */}
+                            <span
+                              className={`absolute -bottom-1 -left-[2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub && activeSubIndex === subcategories.length - 1
+                                  ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
+                                  : "bg-slate-300"
+                                }`}
+                            />
+                          </div>
+
+                          <ul className="space-y-0.5">
+                            {subcategories.map((sub) => {
+                              const isSubActive = value === item && subcategory === sub;
+                              const subKey = `${item}:::${sub}`;
+                              const subCount = subcategoryCounts[subKey] ?? 0;
+
+                              return (
+                                <li key={sub}>
+                                  <button
+                                    type="button"
+                                    onClick={() => onSelectSubcategory(item, sub)}
+                                    className={`group/sub relative flex w-full cursor-pointer items-center justify-between gap-1.5 rounded-md px-2 py-1 text-left transition-all duration-150 ${isSubActive
+                                        ? "text-brand-600 font-semibold"
+                                        : "text-slate-600 hover:text-slate-900 font-medium"
+                                      }`}
+                                  >
+                                    <span className="truncate text-[11.5px] leading-tight tracking-tight">
+                                      {sub}
+                                    </span>
+                                    {subCount > 0 && (
+                                      <span
+                                        className={`shrink-0 rounded-full px-1.5 py-px text-[9.5px] font-medium tabular-nums leading-none ${isSubActive
+                                            ? "bg-brand-50 text-brand-600"
+                                            : "bg-slate-100 text-slate-400 group-hover/sub:bg-slate-200/80 group-hover/sub:text-slate-600"
+                                          }`}
+                                      >
+                                        {subCount}
+                                      </span>
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </motion.div>
+                      );
+                    })()}
+                  </AnimatePresence>
+                </li>
+              );
+            })}
+
+            {filteredOptions.length === 0 && (
+              <li className="px-2 py-2 text-xs text-slate-400">No categories found</li>
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -259,6 +571,8 @@ function FilterPanel({
   categories,
   category,
   categoryCounts,
+  subcategory,
+  products,
   brands,
   brand,
   brandCounts,
@@ -268,6 +582,9 @@ function FilterPanel({
   portTypes,
   portType,
   portTypeCounts,
+  conditionOptions,
+  condition,
+  conditionCounts,
   minPrice,
   maxPrice,
   minPriceLimit,
@@ -276,6 +593,7 @@ function FilterPanel({
   setBrand,
   setAvailability,
   setPortType,
+  setCondition,
   setMinPriceLimit,
   setPriceLimit,
   activeFilters,
@@ -332,17 +650,35 @@ function FilterPanel({
   return (
     <div className="space-y-5">
       <AppliedFilters filters={activeFilters} onClearAll={onClearAll} />
-      <FilterGroup
+      <CategoryFilterGroup
         title="Categories"
         options={categories}
         value={category}
         counts={categoryCounts}
+        subcategory={subcategory}
+        products={products}
         searchable
         defaultOpen
-        onChange={(item) => {
-          setCategory(item);
+        onSelectCategory={(item) => {
+          setCategory(item, "");
+          const subs = CATEGORY_SUBCATEGORIES[item] || [];
+          if (subs.length === 0) {
+            onCategorySelect?.();
+          }
+        }}
+        onSelectSubcategory={(cat, sub) => {
+          setCategory(cat, sub);
           onCategorySelect?.();
         }}
+      />
+      <FilterGroup
+        title="Condition"
+        options={conditionOptions}
+        value={condition}
+        counts={conditionCounts}
+        multiple
+        showCheckbox
+        onChange={setCondition}
       />
       <FilterGroup
         title="Brand"
@@ -391,11 +727,10 @@ function FilterPanel({
                     setMinPriceLimit(preset.min);
                     setPriceLimit(preset.max);
                   }}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
-                    active
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${active
                       ? "border-brand-500 bg-brand-50 text-brand-700"
                       : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
-                  }`}
+                    }`}
                 >
                   {preset.label}
                 </button>
@@ -494,9 +829,16 @@ export default function Shop() {
   const [category, setCategory] = useState(
     () => searchParams.get("category") || "All"
   );
+  const [subcategory, setSubcategory] = useState(
+    () => searchParams.get("subcategory") || ""
+  );
   const [brand, setBrand] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [portType, setPortType] = useState([]);
+  const [condition, setCondition] = useState(() => {
+    const fromUrl = searchParams.get("condition");
+    return fromUrl ? fromUrl.split(",").filter(Boolean) : [];
+  });
   const [sort, setSort] = useState("featured");
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -574,9 +916,12 @@ export default function Shop() {
 
     function pool(ignore) {
       return products.filter((product) => {
-        if (!matchesSearch(product) || !matchesPrice(product)) return false;
-        if (ignore !== "category" && category !== "All" && product.category !== category) {
-          return false;
+        if (ignore !== "category" && category !== "All") {
+          const normSelected = normalizeCategory(category);
+          const normProd = normalizeCategory(product.category);
+          if (normSelected !== normProd && product.category !== category) {
+            return false;
+          }
         }
         if (ignore !== "brand" && brand.length > 0 && !brand.includes(product.brand)) {
           return false;
@@ -591,6 +936,13 @@ export default function Shop() {
           ignore !== "portType" &&
           portType.length > 0 &&
           !portType.includes(product.portType)
+        ) {
+          return false;
+        }
+        if (
+          ignore !== "condition" &&
+          condition.length > 0 &&
+          !condition.includes(getProductCondition(product))
         ) {
           return false;
         }
@@ -629,10 +981,35 @@ export default function Shop() {
     const forBrand = pool("brand");
     const forAvailability = pool("availability");
     const forPort = pool("portType");
+    const forCondition = pool("condition");
 
-    const categoryCounts = countBy(forCategory, (product) => product.category);
+    const categoryCounts = { All: forCategory.length };
+    CANONICAL_CATEGORIES.forEach((cat) => {
+      categoryCounts[cat] = forCategory.filter(
+        (p) => normalizeCategory(p.category) === cat
+      ).length;
+    });
+    const poeCount = forCategory.filter(
+      (p) =>
+        normalizeCategory(p.category) === "PoE" ||
+        p.title?.toLowerCase().includes("poe") ||
+        p.subcategory?.toLowerCase().includes("poe")
+    ).length;
+    if (poeCount > 0) {
+      categoryCounts["PoE"] = poeCount;
+    }
     const brandCounts = countBy(forBrand, (product) => product.brand);
     const portTypeCounts = countBy(forPort, (product) => product.portType);
+    const conditionCounts = {
+      All: forCondition.length,
+      "New Product": forCondition.filter((p) => getProductCondition(p) === "New Product").length,
+      "Used Product": forCondition.filter((p) => getProductCondition(p) === "Used Product").length,
+    };
+    const conditionOptions = [
+      "All",
+      ...(conditionCounts["New Product"] > 0 || condition.includes("New Product") ? ["New Product"] : []),
+      ...(conditionCounts["Used Product"] > 0 || condition.includes("Used Product") ? ["Used Product"] : []),
+    ];
 
     const inStock = forAvailability.filter((product) => product.stock > 0).length;
     const availabilityCounts = {
@@ -642,7 +1019,7 @@ export default function Shop() {
     };
 
     return {
-      categories: optionsFromCounts(categoryCounts, category),
+      categories: ["All", ...CANONICAL_CATEGORIES],
       categoryCounts,
       brands: optionsFromCounts(brandCounts, brand),
       brandCounts,
@@ -652,13 +1029,15 @@ export default function Shop() {
           ? ["In stock"]
           : []),
         ...(availabilityCounts["Out of stock"] > 0 ||
-        availability.includes("Out of stock")
+          availability.includes("Out of stock")
           ? ["Out of stock"]
           : []),
       ],
       availabilityCounts,
       portTypes: optionsFromCounts(portTypeCounts, portType),
       portTypeCounts,
+      conditionOptions,
+      conditionCounts,
     };
   }, [
     products,
@@ -668,6 +1047,7 @@ export default function Shop() {
     brand,
     availability,
     portType,
+    condition,
   ]);
 
   const {
@@ -679,9 +1059,16 @@ export default function Shop() {
     availabilityCounts,
     portTypes,
     portTypeCounts,
+    conditionOptions,
+    conditionCounts,
   } = facetPool;
 
-  if (category !== "All" && !categories.includes(category)) {
+  const normCurrentCat = normalizeCategory(category);
+  if (
+    category !== "All" &&
+    !categories.includes(category) &&
+    !CANONICAL_CATEGORIES.includes(normCurrentCat)
+  ) {
     setCategory("All");
   }
 
@@ -698,6 +1085,11 @@ export default function Shop() {
   const nextPortType = portType.filter((item) => portTypes.includes(item));
   if (nextPortType.length !== portType.length) setPortType(nextPortType);
 
+  const nextCondition = condition.filter((item) =>
+    conditionOptions.includes(item)
+  );
+  if (nextCondition.length !== condition.length) setCondition(nextCondition);
+
   const filteredProducts = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
     const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
@@ -712,8 +1104,28 @@ export default function Shop() {
         product.brand.toLowerCase().includes(query) ||
         product.portType.toLowerCase().includes(query);
 
+      const matchesSubcategory =
+        !subcategory ||
+        (product.subcategory &&
+          product.subcategory.toLowerCase() === subcategory.toLowerCase()) ||
+        product.title?.toLowerCase().includes(subcategory.toLowerCase()) ||
+        product.shortDescription?.toLowerCase().includes(subcategory.toLowerCase()) ||
+        product.portType?.toLowerCase().includes(subcategory.toLowerCase());
+
+      const normCat = normalizeCategory(category);
+      const normProdCat = normalizeCategory(product.category);
+      const isPoeCategory = normCat === "PoE";
+      const isPoeProduct =
+        normProdCat === "PoE" ||
+        product.title?.toLowerCase().includes("poe") ||
+        product.subcategory?.toLowerCase().includes("poe");
+
       const matchesCategory =
-        category === "All" || product.category === category;
+        (category === "All" ||
+          product.category === category ||
+          normCat === normProdCat ||
+          (isPoeCategory && isPoeProduct)) &&
+        matchesSubcategory;
       const matchesBrand =
         brand.length === 0 || brand.includes(product.brand);
       const matchesAvailability =
@@ -723,6 +1135,8 @@ export default function Shop() {
         );
       const matchesPort =
         portType.length === 0 || portType.includes(product.portType);
+      const matchesCondition =
+        condition.length === 0 || condition.includes(getProductCondition(product));
 
       const price = Number(product.price);
       const matchesPrice = price >= min && price <= max;
@@ -733,6 +1147,7 @@ export default function Shop() {
         matchesBrand &&
         matchesAvailability &&
         matchesPort &&
+        matchesCondition &&
         matchesPrice
       );
     });
@@ -766,9 +1181,11 @@ export default function Shop() {
     products,
     debouncedSearch,
     category,
+    subcategory,
     brand,
     availability,
     portType,
+    condition,
     sort,
     minPriceLimit,
     priceLimit,
@@ -792,16 +1209,44 @@ export default function Shop() {
   useEffect(() => {
     const fromUrl = searchParams.get("category");
     setCategory(fromUrl && fromUrl.trim() ? fromUrl : "All");
+    const subFromUrl = searchParams.get("subcategory");
+    setSubcategory(subFromUrl && subFromUrl.trim() ? subFromUrl : "");
+    const condFromUrl = searchParams.get("condition");
+    setCondition(condFromUrl ? condFromUrl.split(",").filter(Boolean) : []);
   }, [searchParams]);
 
-  function selectCategory(name) {
+  function selectCategory(name, sub = "") {
     const next = typeof name === "function" ? name(category) : name;
     setCategory(next);
+    setSubcategory(sub);
     setSearchParams(
       (current) => {
         const params = new URLSearchParams(current);
-        if (!next || next === "All") params.delete("category");
-        else params.set("category", next);
+        if (!next || next === "All") {
+          params.delete("category");
+          params.delete("subcategory");
+        } else {
+          params.set("category", next);
+          if (sub) params.set("subcategory", sub);
+          else params.delete("subcategory");
+        }
+        return params;
+      },
+      { replace: true }
+    );
+  }
+
+  function handleConditionChange(next) {
+    const val = typeof next === "function" ? next(condition) : next;
+    setCondition(val);
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current);
+        if (!val || val.length === 0) {
+          params.delete("condition");
+        } else {
+          params.set("condition", val.join(","));
+        }
         return params;
       },
       { replace: true }
@@ -811,9 +1256,11 @@ export default function Shop() {
   const visibleResetKey = [
     debouncedSearch,
     category,
+    subcategory,
     brand.join(","),
     availability.join(","),
     portType.join(","),
+    condition.join(","),
     sort,
     minPriceLimit,
     priceLimit,
@@ -874,8 +1321,8 @@ export default function Shop() {
   const activeFilters = [
     category !== "All" && {
       key: "category",
-      label: category,
-      clear: () => setCategory("All"),
+      label: subcategory ? `${category} › ${subcategory}` : category,
+      clear: () => selectCategory("All", ""),
     },
     ...brand.map((item) => ({
       key: `brand-${item}`,
@@ -894,14 +1341,22 @@ export default function Shop() {
       clear: () =>
         setPortType((current) => current.filter((entry) => entry !== item)),
     })),
+    ...condition.map((item) => ({
+      key: `condition-${item}`,
+      label: item,
+      clear: () =>
+        handleConditionChange((current) =>
+          current.filter((entry) => entry !== item)
+        ),
+    })),
     priceActive && {
       key: "price",
       label:
         minPriceLimit > minPrice && priceLimit < maxPrice
           ? `${formatPrice(minPriceLimit)} - ${formatPrice(priceLimit)}`
           : minPriceLimit > minPrice
-          ? `From ${formatPrice(minPriceLimit)}`
-          : `Up to ${formatPrice(priceLimit)}`,
+            ? `From ${formatPrice(minPriceLimit)}`
+            : `Up to ${formatPrice(priceLimit)}`,
       clear: () => {
         setMinPriceLimit(minPrice);
         setPriceLimit(maxPrice);
@@ -910,10 +1365,11 @@ export default function Shop() {
   ].filter(Boolean);
 
   const clearFilters = () => {
-    setCategory("All");
+    selectCategory("All", "");
     setBrand([]);
     setAvailability([]);
     setPortType([]);
+    handleConditionChange([]);
     setMinPriceLimit(minPrice);
     setPriceLimit(maxPrice);
   };
@@ -961,6 +1417,8 @@ export default function Shop() {
     categories,
     category,
     categoryCounts,
+    subcategory,
+    products,
     brands,
     brand,
     brandCounts,
@@ -970,14 +1428,18 @@ export default function Shop() {
     portTypes,
     portType,
     portTypeCounts,
+    conditionOptions,
+    condition,
+    conditionCounts,
     minPrice,
     maxPrice,
     minPriceLimit,
     priceLimit,
-    setCategory,
+    setCategory: selectCategory,
     setBrand,
     setAvailability,
     setPortType,
+    setCondition: handleConditionChange,
     setMinPriceLimit,
     setPriceLimit,
     activeFilters,
@@ -988,30 +1450,75 @@ export default function Shop() {
     <main className="min-h-screen bg-slate-50">
       <StoreHeader />
 
-      {/* Top extra sections commented out - starting directly from sidebar & products
-      <section className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="page-offset relative mx-auto max-w-8xl px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-8 2xl:max-w-[1536px]">
-          <nav aria-label="Breadcrumb" className="page-crumb">
-            <Link to="/">Home</Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">Shop</span>
-          </nav>
+      {/* Breadcrumb Navigation */}
+      <div className="border-b border-slate-200/80 bg-white">
+        <nav
+          aria-label="Breadcrumb"
+          className="page-crumb page-offset mx-auto flex max-w-8xl flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8 2xl:max-w-384"
+        >
+          <Link to="/">Home</Link>
+          <span aria-hidden="true">/</span>
 
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600 sm:mt-5">
-            Welcome to Wasooli Store
-          </p>
-
-          <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:mt-2.5 sm:text-3xl lg:text-4xl">
-            Explore Products<span className="text-brand-500">.</span>
-          </h1>
-
-          <p className="mt-2 max-w-xl text-xs leading-5 text-slate-600 sm:mt-3 sm:text-sm">
-            Discover products selected by Wasooli Store for your everyday style
-            and needs.
-          </p>
-        </div>
-      </section>
+          {category && category !== "All" ? (
+            <>
+              <Link
+                to="/shop"
+                onClick={() => selectCategory("All", "")}
+                className="cursor-pointer transition hover:text-brand-600"
+              >
+                Shop
+              </Link>
+              <span aria-hidden="true">/</span>
+              {subcategory ? (
+                <>
+                  <Link
+                    to={`/shop?category=${encodeURIComponent(category)}`}
+                    onClick={() => selectCategory(category, "")}
+                    className="cursor-pointer transition hover:text-brand-600"
+                  >
+                    {category}
+                  </Link>
+                  <span aria-hidden="true">/</span>
+                  <span
+                    aria-current="page"
+                    className="max-w-48 truncate font-medium text-slate-900 sm:max-w-md"
+                  >
+                    {subcategory}
+                  </span>
+                </>
+              ) : (
+                <span
+                  aria-current="page"
+                  className="max-w-48 truncate font-medium text-slate-900 sm:max-w-md"
+                >
+                  {category}
+                </span>
+              )}
+            </>
+          ) : condition.length === 1 ? (
+            <>
+              <Link
+                to="/shop"
+                onClick={() => setCondition([])}
+                className="cursor-pointer transition hover:text-brand-600"
+              >
+                Shop
+              </Link>
+              <span aria-hidden="true">/</span>
+              <span
+                aria-current="page"
+                className="max-w-48 truncate font-medium text-slate-900 sm:max-w-md"
+              >
+                {condition[0]}s
+              </span>
+            </>
+          ) : (
+            <span aria-current="page" className="font-medium text-slate-900">
+              Shop
+            </span>
+          )}
+        </nav>
+      </div>
 
       <section
         className="border-b border-slate-200 bg-white"
@@ -1045,35 +1552,6 @@ export default function Shop() {
         </div>
       </section>
 
-      <ShopCategoryStrip
-        items={categoryStripItems}
-        active={category === "All" ? null : category}
-        onSelect={(name) => {
-          selectCategory((current) => (current === name ? "All" : name));
-          smoothScrollTo("shop-browse", { reduce: reduceMotion });
-        }}
-      />
-
-      <ShopProductRail
-        subtitle="Curated picks"
-        title="Featured products"
-        products={featuredProducts}
-        tone="light"
-      />
-      <ShopProductRail
-        subtitle="What people buy"
-        title="Trending now"
-        products={trendingProducts}
-        tone="dark"
-        autoplay
-      />
-      <ShopProductRail
-        subtitle="Continue browsing"
-        title="Recently viewed"
-        products={recentProducts}
-        tone="light"
-      />
-      */}
 
       <section
         id="shop-browse"
@@ -1094,22 +1572,14 @@ export default function Shop() {
                     </p>
                   </div>
                 </div>
-                {activeFilters.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="text-xs font-semibold text-brand-600 transition hover:text-brand-700"
-                  >
-                    Clear all
-                  </button>
-                ) : null}
+               
               </div>
               <FilterPanel {...filterProps} />
             </div>
           </aside>
 
           <div className="min-w-0">
-            <div className="sticky top-[var(--store-header-height,0px)] z-30 -mx-4 mb-5 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 shadow-sm backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:top-auto lg:mx-0 lg:mb-5 lg:rounded-2xl lg:border lg:border-slate-200 lg:bg-white lg:px-4 lg:py-3.5 lg:shadow-sm lg:backdrop-blur-none">
+            <div className="sticky top-(--store-header-height,0px) z-30 -mx-4 mb-5 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 shadow-sm backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:top-auto lg:mx-0 lg:mb-5 lg:rounded-2xl lg:border lg:border-slate-200 lg:bg-white lg:px-4 lg:py-3.5 lg:shadow-sm lg:backdrop-blur-none">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
                 <div className="relative min-w-0 flex-1">
                   <Search
@@ -1180,11 +1650,10 @@ export default function Shop() {
                       onClick={() => setViewMode("grid")}
                       aria-pressed={viewMode === "grid"}
                       aria-label="Grid view"
-                      className={`grid size-8 place-items-center rounded-lg transition ${
-                        viewMode === "grid"
+                      className={`grid size-8 place-items-center rounded-lg transition ${viewMode === "grid"
                           ? "bg-brand-500 text-white"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                      }`}
+                        }`}
                     >
                       <LayoutGrid size={15} />
                     </button>
@@ -1193,46 +1662,15 @@ export default function Shop() {
                       onClick={() => setViewMode("list")}
                       aria-pressed={viewMode === "list"}
                       aria-label="List view"
-                      className={`grid size-8 place-items-center rounded-lg transition ${
-                        viewMode === "list"
+                      className={`grid size-8 place-items-center rounded-lg transition ${viewMode === "list"
                           ? "bg-brand-500 text-white"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                      }`}
+                        }`}
                     >
                       <List size={15} />
                     </button>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-                {/* <p className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                  {viewMode === "list" ? (
-                    <List size={13} className="text-brand-500" />
-                  ) : (
-                    <LayoutGrid size={13} className="text-brand-500" />
-                  )}
-                  Showing{" "}
-                  <span className="font-semibold text-slate-800">{visibleProducts.length}</span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-slate-800">{filteredProducts.length}</span>{" "}
-                  products
-                </p> */}
-                {activeFilters.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {activeFilters.map((filter) => (
-                      <button
-                        key={filter.key}
-                        type="button"
-                        onClick={filter.clear}
-                        className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition hover:bg-brand-100"
-                      >
-                        {filter.label}
-                        <X size={10} />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
               </div>
             </div>
 
@@ -1255,7 +1693,11 @@ export default function Shop() {
               </div>
             ) : visibleProducts.length > 0 ? (
               <>
-                <div
+                <motion.div
+                  key={`${category}-${subcategory}-${sort}`}
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
                   className={
                     viewMode === "list"
                       ? "flex flex-col gap-3"
@@ -1270,7 +1712,7 @@ export default function Shop() {
                       layout={viewMode}
                     />
                   ))}
-                </div>
+                </motion.div>
 
                 <div className="mt-8 flex flex-col items-center gap-3 sm:mt-12">
                   <div className="h-1.5 w-40 overflow-hidden rounded-full bg-slate-200 sm:w-56">

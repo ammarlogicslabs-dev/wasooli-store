@@ -1,3 +1,5 @@
+import { getProductPolicy } from "../utils/productPolicy";
+
 export const EMPTY_BOT_INSTRUCTIONS = {
   setupSteps: [],
   dosAndDonts: [],
@@ -73,6 +75,7 @@ export function normalizeBotInstructions(raw) {
 export function buildDefaultInstructions(product) {
   if (!product) return { ...EMPTY_BOT_INSTRUCTIONS };
 
+  const policy = getProductPolicy(product);
   const title = product.title || "Product";
   const category = (product.category || "").toLowerCase();
   const brand = product.brand || "Standard";
@@ -161,6 +164,10 @@ export function buildDefaultInstructions(product) {
         q: "Does this cable require any software drivers?",
         a: "No, this is completely plug-and-play. No drivers or software installation required.",
       },
+      {
+        q: "What is the return & exchange policy for this item?",
+        a: `${policy.badge} (${policy.condition}): ${policy.shortSummary}. ${policy.conditionTerms}`,
+      },
     ];
   } else if (category.includes("switch") || category.includes("router") || category.includes("access point")) {
     setupSteps = [
@@ -225,6 +232,10 @@ export function buildDefaultInstructions(product) {
         q: "Can I connect multiple switches together?",
         a: "Yes, you can daisy-chain switches via any LAN port using standard Ethernet cables.",
       },
+      {
+        q: "What warranty or testing guarantee applies to this product?",
+        a: `${policy.badge} (${policy.condition}): ${policy.shortSummary}. ${policy.conditionTerms}`,
+      },
     ];
   } else {
     setupSteps = [
@@ -273,7 +284,7 @@ export function buildDefaultInstructions(product) {
       },
       {
         q: "What warranty does Wasooli Store provide?",
-        a: "All items include safe delivery guarantee and 2-day inspection exchange for sealed original items.",
+        a: `${policy.badge} (${policy.condition}): ${policy.shortSummary}. ${policy.conditionTerms}`,
       },
     ];
   }
@@ -363,7 +374,14 @@ export function generateBotResponse(query, product, instructions) {
   }
 
   if (q.includes("warranty") || q.includes("return") || q.includes("exchange") || q.includes("guarantee")) {
-    return `Wasooli Store offers a safe delivery guarantee on ${title}. Exchanges are available within 2 days of delivery for unused items in their original sealed packaging.`;
+    const policy = getProductPolicy(product);
+    return `Return & Exchange Policy for ${title} (${policy.condition} · ${policy.category}):\n\n` +
+      `• Coverage: ${policy.badge} (${policy.warrantyType})\n` +
+      `• Overview: ${policy.shortSummary}\n` +
+      `• Terms: ${policy.conditionTerms} ${policy.categoryTerms}\n\n` +
+      `✓ Eligible for exchange/claim: ${policy.eligibleItems.slice(0, 2).join("; ")}.\n` +
+      `✗ Ineligible: ${policy.ineligibleItems.slice(0, 2).join("; ")}.\n\n` +
+      `Need to file a claim? Contact Wasooli support within ${policy.warrantyPeriod} with your Order ID and photo/video proof.`;
   }
 
   const faqHit = (instructions.quickFaqs || []).find((item) => {

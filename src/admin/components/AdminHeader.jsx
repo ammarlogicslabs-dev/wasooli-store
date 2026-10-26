@@ -1,4 +1,4 @@
-import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useAdminAuth } from "../auth/AdminAuthContext";
 import { useAdminData } from "../hooks/useAdminData";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -14,9 +14,6 @@ export default function AdminHeader({ collapsed, onToggleCollapse, onOpenMobile 
       <div className="flex items-center gap-2">
         <button type="button" onClick={onOpenMobile} className="grid size-10 cursor-pointer place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
           <Menu size={18} />
-        </button>
-        <button type="button" onClick={onToggleCollapse} className="hidden size-10 cursor-pointer place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:grid" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
       </div>
       <div className="flex items-center gap-3">

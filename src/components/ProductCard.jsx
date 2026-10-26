@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { Bot, Heart, ShoppingBag, Star } from "lucide-react";
-import { formatPrice } from "../data/product";
+import { formatPrice, getProductCondition } from "../data/product";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import ProductBotModal from "./ProductBotModal";
@@ -23,6 +23,7 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
   const isList = layout === "list";
+  const isUsed = getProductCondition(product) === "Used Product";
 
   function handleAddToCart(event) {
     event.preventDefault();
@@ -75,9 +76,13 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
             <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-slate-950 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
               {product.badge}
             </span>
+          ) : isUsed ? (
+            <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-amber-500/95 backdrop-blur-xs px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+              Used
+            </span>
           ) : null}
           {hasDiscount ? (
-            <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+            <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
               −{discountPct}%
             </span>
           ) : null}

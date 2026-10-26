@@ -16,14 +16,48 @@ import PriceTiersEditor from "../components/PriceTiersEditor";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
 import { useAdminData } from "../hooks/useAdminData";
 import { normalizePriceTiers } from "../../utils/priceTiers";
+import {
+  CANONICAL_CATEGORIES,
+  CATEGORY_SUBCATEGORIES,
+  normalizeCategory,
+} from "../../data/categories";
+import { getProductPolicy } from "../../utils/productPolicy";
+
+const CATEGORY_PORT_SUGGESTIONS = {
+  "Routing": ["Gigabit RJ45", "10G SFP+ / RJ45", "Cellular 4G/5G SIM", "Console RJ45"],
+  "Switching": ["10/100/1000M RJ45", "1G SFP", "10G SFP+", "PoE+ RJ45", "PoE++ RJ45"],
+  "Wireless": ["Wi-Fi 6 / RJ45", "Wi-Fi 7 / 2.5GbE", "RP-SMA Antenna", "PoE PD RJ45"],
+  "Network Security": ["Gigabit WAN/LAN", "10G SFP+ Interfaces", "Dedicated Management RJ45"],
+  "Optical & Fiber": ["LC Duplex", "SC Simplex", "SFP 1.25G", "SFP+ 10G", "QSFP+ 40G"],
+  "Cabling & Connectivity": ["Snagless RJ45", "Cat6 RJ45 8P8C", "Keystone Jack", "Patch Panel 24-Port"],
+  "PoE": ["802.3af/at RJ45", "Passive 24V RJ45", "802.3bt 90W RJ45", "Gigabit PoE Injector"],
+  "Adapters & NICs": ["PCIe x4 / RJ45", "PCIe x8 / SFP+", "USB 3.0 to RJ45", "M.2 Key-E Wi-Fi"],
+  "Power & Racks": ["C13 / C14 Sockets", "Universal AC Outlets", "19-inch 1U Rackmount", "19-inch 42U Enclosure"],
+  "Tools & Accessories": ["RJ45 / RJ11 8P8C", "Optical VFL 2.5mm", "Digital LCD Tester", "Punchdown 110/Krone"],
+};
+
+const CATEGORY_DEFAULT_SPECS = {
+  "Routing": "Port Interface | Gigabit RJ45\nRouting Protocols | Static, RIP, OSPF, BGP\nVPN Security | IPsec, OpenVPN, WireGuard\nPower Supply | 12V DC Adapter",
+  "Switching": "Port Interface | 10/100/1000 Mbps RJ45\nSwitching Fabric | Gigabit Non-blocking\nPoE Capability | 802.3af/at Auto-sensing\nMounting | Desktop & 19-inch Rackmount",
+  "Wireless": "Wi-Fi Standard | Wi-Fi 6 (802.11ax)\nFrequency Bands | 2.4 GHz & 5 GHz Dual-Band\nMax Data Rate | Up to 1800-3000 Mbps\nAntenna Gain | High-Gain Omnidirectional",
+  "Network Security": "Form Factor | Desktop / 1U Rackmount\nFirewall Throughput | Enterprise Multi-Gbps\nThreat Protection | IPS, Antivirus, SSL Inspection\nInterfaces | Multiple Routed WAN/LAN Ports",
+  "Optical & Fiber": "Connector Type | LC Duplex\nWavelength | 1310nm / 850nm\nFiber Type | Single-Mode (SMF) / Multi-Mode (MMF)\nMax Link Distance | Up to 10km / 20km",
+  "Cabling & Connectivity": "Cable Category | Cat6 UTP 23AWG\nConductor Material | 100% Pure Bare Copper\nBandwidth Capacity | 250 MHz / 10 Gbps\nConnector Type | Gold-plated RJ45 8P8C",
+  "PoE": "PoE Standard | IEEE 802.3af / 802.3at\nPower Output | Up to 30W / 60W Output\nData Passthrough | 10/100/1000 Mbps Gigabit\nInput Voltage | 100-240V AC 50/60Hz",
+  "Adapters & NICs": "Host Bus Interface | PCI Express 2.0 / 3.0 x4\nNetwork Interface | 1000M RJ45 / 10G SFP+\nBrackets Included | Full-height & Low-profile\nOS Support | Windows, Linux, VMware ESXi",
+  "Power & Racks": "Rack Standard | 19-inch Standard Enclosure\nConstruction | Heavy-duty Cold Rolled Steel\nPower Outlets | C13 / Universal Outlets\nProtection | Surge & Overload Circuit Breaker",
+  "Tools & Accessories": "Tool Compatibility | RJ45 Cat5e/Cat6 & RJ11 8P8C/6P\nBlade Material | High-Carbon Hardened Steel\nHandle Grip | Ergonomic Non-slip Rubber\nTester Functions | Pin-by-pin LED Continuity Test",
+};
 
 const EMPTY = {
   title: "",
   sku: "",
   slug: "",
   category: "",
+  subcategory: "",
   brand: "Wasooli",
   portType: "",
+  condition: "New Product",
   price: "",
   oldPrice: "",
   stock: "0",
@@ -60,6 +94,8 @@ function toForm(product) {
   return {
     ...EMPTY,
     ...product,
+    subcategory: product.subcategory || "",
+    condition: product.condition || "New Product",
     price: String(product.price ?? ""),
     oldPrice: product.oldPrice ?? "",
     stock: String(product.stock ?? 0),
@@ -114,10 +150,11 @@ export default function ProductFormPage() {
 
   function loadCategoryTemplate() {
     const template = buildDefaultInstructions({
-      title: form.title || "Product",
+      title: form.title || form.subcategory || form.category || "Product",
       category: form.category,
       brand: form.brand,
       portType: form.portType,
+      condition: form.condition,
       specifications: (form.specificationsText || "")
         .split("\n")
         .map((line) => {
@@ -127,7 +164,26 @@ export default function ProductFormPage() {
         .filter((item) => item.label && item.value),
     });
     update("botInstructions", template);
-    toast.success("Category template loaded. Edit anything before saving.");
+
+    // Prefill specs if empty
+    if (!form.specificationsText?.trim() && form.category) {
+      const defaultSpecs =
+        CATEGORY_DEFAULT_SPECS[form.category] ||
+        CATEGORY_DEFAULT_SPECS[normalizeCategory(form.category)];
+      if (defaultSpecs) update("specificationsText", defaultSpecs);
+    }
+
+    // Prefill default port type if empty
+    if (!form.portType?.trim() && form.category) {
+      const defaultPort = (
+        CATEGORY_PORT_SUGGESTIONS[form.category] ||
+        CATEGORY_PORT_SUGGESTIONS[normalizeCategory(form.category)] ||
+        []
+      )[0];
+      if (defaultPort) update("portType", defaultPort);
+    }
+
+    toast.success(`${form.category || "Category"} template & FAQs loaded.`);
   }
 
   async function handleExtraFiles(event) {
@@ -189,6 +245,23 @@ export default function ProductFormPage() {
     </label>
   );
 
+  const availableSubcategories = form.category
+    ? CATEGORY_SUBCATEGORIES[form.category] ||
+      CATEGORY_SUBCATEGORIES[normalizeCategory(form.category)] ||
+      []
+    : [];
+
+  const portSuggestions = form.category
+    ? CATEGORY_PORT_SUGGESTIONS[form.category] ||
+      CATEGORY_PORT_SUGGESTIONS[normalizeCategory(form.category)] ||
+      []
+    : [];
+
+  const policy = getProductPolicy({
+    category: form.category,
+    condition: form.condition,
+  });
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <PageHeader
@@ -204,14 +277,163 @@ export default function ProductFormPage() {
             {field("slug", "Link slug", { placeholder: "Optional, generated from the name" })}
             <label className="block text-sm font-semibold text-slate-900">
               Category
-              <input list="category-options" value={form.category} onChange={(event) => update("category", event.target.value)} className={`${inputClass} mt-1.5`} />
-              <datalist id="category-options">
-                {categories.map((category) => <option key={category.id} value={category.name} />)}
-              </datalist>
-              {errors.category ? <span className="mt-1 block text-xs font-medium text-red-600">{errors.category}</span> : null}
+              <select
+                value={form.category}
+                onChange={(event) => {
+                  const nextCategory = event.target.value;
+                  update("category", nextCategory);
+                  const nextSubs = nextCategory
+                    ? CATEGORY_SUBCATEGORIES[nextCategory] ||
+                      CATEGORY_SUBCATEGORIES[normalizeCategory(nextCategory)] ||
+                      []
+                    : [];
+                  if (!nextSubs.includes(form.subcategory)) {
+                    update("subcategory", "");
+                  }
+                  if (!form.portType) {
+                    const defaultPort = (
+                      CATEGORY_PORT_SUGGESTIONS[nextCategory] ||
+                      CATEGORY_PORT_SUGGESTIONS[normalizeCategory(nextCategory)] ||
+                      []
+                    )[0];
+                    if (defaultPort) update("portType", defaultPort);
+                  }
+                }}
+                className={`${inputClass} mt-1.5`}
+              >
+                <option value="">Select category</option>
+                {CANONICAL_CATEGORIES.map((catName) => (
+                  <option key={catName} value={catName}>
+                    {catName}
+                  </option>
+                ))}
+                {categories
+                  .filter((c) => !CANONICAL_CATEGORIES.includes(c.name))
+                  .map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                {form.category &&
+                  !CANONICAL_CATEGORIES.includes(form.category) &&
+                  !categories.some((c) => c.name === form.category) && (
+                    <option value={form.category}>{form.category}</option>
+                  )}
+              </select>
+              {errors.category ? (
+                <span className="mt-1 block text-xs font-medium text-red-600">
+                  {errors.category}
+                </span>
+              ) : null}
             </label>
+
+            <label className="block text-sm font-semibold text-slate-900">
+              <span className="flex items-center justify-between">
+                <span>Subcategory</span>
+                {/* {availableSubcategories.length > 0 && (
+                  <span className="text-xs font-normal text-slate-500">
+                    {availableSubcategories.length} available
+                  </span>
+                )} */}
+              </span>
+              <select
+                value={form.subcategory || ""}
+                disabled={!form.category}
+                onChange={(event) => update("subcategory", event.target.value)}
+                className={`${inputClass} mt-1.5 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed`}
+              >
+                <option value="">
+                  {form.category
+                    ? `Select subcategory (optional)`
+                    : "— First select a category —"}
+                </option>
+                {availableSubcategories.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+                {form.subcategory && !availableSubcategories.includes(form.subcategory) && (
+                  <option value={form.subcategory}>{form.subcategory}</option>
+                )}
+              </select>
+            </label>
+
+            {/* Dynamic Category & Condition Policy Banner */}
+            {/* {form.category ? (
+              <div className="sm:col-span-2 rounded-2xl border border-brand-200/90 bg-gradient-to-br from-brand-50/70 via-white to-brand-50/40 p-3.5 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800">
+                      Category Context:
+                    </span>
+                    <span className="rounded-md bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-800">
+                      {form.category}
+                    </span>
+                    {form.subcategory ? (
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                        {form.subcategory}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-xs font-bold ${
+                      form.condition === "Used Product"
+                        ? "bg-amber-100 text-amber-900"
+                        : "bg-emerald-100 text-emerald-900"
+                    }`}
+                  >
+                    {policy.badge}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+                  <strong className="text-slate-800">{policy.warrantyType} ({policy.warrantyPeriod}):</strong> {policy.shortSummary}
+                </p>
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100/80 pt-2 text-xs">
+                  <span className="text-slate-500">
+                    Policy and bot instructions automatically adjust for this product.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={loadCategoryTemplate}
+                    className="cursor-pointer font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                  >
+                    Auto-fill category specs & bot template →
+                  </button>
+                </div>
+              </div>
+            ) : null} */}
+
             {field("brand", "Brand")}
-            {field("portType", "Port type")}
+
+            <label className="block text-sm font-semibold text-slate-900">
+              Port type
+              <input
+                value={form.portType}
+                onChange={(event) => update("portType", event.target.value)}
+                placeholder="e.g. Gigabit RJ45, 10G SFP+, LC Duplex"
+                className={`${inputClass} mt-1.5`}
+              />
+              {portSuggestions.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[11px] font-medium text-slate-400">Suggestions:</span>
+                  {portSuggestions.map((sug) => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => update("portType", sug)}
+                      className={`cursor-pointer rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
+                        form.portType === sug
+                          ? "bg-brand-500 text-white font-semibold"
+                          : "bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700"
+                      }`}
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </label>
+
             {field("price", "Price", { inputMode: "decimal" })}
             {field("oldPrice", "Compare-at price", { inputMode: "decimal" })}
             {field("stock", "Stock", { inputMode: "numeric" })}
@@ -221,6 +443,17 @@ export default function ProductFormPage() {
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
                 <option value="archived">Archived</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-slate-900">
+              Condition
+              <select
+                value={form.condition || "New Product"}
+                onChange={(event) => update("condition", event.target.value)}
+                className={`${inputClass} mt-1.5`}
+              >
+                <option value="New Product">New Product</option>
+                <option value="Used Product">Used Product</option>
               </select>
             </label>
           </div>

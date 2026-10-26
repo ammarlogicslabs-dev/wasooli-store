@@ -334,6 +334,8 @@ function toProductPayload(input) {
     slug: slugify(input.slug || input.title),
     sku: String(input.sku).trim(),
     category: String(input.category).trim(),
+    subcategory: String(input.subcategory || "").trim(),
+    condition: String(input.condition || "New Product").trim(),
     brand: String(input.brand || "Wasooli").trim(),
     portType: String(input.portType || "").trim(),
     image: primary,

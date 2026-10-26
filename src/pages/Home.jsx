@@ -31,6 +31,7 @@ import ShopProductRail from "../components/ShopProductRail";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { normalizeCategory } from "../data/categories";
 import { getRecentlyViewedIds } from "../utils/recentlyViewed";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { smoothScrollTo } from "../utils/smoothScroll";
@@ -577,8 +578,8 @@ function CategoryGrid({ items, loading }) {
               >
                 <TiltCard max={9} className="rounded-2xl">
                   <Link
-                    to="/shop"
-                    className="group relative block aspect-[4/3] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-[0_8px_24px_-16px_rgba(15,23,42,0.35)] transition-shadow duration-300 hover:border-brand-300 hover:shadow-[0_28px_44px_-18px_rgba(44,154,255,0.5)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+                    to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                    className="group relative block aspect-4/3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-[0_8px_24px_-16px_rgba(15,23,42,0.35)] transition-shadow duration-300 hover:border-brand-300 hover:shadow-[0_28px_44px_-18px_rgba(44,154,255,0.5)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
                     aria-label={`Browse ${cat.name}`}
                   >
                     {cat.image ? (
@@ -924,7 +925,7 @@ export default function Home() {
   const { categoryItems, categoryTotal } = useMemo(() => {
     const map = new Map();
     products.forEach((p) => {
-      const name = p.category;
+      const name = normalizeCategory(p.category);
       if (!name) return;
       const entry = map.get(name) || { name, count: 0, image: null };
       entry.count += 1;

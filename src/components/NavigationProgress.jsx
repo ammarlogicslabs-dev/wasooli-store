@@ -11,7 +11,7 @@ export default function NavigationProgress() {
 
   return (
     <NavigationProgressBar
-      key={`${location.pathname}${location.search}`}
+      key={location.pathname}
     />
   );
 }

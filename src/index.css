@@ -169,31 +169,87 @@ img {
     cursor: pointer;
 }
 
+/* Global Sleek Brand Scrollbar for all pages & elements */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(44, 154, 255, 0.5) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(44, 154, 255, 0.45);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2c9aff;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #1676d2;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #2c9aff #f1f5f9;
-  }
-  
-  .custom-scrollbar-hide {
+    scrollbar-color: rgba(44, 154, 255, 0.5) transparent;
+}
+
+.custom-scrollbar-hide {
     scrollbar-width: none;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 3px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
+    -ms-overflow-style: none;
+}
+
+.custom-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(44, 154, 255, 0.5);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #2c9aff;
-    border-radius: 3px;
-  }
-  input, select, textarea {
+}
+
+input, select, textarea {
     outline: none;
-  }
+}
   
 
 @keyframes store-headline {

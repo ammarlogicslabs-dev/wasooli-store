@@ -28,6 +28,7 @@ export default function AdminLayout() {
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
         onLogout={handleLogout}
+        onToggleCollapse={() => setCollapsed((value) => !value)}
       />
       <div className={`flex min-h-screen min-w-0 flex-col ${collapsed ? "lg:pl-20" : "lg:pl-72"}`}>
         <AdminHeader

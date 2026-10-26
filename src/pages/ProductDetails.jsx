@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "../data/product";
 import { getProductInstructions } from "../data/productInstructions";
+import { getProductPolicy } from "../utils/productPolicy";
 import ProductCard from "../components/ProductCard";
 import ProductBotModal from "../components/ProductBotModal";
 import QuantityStepper from "../components/QuantityStepper";
@@ -162,6 +163,7 @@ export default function ProductDetail() {
 
   const wished = product ? isWished(product.id) : false;
   const instructions = getProductInstructions(product);
+  const policy = getProductPolicy(product);
 
   if (slug !== activeSlug) {
     setActiveSlug(slug);
@@ -622,14 +624,25 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="flex items-start gap-3 border-t border-slate-100 pt-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
-                <Package size={18} />
+              <span
+                className={`grid size-10 shrink-0 place-items-center rounded-xl ${
+                  policy.isUsed ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                <RotateCcw size={18} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Exchange policy</p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Sealed unused items within 2 days of delivery
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="text-sm font-semibold text-slate-900">{policy.badge}</p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      policy.isUsed ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {policy.condition}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-500">{policy.shortSummary}</p>
               </div>
             </div>
           </div>
@@ -686,7 +699,7 @@ export default function ProductDetail() {
           <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:hidden">
             {[
               { icon: Truck, title: "Fast dispatch", text: "1–2 working days" },
-              { icon: RotateCcw, title: "Easy exchange", text: "Sealed items only" },
+              { icon: RotateCcw, title: policy.badge, text: policy.warrantyType },
               { icon: ShieldCheck, title: "Secure checkout", text: "Protected payments" },
             ].map(({ icon: Icon, title, text }) => (
               <div
@@ -842,6 +855,12 @@ export default function ProductDetail() {
               <p className="flex items-center gap-2">
                 <Truck size={14} className="text-brand-600" />
                 Packed in 1–2 working days
+              </p>
+              <p className="flex items-center gap-2">
+                <RotateCcw size={14} className={policy.isUsed ? "text-amber-600" : "text-emerald-600"} />
+                <span>
+                  <strong className="font-semibold text-slate-800">{policy.badge}</strong> · {policy.warrantyType}
+                </span>
               </p>
             </div>
           </div>
@@ -1030,13 +1049,13 @@ export default function ProductDetail() {
                 {[
                   {
                     id: "shipping",
-                    title: "Shipping",
-                    body: "Orders are packed within 1–2 working days. Standard delivery usually arrives in 3–5 working days, and express delivery in 1–2 working days. You choose the option at checkout.",
+                    title: "Shipping & Delivery",
+                    body: "Orders are packed within 1–2 working days. Standard delivery usually arrives in 3–5 working days, and express delivery in 1–2 working days. Cash on delivery (COD) is available for eligible destinations across Pakistan.",
                   },
                   {
                     id: "returns",
-                    title: "Return and exchange policy",
-                    body: "Wasooli Store does not accept returns. An exchange is available only when the item is unused and still in its original sealed packaging, and the request is made within 2 days of delivery. Opened or used items cannot be exchanged. Pre-order and back-order items cannot be exchanged or returned.",
+                    title: `Return & Exchange Policy (${policy.badge})`,
+                    body: "",
                   },
                 ].map((item) => {
                   const open = openPolicy === item.id;
@@ -1058,9 +1077,117 @@ export default function ProductDetail() {
                         )}
                       </button>
                       {open ? (
-                        <p className="border-t border-slate-200 px-4 py-4 text-sm leading-7 text-slate-600">
-                          {item.body}
-                        </p>
+                        item.id === "returns" ? (
+                          <div className="border-t border-slate-200 px-5 py-5 space-y-5">
+                            {/* Summary Card */}
+                            <div
+                              className={`rounded-xl border p-4 ${
+                                policy.isUsed
+                                  ? "border-amber-200 bg-amber-50/50"
+                                  : "border-emerald-200 bg-emerald-50/50"
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
+                                      policy.isUsed
+                                        ? "bg-amber-100 text-amber-900"
+                                        : "bg-emerald-100 text-emerald-900"
+                                    }`}
+                                  >
+                                    {policy.condition}
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-500">
+                                    Category:{" "}
+                                    <strong className="text-slate-800">{policy.category}</strong>
+                                  </span>
+                                </div>
+                                <span
+                                  className={`rounded-md px-2 py-0.5 text-xs font-bold ${
+                                    policy.isUsed
+                                      ? "bg-amber-200/80 text-amber-900"
+                                      : "bg-emerald-200/80 text-emerald-900"
+                                  }`}
+                                >
+                                  {policy.badge}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-slate-900">
+                                {policy.warrantyType} ({policy.warrantyPeriod})
+                              </p>
+                              <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                                {policy.shortSummary}
+                              </p>
+                              <div className="mt-3 grid gap-2 border-t border-slate-200/60 pt-3 text-xs sm:grid-cols-2 text-slate-700">
+                                <div>
+                                  <span className="font-semibold text-slate-900">Condition Terms: </span>
+                                  <span>{policy.conditionTerms}</span>
+                                </div>
+                                <div>
+                                  <span className="font-semibold text-slate-900">Category Rules: </span>
+                                  <span>{policy.categoryTerms}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Eligible vs Ineligible Grid */}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+                                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-800">
+                                  <CheckCircle2 size={15} className="text-emerald-600" />
+                                  Qualifies for Exchange / Return
+                                </p>
+                                <ul className="mt-2.5 space-y-2 text-xs text-emerald-950">
+                                  {policy.eligibleItems.map((rule, idx) => (
+                                    <li key={idx} className="flex items-start gap-2">
+                                      <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-600" />
+                                      <span>{rule}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-4">
+                                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-800">
+                                  <X size={15} className="text-rose-600" />
+                                  Strictly Non-Returnable
+                                </p>
+                                <ul className="mt-2.5 space-y-2 text-xs text-rose-950">
+                                  {policy.ineligibleItems.map((rule, idx) => (
+                                    <li key={idx} className="flex items-start gap-2">
+                                      <span className="mt-1 size-1.5 shrink-0 rounded-full bg-rose-600" />
+                                      <span>{rule}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+
+                            {/* 3-Step Claim Process */}
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              <p className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                How to Claim within {policy.warrantyPeriod}
+                              </p>
+                              <ol className="mt-2.5 space-y-2 text-xs text-slate-600">
+                                {policy.claimProcess.map((step, idx) => (
+                                  <li key={idx} className="flex items-start gap-2">
+                                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
+                                      {idx + 1}
+                                    </span>
+                                    <span className="pt-0.5 leading-snug">
+                                      {step.replace(/^[0-9]+[.:]\s*/, "")}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="border-t border-slate-200 px-4 py-4 text-sm leading-7 text-slate-600">
+                            {item.body}
+                          </p>
+                        )
                       ) : null}
                     </div>
                   );

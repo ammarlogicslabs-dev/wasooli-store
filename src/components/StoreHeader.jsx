@@ -18,6 +18,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { normalizeCategory } from "../data/categories";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import QuantityStepper from "./QuantityStepper";
 import { PROGRAMMATIC_SCROLL_EVENT } from "../utils/smoothScroll";
@@ -42,29 +43,29 @@ const STORE_HEADLINE =
 
 /** 10 Networking categories with large custom vector icons */
 const NAV_ICONS = [
-  { Icon: RoutingIcon, label: "Routers", category: "Routers & Wireless" },
-  { Icon: SwitchingIcon, label: "Switches", category: "Switches & Adapters" },
+  { Icon: RoutingIcon, label: "Routing", category: "Routing" },
+  { Icon: SwitchingIcon, label: "Switching", category: "Switching" },
   { Icon: WirelessIcon, label: "Wireless", category: "Wireless" },
-  { Icon: NetworkSecurityIcon, label: "Network Security", category: null },
-  { Icon: OpticalFiberIcon, label: "Optical & Fiber", category: "Outdoor & Industrial Cables" },
-  { Icon: CablingIcon, label: "Cabling & Connectivity", category: "Cat6 Cables" },
-  { Icon: PoeIcon, label: "PoE", category: null },
+  { Icon: NetworkSecurityIcon, label: "Network Security", category: "Network Security" },
+  { Icon: OpticalFiberIcon, label: "Optical & Fiber", category: "Optical & Fiber" },
+  { Icon: CablingIcon, label: "Cabling & Connectivity", category: "Cabling & Connectivity" },
+  { Icon: PoeIcon, label: "PoE", category: "PoE" },
   { Icon: AdaptersNicIcon, label: "Adapters & NICs", category: "Adapters & NICs" },
-  { Icon: PowerRacksIcon, label: "Power & Racks", category: null },
-  { Icon: ToolsAccessoriesIcon, label: "Tools & Accessories", category: null },
+  { Icon: PowerRacksIcon, label: "Power & Racks", category: "Power & Racks" },
+  { Icon: ToolsAccessoriesIcon, label: "Tools & Accessories", category: "Tools & Accessories" },
 ];
 
 const LABEL_WIDTHS = {
-  "Routers": 68,
-  "Switches": 76,
-  "Wireless": 72,
-  "Network Security": 122,
-  "Optical & Fiber": 108,
-  "Cabling & Connectivity": 154,
-  "PoE": 46,
-  "Adapters & NICs": 114,
-  "Power & Racks": 104,
-  "Tools & Accessories": 144,
+  "Routing": 58,
+  "Switching": 70,
+  "Wireless": 62,
+  "Network Security": 110,
+  "Optical & Fiber": 96,
+  "Cabling & Connectivity": 138,
+  "PoE": 38,
+  "Adapters & NICs": 104,
+  "Power & Racks": 98,
+  "Tools & Accessories": 124,
 };
 
 function navIconTo(category) {
@@ -450,6 +451,7 @@ export default function StoreHeader() {
                 {STORE_NAME}
               </span>
             </Link>
+            {/* Desktop: Vibrant 3D icon pods centered with active item expanding its text */}
             {/* Desktop: Vibrant 3D icon pods centered with leftward shift so right icons stay fixed */}
             <nav
               aria-label="Shop categories"
@@ -459,76 +461,137 @@ export default function StoreHeader() {
                 onMouseLeave={() => setHoveredIndex(null)}
                 className="flex max-w-full items-center justify-center gap-1.5 xl:gap-2 p-1 overflow-visible"
               >
-                {NAV_ICONS.map(({ Icon, label, category }, index) => {
-                  const to = navIconTo(category);
-                  const active =
-                    location.pathname === "/shop" &&
-                    category &&
-                    new URLSearchParams(location.search).get("category") === category;
-                  const isHovered = hoveredIndex === index;
-                  const isLeftOfHovered = hoveredIndex !== null && index <= hoveredIndex;
-                  const currentShift =
-                    hoveredIndex !== null
-                      ? LABEL_WIDTHS[NAV_ICONS[hoveredIndex]?.label] || 80
-                      : 0;
-                  const labelWidth = LABEL_WIDTHS[label] || 80;
+                {(() => {
+                  const searchCat = new URLSearchParams(location.search).get("category");
+                  const activeIndex =
+                    location.pathname === "/shop" && searchCat
+                      ? NAV_ICONS.findIndex(
+                          (item) =>
+                            item.category === searchCat ||
+                            normalizeCategory(item.category) === normalizeCategory(searchCat)
+                        )
+                      : -1;
 
-                  return (
-                    <Link
-                      key={label}
-                      to={to}
-                      viewTransition
-                      aria-label={label}
-                      aria-current={active ? "page" : undefined}
-                      onMouseEnter={() => setHoveredIndex(index)}
-                      style={{
-                        transform: isLeftOfHovered
-                          ? `translateX(-${currentShift}px)`
-                          : "translateX(0px)",
-                      }}
-                      className={`group relative flex shrink-0 items-center rounded-2xl p-1.5 transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${active
-                          ? "text-brand-700"
-                          : "text-slate-600 hover:text-slate-900"
+                  const getShift = (index) => {
+                    const hasActive = activeIndex !== -1;
+                    const hasHover = hoveredIndex !== null;
+
+                    if (!hasActive && !hasHover) return 0;
+
+                    const A = hasActive ? activeIndex : null;
+                    const H = hasHover ? hoveredIndex : null;
+
+                    if (A !== null && H === null) {
+                      const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
+                      return index <= A ? shiftA : 0;
+                    }
+
+                    if (A === null && H !== null) {
+                      const shiftH = LABEL_WIDTHS[NAV_ICONS[H]?.label] || 80;
+                      return index <= H ? shiftH : 0;
+                    }
+
+                    if (A === H) {
+                      const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
+                      return index <= A ? shiftA : 0;
+                    }
+
+                    const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
+                    const shiftH = LABEL_WIDTHS[NAV_ICONS[H]?.label] || 80;
+                    const minIdx = Math.min(A, H);
+                    const maxIdx = Math.max(A, H);
+                    const shiftMin = minIdx === A ? shiftA : shiftH;
+                    const shiftMax = maxIdx === A ? shiftA : shiftH;
+
+                    if (index <= minIdx) {
+                      return shiftMin + shiftMax;
+                    }
+                    if (index <= maxIdx) {
+                      return shiftMax;
+                    }
+                    return 0;
+                  };
+
+                  return NAV_ICONS.map(({ Icon, label, category }, index) => {
+                    const to = navIconTo(category);
+                    const active = activeIndex === index;
+                    const isHovered = hoveredIndex === index;
+                    const isExpanded = active || isHovered;
+                    const labelWidth = LABEL_WIDTHS[label] || 80;
+                    const shift = getShift(index);
+
+                    return (
+                      <Link
+                        key={label}
+                        to={to}
+                        viewTransition
+                        aria-label={label}
+                        aria-current={active ? "page" : undefined}
+                        onMouseEnter={() => setHoveredIndex(index)}
+                        style={{
+                          transform: `translateX(-${shift}px)`,
+                        }}
+                        className={`group relative flex shrink-0 items-center rounded-2xl p-1.5 transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 cursor-pointer ${
+                          active ? "text-brand-700" : "text-slate-600 hover:text-slate-900"
                         }`}
-                    >
-                      {/* Animated sliding active pill indicator across links */}
-                      {active && (
-                        <motion.span
-                          layoutId="activeCategoryPill"
-                          className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200/80 shadow-xs pointer-events-none"
-                          transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                        />
-                      )}
-
-                      {/* Smooth expanding pill highlight on hover */}
-                      <span
-                        className={`absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs pointer-events-none transition-all duration-300 ease-out ${isHovered && !active ? "opacity-100" : "opacity-0"
-                          }`}
-                        style={{
-                          width: isHovered ? `calc(100% + ${labelWidth}px)` : "100%",
-                        }}
-                      />
-
-                      {/* Icon container with depth & elevation on the LEFT (no zoom/scale on hover) */}
-                      <span className="relative z-10 grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-2xs transition-all duration-200 group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40">
-                        <Icon size={28} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
-                      </span>
-
-                      {/* Smooth expanding pill name on the RIGHT */}
-                      <span
-                        className="pointer-events-none absolute left-[46px] z-10 overflow-hidden transition-all duration-300 ease-out flex items-center"
-                        style={{
-                          width: isHovered ? `${labelWidth}px` : "0px",
-                          opacity: isHovered ? 1 : 0,
-                        }}
                       >
-                        <span className="block whitespace-nowrap pl-2.5 pr-3 text-xs font-bold tracking-tight text-slate-800 group-hover:text-brand-600 transition-colors">
-                          {label}
+                        {/* Animated sliding active pill indicator across links */}
+                        {active && (
+                          <motion.span
+                            layoutId="activeCategoryPill"
+                            className="absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out cursor-pointer"
+                            style={{
+                              width: `calc(100% + ${labelWidth}px)`,
+                            }}
+                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                          />
+                        )}
+
+                        {/* Smooth expanding pill highlight on hover for non-active items */}
+                        {!active && (
+                          <span
+                            className={`absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out ${
+                              isHovered ? "opacity-100 cursor-pointer" : "opacity-0 pointer-events-none"
+                            }`}
+                            style={{
+                              width: isHovered ? `calc(100% + ${labelWidth}px)` : "100%",
+                            }}
+                          />
+                        )}
+
+                        {/* Icon container with depth & elevation on the LEFT */}
+                        <span
+                          className={`relative z-10 grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border transition-all duration-200 ${
+                            active
+                              ? "border-brand-300 shadow-xs from-white to-brand-50/50"
+                              : "border-slate-200/90 shadow-2xs group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40"
+                          }`}
+                        >
+                          <Icon size={26} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
                         </span>
-                      </span>
-                    </Link>
-                  );
-                })}
+
+                        {/* Smooth expanding pill name on the RIGHT */}
+                        <span
+                          className={`absolute left-[46px] z-10 overflow-hidden transition-all duration-300 ease-out flex items-center ${
+                            isExpanded ? "cursor-pointer" : "pointer-events-none"
+                          }`}
+                          style={{
+                            width: isExpanded ? `${labelWidth}px` : "0px",
+                            opacity: isExpanded ? 1 : 0,
+                          }}
+                        >
+                          <span
+                            className={`block whitespace-nowrap pl-2.5 pr-1.5 text-xs font-bold tracking-tight transition-colors ${
+                              active ? "text-brand-700" : "text-slate-800 group-hover:text-brand-600"
+                            }`}
+                          >
+                            {label}
+                          </span>
+                        </span>
+                      </Link>
+                    );
+                  });
+                })()}
               </div>
             </nav>
 
@@ -577,8 +640,8 @@ export default function StoreHeader() {
                   viewTransition
                   aria-label="My account"
                   className={`relative grid size-10 place-items-center rounded-xl border transition ${location.pathname === "/account"
-                      ? "border-brand-500 bg-brand-50 text-brand-600"
-                      : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                    ? "border-brand-500 bg-brand-50 text-brand-600"
+                    : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
                     }`}
                 >
                   <User size={18} />
@@ -605,14 +668,16 @@ export default function StoreHeader() {
           {/* Mobile: Elevated 3D category cards */}
           <nav
             aria-label="Shop categories mobile"
-            className="mt-2.5 flex gap-2 overflow-x-auto pb-1 scrollbar-none lg:hidden"
+            className="mt-2.5 flex gap-2.5 sm:gap-3 overflow-x-auto pb-1 scrollbar-none lg:hidden"
           >
             {NAV_ICONS.map(({ Icon, label, category }) => {
               const to = navIconTo(category);
+              const searchCat = new URLSearchParams(location.search).get("category");
               const active =
                 location.pathname === "/shop" &&
-                category &&
-                new URLSearchParams(location.search).get("category") === category;
+                Boolean(category) &&
+                (searchCat === category ||
+                  normalizeCategory(searchCat) === normalizeCategory(category));
               return (
                 <Link
                   key={`m-${label}`}
@@ -621,8 +686,8 @@ export default function StoreHeader() {
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={`flex w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${active
-                      ? "bg-brand-50 ring-1 ring-brand-300 shadow-xs"
-                      : "bg-white border border-slate-200/70 active:bg-slate-100 shadow-2xs"
+                    ? "bg-brand-50 ring-1 ring-brand-300 shadow-xs"
+                    : "bg-white border border-slate-200/70 active:bg-slate-100 shadow-2xs"
                     }`}
                 >
                   <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-2xs">
