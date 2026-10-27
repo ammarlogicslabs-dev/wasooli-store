@@ -459,19 +459,14 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-1 sm:px-6 sm:py-2 lg:px-8">
+        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-0.5 sm:px-6 sm:py-1 lg:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
-              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white sm:size-12 shadow-xs">
-                <img
-                  src="/wasooli.png"
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </span>
-              <span className="truncate text-base font-bold tracking-tight text-slate-900 sm:text-xl">
-                {STORE_NAME}
-              </span>
+            <Link to="/" viewTransition className="flex shrink-0 items-center py-0.5 group">
+              <img
+                src="/wasooli.png"
+                alt="Wasooli Store - ISP Supplies"
+                className="h-14 w-auto object-contain sm:h-16 transition-transform duration-200 group-hover:scale-105"
+              />
             </Link>
             {/* Desktop: Vibrant 3D icon pods centered with active item expanding its text */}
             {/* Desktop: Vibrant 3D icon pods centered with leftward shift so right icons stay fixed */}

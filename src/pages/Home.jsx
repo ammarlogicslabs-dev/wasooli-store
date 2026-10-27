@@ -255,7 +255,7 @@ function HeroSection({ productCount, categoryCount }) {
       className="relative flex h-[calc(100vh-var(--store-header-height,108px))] max-h-[calc(100vh-var(--store-header-height,108px))] flex-col justify-between overflow-hidden bg-slate-950 text-white"
     >
       {/* BG parallax image */}
-      <motion.img src="/wasooli-hero.jpg" alt="" aria-hidden="true" fetchPriority="high"
+      <motion.img src="/wasooli-hero.png" alt="" aria-hidden="true" fetchPriority="high"
         style={reduce ? undefined : { y: bgY, scale: 1.1 }}
         className="absolute inset-0 h-full w-full object-cover opacity-[0.18] sm:opacity-[0.22]"
       />
@@ -498,10 +498,10 @@ function CategoryGrid({ items, loading }) {
                 reduce
                   ? false
                   : {
-                      delay: 2600,
-                      disableOnInteraction: false,
-                      pauseOnMouseEnter: true,
-                    }
+                    delay: 2600,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true,
+                  }
               }
               spaceBetween={10}
               slidesPerView={2.8}
@@ -576,11 +576,10 @@ function CategoryGrid({ items, loading }) {
                       }
                     }}
                     aria-label={`Go to slide ${idx + 1}`}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      isActive
+                    className={`h-2 rounded-full transition-all duration-300 ${isActive
                         ? "w-6 bg-slate-900"
                         : "w-2 bg-slate-300 hover:bg-slate-400"
-                    }`}
+                      }`}
                   />
                 );
               })}
@@ -744,11 +743,10 @@ function PromoBanner({ showcase }) {
                       key={tier.range}
                       type="button"
                       onClick={() => setSelectedTier(idx)}
-                      className={`relative flex flex-col items-center justify-center rounded-xl p-2.5 sm:p-3 text-center transition-all duration-200 focus:outline-none cursor-pointer ${
-                        isSelected
+                      className={`relative flex flex-col items-center justify-center rounded-xl p-2.5 sm:p-3 text-center transition-all duration-200 focus:outline-none cursor-pointer ${isSelected
                           ? "border-2 border-[#2C9AFF] bg-[#2C9AFF]/20 text-white shadow-[0_0_20px_rgba(44,154,255,0.35)]"
                           : "border border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:bg-white/[0.08] hover:text-slate-200"
-                      }`}
+                        }`}
                     >
                       {tier.popular ? (
                         <span className="absolute -top-2.5 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-xs uppercase tracking-wider">
@@ -788,7 +786,7 @@ function PromoBanner({ showcase }) {
             <motion.div {...fadeUpInView(0.36, reduce)} className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 to="/shop"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2C9AFF] px-6 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(44,154,255,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#208ef3] hover:shadow-[0_8px_28px_rgba(44,154,255,0.55)] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2C9AFF]/50"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(44,154,255,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#208ef3] hover:shadow-[0_8px_28px_rgba(44,154,255,0.55)] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2C9AFF]/50"
               >
                 Browse all products <ArrowRight size={16} aria-hidden="true" />
               </Link>
@@ -817,9 +815,9 @@ function PromoBanner({ showcase }) {
                   reduce
                     ? undefined
                     : {
-                        y: [-6, 6, -6],
-                        rotate: [2, 3.5, 2],
-                      }
+                      y: [-6, 6, -6],
+                      rotate: [2, 3.5, 2],
+                    }
                 }
                 transition={{
                   duration: 5.5,
@@ -864,9 +862,9 @@ function PromoBanner({ showcase }) {
                   reduce
                     ? undefined
                     : {
-                        y: [0, -10, 0],
-                        rotate: [-1.5, -0.5, -1.5],
-                      }
+                      y: [0, -10, 0],
+                      rotate: [-1.5, -0.5, -1.5],
+                    }
                 }
                 transition={{
                   duration: 4.8,
@@ -921,9 +919,9 @@ function PromoBanner({ showcase }) {
                   reduce
                     ? undefined
                     : {
-                        y: [6, -6, 6],
-                        rotate: [-3, -1, -3],
-                      }
+                      y: [6, -6, 6],
+                      rotate: [-3, -1, -3],
+                    }
                 }
                 transition={{
                   duration: 5.2,

@@ -102,11 +102,11 @@ export default function CategoriesPage() {
           <form onSubmit={handleSave} className="space-y-3">
             <label className="block text-sm font-semibold text-slate-900">
               Name
-              <input value={form.name ?? ""} onChange={(event) => setForm({ ...form, name: event.target.value })} className={`${inputClass} mt-1.5`} />
+              <input value={form.name ?? ""} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Wireless & Wi-Fi Gear" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="block text-sm font-semibold text-slate-900">
               Description
-              <textarea value={form.description ?? ""} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${inputClass} mt-1.5`} rows={3} />
+              <textarea value={form.description ?? ""} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Brief description of products in this category..." className={`${inputClass} mt-1.5`} rows={3} />
             </label>
             <div>
               <p className="mb-1.5 text-sm font-semibold text-slate-900">Image</p>

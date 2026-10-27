@@ -112,7 +112,7 @@ export default function InventoryPage() {
           <form onSubmit={saveAdjustment} className="space-y-3">
             <p className="text-sm text-slate-600">{selected.title} currently has <strong>{selected.stock}</strong> in stock.</p>
             <label className="block text-sm font-semibold text-slate-900">New quantity
-              <input value={nextStock} onChange={(event) => setNextStock(event.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={`${inputClass} mt-1.5`} />
+              <input value={nextStock} onChange={(event) => setNextStock(event.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 25" inputMode="numeric" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="block text-sm font-semibold text-slate-900">Reason
               <select value={reason} onChange={(event) => setReason(event.target.value)} className={`${inputClass} mt-1.5`}>

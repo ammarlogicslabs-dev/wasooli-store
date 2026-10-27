@@ -286,8 +286,8 @@ export default function ProductFormPage() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
-            {field("title", "Name")}
-            {field("sku", "SKU")}
+            {field("title", "Name", { placeholder: "e.g. Cat6 High-Speed Network Cable 305m" })}
+            {field("sku", "SKU", { placeholder: "e.g. WAS-CAT6-305" })}
             {field("slug", "Link slug", { placeholder: "Optional, generated from the name" })}
             <label className="block text-sm font-semibold text-slate-900">
               Category <span className="text-red-500">*</span>
@@ -412,7 +412,7 @@ export default function ProductFormPage() {
               </div>
             ) : null} */}
 
-            {field("brand", "Brand")}
+            {field("brand", "Brand", { placeholder: "e.g. Cisco, TP-Link, Ubiquiti, Wasooli" })}
 
             <label className="block text-sm font-semibold text-slate-900">
               Port type
@@ -443,9 +443,9 @@ export default function ProductFormPage() {
               )}
             </label>
 
-            {field("price", "Price", { inputMode: "decimal" })}
-            {field("oldPrice", "Compare-at price", { inputMode: "decimal" })}
-            {field("stock", "Stock", { inputMode: "numeric" })}
+            {field("price", "Price", { inputMode: "decimal", placeholder: "e.g. 4500" })}
+            {field("oldPrice", "Compare-at price", { inputMode: "decimal", placeholder: "e.g. 5200" })}
+            {field("stock", "Stock", { inputMode: "numeric", placeholder: "e.g. 50" })}
             <label className="block text-sm font-semibold text-slate-900">
               Visibility
               <select value={form.status} onChange={(event) => update("status", event.target.value)} className={`${inputClass} mt-1.5`}>
@@ -466,18 +466,36 @@ export default function ProductFormPage() {
               </select>
             </label>
           </div>
-          {field("shortDescription", "Short description")}
+          {field("shortDescription", "Short description", { placeholder: "Brief single-sentence summary of the product..." })}
           <label className="block text-sm font-semibold text-slate-900">
             Description
-            <textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={4} className={`${inputClass} mt-1.5`} />
+            <textarea
+              value={form.description}
+              onChange={(event) => update("description", event.target.value)}
+              placeholder="Detailed product overview, applications, and build quality..."
+              rows={4}
+              className={`${inputClass} mt-1.5`}
+            />
           </label>
           <label className="block text-sm font-semibold text-slate-900">
             Features, one per line
-            <textarea value={form.featuresText} onChange={(event) => update("featuresText", event.target.value)} rows={4} className={`${inputClass} mt-1.5`} />
+            <textarea
+              value={form.featuresText}
+              onChange={(event) => update("featuresText", event.target.value)}
+              placeholder={"Pure copper conductors\n250 MHz bandwidth\nGold-plated RJ45 connectors"}
+              rows={4}
+              className={`${inputClass} mt-1.5`}
+            />
           </label>
           <label className="block text-sm font-semibold text-slate-900">
             Specifications, one per line as Label | Value
-            <textarea value={form.specificationsText} onChange={(event) => update("specificationsText", event.target.value)} rows={4} className={`${inputClass} mt-1.5`} />
+            <textarea
+              value={form.specificationsText}
+              onChange={(event) => update("specificationsText", event.target.value)}
+              placeholder={"Cable Length | 305 Meters\nConnector Type | RJ45\nStandard | TIA/EIA 568-C.2"}
+              rows={4}
+              className={`${inputClass} mt-1.5`}
+            />
           </label>
         </section>
         <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-4 lg:self-start">

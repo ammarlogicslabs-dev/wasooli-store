@@ -97,7 +97,7 @@ export default function CouponsPage() {
         {form && (
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-semibold text-slate-900 sm:col-span-2">Code
-              <input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })} className={`${inputClass} mt-1.5`} />
+              <input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })} placeholder="e.g. WASOOLI10" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="text-sm font-semibold text-slate-900">Type
               <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={`${inputClass} mt-1.5`}>
@@ -106,13 +106,13 @@ export default function CouponsPage() {
               </select>
             </label>
             <label className="text-sm font-semibold text-slate-900">Value
-              <input value={form.value} onChange={(event) => setForm({ ...form, value: event.target.value })} inputMode="decimal" className={`${inputClass} mt-1.5`} />
+              <input value={form.value} onChange={(event) => setForm({ ...form, value: event.target.value })} placeholder="e.g. 10 (for 10%) or 500" inputMode="decimal" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="text-sm font-semibold text-slate-900">Minimum order
-              <input value={form.minOrder} onChange={(event) => setForm({ ...form, minOrder: event.target.value })} inputMode="decimal" className={`${inputClass} mt-1.5`} />
+              <input value={form.minOrder} onChange={(event) => setForm({ ...form, minOrder: event.target.value })} placeholder="e.g. 2000" inputMode="decimal" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="text-sm font-semibold text-slate-900">Usage limit
-              <input value={form.usageLimit} onChange={(event) => setForm({ ...form, usageLimit: event.target.value })} inputMode="numeric" className={`${inputClass} mt-1.5`} />
+              <input value={form.usageLimit} onChange={(event) => setForm({ ...form, usageLimit: event.target.value })} placeholder="e.g. 100" inputMode="numeric" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="text-sm font-semibold text-slate-900">Start
               <input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} className={`${inputClass} mt-1.5`} />

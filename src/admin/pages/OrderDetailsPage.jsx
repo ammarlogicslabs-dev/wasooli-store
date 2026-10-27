@@ -162,13 +162,13 @@ export default function OrderDetailsPage() {
               </select>
             </label>
             <label className="block text-sm font-semibold text-slate-900">Courier
-              <input value={courier} onChange={(event) => setCourier(event.target.value)} className={`${inputClass} mt-1.5`} />
+              <input value={courier} onChange={(event) => setCourier(event.target.value)} placeholder="e.g. TCS, Leopards, Trax" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="block text-sm font-semibold text-slate-900">Tracking number
-              <input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} className={`${inputClass} mt-1.5`} />
+              <input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} placeholder="e.g. TRK123456789" className={`${inputClass} mt-1.5`} />
             </label>
             <label className="block text-sm font-semibold text-slate-900">Internal note
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className={`${inputClass} mt-1.5`} />
+              <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add an internal note or update about this order..." rows={3} className={`${inputClass} mt-1.5`} />
             </label>
             <button
               type="button"

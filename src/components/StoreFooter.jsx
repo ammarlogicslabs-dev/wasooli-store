@@ -16,6 +16,14 @@ import {
   Zap,
 } from "lucide-react";
 
+const TICKER_ANNOUNCEMENTS = [
+  "MON – SAT: 10:00 AM – 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
+  "PRICES & AVAILABILITY MAY VARY DUE TO CURRENCY & TARIFF FLUCTUATIONS",
+  "WASOOLI STORE OPERATES ONLY ONE OFFICIAL PLATFORM — BEWARE OF FAKE CHANNELS",
+  "NATIONWIDE 1–2 DAY DISPATCH WITH LIVE TRACKING ACROSS ALL CITIES IN PAKISTAN",
+  "100% GENUINE & QUALITY-TESTED NETWORKING HARDWARE WITH OFFICIAL STORE WARRANTY",
+];
+
 export default function StoreFooter() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -34,7 +42,35 @@ export default function StoreFooter() {
   }
 
   return (
-    <footer className="relative border-t border-slate-800 bg-slate-950 text-slate-300">
+    <footer className="relative bg-slate-950 text-slate-300">
+      {/* Top Announcement Ticker Strip */}
+      <div className="relative overflow-hidden border-y border-sky-200/90 bg-[#dbeafe] text-slate-800 py-2 sm:py-2.5 shadow-xs">
+        <style>{`
+          @keyframes footer-ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .footer-ticker-track {
+            animation: footer-ticker 35s linear infinite;
+            display: flex;
+            width: max-content;
+          }
+          .footer-ticker-track:hover {
+            animation-play-state: paused;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .footer-ticker-track { animation: none !important; }
+          }
+        `}</style>
+        <div className="footer-ticker-track whitespace-nowrap text-[11px] sm:text-xs font-semibold tracking-wider text-slate-800 uppercase select-none">
+          {[...TICKER_ANNOUNCEMENTS, ...TICKER_ANNOUNCEMENTS].map((msg, idx) => (
+            <span key={idx} className="inline-flex items-center">
+              <span>{msg}</span>
+              <span className="mx-4 sm:mx-6 text-slate-400 select-none text-[9px]">●</span>
+            </span>
+          ))}
+        </div>
+      </div>
       {/* Top Value Banner */}
       {/* <div className="border-b border-slate-900 bg-slate-900/40">
         <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
@@ -83,7 +119,7 @@ export default function StoreFooter() {
       </div> */}
 
       {/* Main Footer Links */}
-      <div className="mx-auto max-w-8xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 2xl:max-w-[1536px]">
+      <div className="mx-auto max-w-8xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 2xl:max-w-[1536px]">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2">
@@ -226,13 +262,13 @@ export default function StoreFooter() {
               </form>
             )}
 
-            <div className="mt-6 rounded-xl border border-slate-800/80 bg-slate-900/60 p-3">
+            {/* <div className="mt-6 rounded-xl border border-slate-800/80 bg-slate-900/60 p-3">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
                 <Zap size={14} className="text-brand-400" />
                 <span>Payment Methods</span>
               </div>
               <p className="mt-1 text-[11px] text-slate-400">Cash on Delivery (COD) · IBFT / Bank Transfer</p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

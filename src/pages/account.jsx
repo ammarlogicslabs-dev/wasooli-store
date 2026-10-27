@@ -112,6 +112,7 @@ function PasswordField({ id, label, value, shown, onToggle, onChange, autoComple
           value={value}
           autoComplete={autoComplete}
           onChange={onChange}
+          placeholder={`Enter ${label.toLowerCase()}`}
           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
         />
         <button

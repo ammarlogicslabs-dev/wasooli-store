@@ -49,10 +49,10 @@ export default function ProfilePage() {
         </div>
         <p className="text-sm text-slate-500">{admin?.email}</p>
         <label className="block text-sm font-semibold text-slate-900">Display name
-          <input value={form.adminName} onChange={(event) => setForm({ ...form, adminName: event.target.value })} className={`${inputClass} mt-1.5`} />
+          <input value={form.adminName} onChange={(event) => setForm({ ...form, adminName: event.target.value })} placeholder="e.g. Admin Name" className={`${inputClass} mt-1.5`} />
         </label>
         <label className="block text-sm font-semibold text-slate-900">Email
-          <input value={form.adminEmail} onChange={(event) => setForm({ ...form, adminEmail: event.target.value })} className={`${inputClass} mt-1.5 disabled:cursor-not-allowed disabled:opacity-50`} disabled />
+          <input value={form.adminEmail} onChange={(event) => setForm({ ...form, adminEmail: event.target.value })} placeholder="admin@example.com" className={`${inputClass} mt-1.5 disabled:cursor-not-allowed disabled:opacity-50`} disabled />
         </label>
         <button type="submit" className={buttonClass}>Save profile</button>
       </form>

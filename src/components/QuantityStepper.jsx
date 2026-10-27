@@ -96,6 +96,7 @@ export default function QuantityStepper({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        placeholder={String(min)}
         aria-label={label}
         className={styles.input}
       />
