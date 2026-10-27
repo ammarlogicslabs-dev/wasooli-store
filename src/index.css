@@ -1,0 +1,378 @@
+@import "tailwindcss";
+
+
+
+@theme {
+    --color-brand-50: #eaf5ff;
+    --color-brand-100: #d6ebff;
+    --color-brand-200: #b9dcff;
+    --color-brand-300: #7ec4ff;
+    --color-brand-400: #4eabff;
+    --color-brand-500: #2c9aff;
+    --color-brand-600: #1676d2;
+    --color-brand-700: #125eaa;
+    --color-brand-800: #0e4a86;
+    --color-brand-900: #0c3a68;
+    --color-brand-950: #0f172a;
+    --font-sans: "Inter", sans-serif;
+}
+
+:root {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    color: #171717;
+    background: #faf9f6;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-anchor: none;
+    font-size: 14px;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+button {
+    font: inherit;
+}
+
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 400;
+    line-height: inherit;
+}
+
+.shop-chip-sm {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 13px;
+}
+
+.shop-filter-item {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.page-offset {
+    padding-top: 1.5rem;
+}
+
+.page-crumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #64748b;
+}
+
+.page-crumb a:hover {
+    color: #1676d2;
+}
+
+.page-crumb [aria-current="page"] {
+    color: #0f172a;
+}
+
+.product-buy-row button {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 14px;
+}
+
+@media (min-width: 640px) {
+    .product-buy-row button {
+        font-size: 13px;
+        line-height: 18px;
+    }
+}
+
+button,
+[role="button"],
+select,
+summary,
+a {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+select:disabled,
+input:disabled {
+    cursor: not-allowed;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+.dual-range {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    appearance: none;
+    background: transparent;
+}
+
+.dual-range::-webkit-slider-runnable-track {
+    height: 0;
+    background: transparent;
+}
+
+.dual-range::-webkit-slider-thumb {
+    pointer-events: auto;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    margin-top: -8px;
+    border-radius: 9999px;
+    border: 2px solid #fff;
+    background: #2c9aff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    cursor: pointer;
+}
+
+.dual-range::-moz-range-track {
+    height: 0;
+    background: transparent;
+    border: none;
+}
+
+.dual-range::-moz-range-thumb {
+    pointer-events: auto;
+    height: 16px;
+    width: 16px;
+    border: 2px solid #fff;
+    border-radius: 9999px;
+    background: #2c9aff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    cursor: pointer;
+}
+
+/* Global Sleek Brand Scrollbar for all pages & elements */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(44, 154, 255, 0.5) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(44, 154, 255, 0.45);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2c9aff;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #1676d2;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(44, 154, 255, 0.5) transparent;
+}
+
+.custom-scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.custom-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(44, 154, 255, 0.5);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #2c9aff;
+}
+
+input, select, textarea {
+    outline: none;
+}
+  
+
+@keyframes store-headline {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.store-headline {
+    container-type: inline-size;
+}
+
+.store-headline-track {
+    display: flex;
+    width: max-content;
+    animation: store-headline 20s linear infinite;
+}
+
+.store-headline-track > span {
+    padding-right: 100cqi;
+}
+
+.store-headline:hover .store-headline-track {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .store-headline-track {
+        animation: none;
+    }
+}
+
+@keyframes shop-trust-marquee {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        transform: translate3d(-50%, 0, 0);
+    }
+}
+
+.shop-trust-marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 3%,
+        #000 97%,
+        transparent
+    );
+}
+
+.shop-trust-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    backface-visibility: hidden;
+    animation: shop-trust-marquee 36s linear infinite;
+}
+
+.shop-trust-set {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.shop-trust-marquee:hover .shop-trust-track {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-trust-track {
+        animation: none;
+        will-change: auto;
+    }
+}
+
+/* Professional cross-fade when React Router viewTransition is enabled */
+@supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.32s;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    ::view-transition-old(root) {
+        animation-name: wasooli-vt-fade-out;
+    }
+
+    ::view-transition-new(root) {
+        animation-name: wasooli-vt-fade-in;
+    }
+}
+
+@keyframes wasooli-vt-fade-out {
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes wasooli-vt-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
