@@ -383,11 +383,10 @@ export default function ProductDetail() {
                     onClick={() => setActiveImage(index)}
                     aria-label={`View image ${index + 1}`}
                     aria-pressed={activeImage === index}
-                    className={`overflow-hidden rounded-xl border-2 transition ${
-                      activeImage === index
-                        ? "border-brand-500 ring-2 ring-brand-100"
-                        : "border-slate-200 opacity-80 hover:opacity-100"
-                    }`}
+                    className={`overflow-hidden rounded-xl border-2 transition ${activeImage === index
+                      ? "border-brand-500 ring-2 ring-brand-100"
+                      : "border-slate-200 opacity-80 hover:opacity-100"
+                      }`}
                   >
                     <img
                       src={resolveMediaUrl(image)}
@@ -449,9 +448,9 @@ export default function ProductDetail() {
                   style={
                     zoom.active
                       ? {
-                          transform: "scale(1.85)",
-                          transformOrigin: `${zoom.x}% ${zoom.y}%`,
-                        }
+                        transform: "scale(1.85)",
+                        transformOrigin: `${zoom.x}% ${zoom.y}%`,
+                      }
                       : undefined
                   }
                 />
@@ -468,9 +467,8 @@ export default function ProductDetail() {
                       key={image}
                       type="button"
                       onClick={() => setActiveImage(index)}
-                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 ${
-                        activeImage === index ? "border-brand-500" : "border-slate-200"
-                      }`}
+                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 ${activeImage === index ? "border-brand-500" : "border-slate-200"
+                        }`}
                     >
                       <img src={resolveMediaUrl(image)} alt="" className="h-full w-full object-cover" />
                     </button>
@@ -517,9 +515,8 @@ export default function ProductDetail() {
             ) : null}
 
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                outOfStock ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${outOfStock ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
+                }`}
             >
               <span className={`size-1.5 rounded-full ${outOfStock ? "bg-red-500" : "bg-emerald-500"}`} />
               {outOfStock ? "Out of stock" : lowStock ? `Only ${stock} left` : "In stock"}
@@ -566,9 +563,8 @@ export default function ProductDetail() {
                       return (
                         <tr
                           key={formatTierRange(tier)}
-                          className={`border-t border-slate-100 ${
-                            active ? "bg-brand-50 font-semibold text-brand-800" : "text-slate-700"
-                          }`}
+                          className={`border-t border-slate-100 ${active ? "bg-brand-50 font-semibold text-brand-800" : "text-slate-700"
+                            }`}
                         >
                           <td className="px-3 py-2">{formatTierRange(tier)}</td>
                           <td className="px-3 py-2">{formatPrice(tier.price)}</td>
@@ -625,9 +621,8 @@ export default function ProductDetail() {
             </div>
             <div className="flex items-start gap-3 border-t border-slate-100 pt-3">
               <span
-                className={`grid size-10 shrink-0 place-items-center rounded-xl ${
-                  policy.isUsed ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
-                }`}
+                className={`grid size-10 shrink-0 place-items-center rounded-xl ${policy.isUsed ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
+                  }`}
               >
                 <RotateCcw size={18} />
               </span>
@@ -635,9 +630,8 @@ export default function ProductDetail() {
                 <div className="flex flex-wrap items-center gap-1.5">
                   <p className="text-sm font-semibold text-slate-900">{policy.badge}</p>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                      policy.isUsed ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                    }`}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${policy.isUsed ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
+                      }`}
                   >
                     {policy.condition}
                   </span>
@@ -672,16 +666,15 @@ export default function ProductDetail() {
                 type="button"
                 disabled={outOfStock}
                 onClick={handleAddToCart}
-                className={`inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 sm:flex-none sm:px-6 ${
-                  added ? "bg-emerald-500" : "bg-brand-500 hover:bg-brand-600"
-                }`}
+                className={`inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 sm:flex-none sm:px-6 ${added ? "bg-emerald-500" : "bg-brand-500 hover:bg-brand-600"
+                  }`}
               >
                 {added ? <Check size={16} /> : <ShoppingBag size={16} />}
                 {cartLabel}
               </button>
               <button
                 type="button"
-                disabled={outOfStock} 
+                disabled={outOfStock}
                 onClick={handleBuyNow}
                 className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-900 bg-white px-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 sm:flex-none sm:px-6"
               >
@@ -761,9 +754,8 @@ export default function ProductDetail() {
                       return (
                         <tr
                           key={formatTierRange(tier)}
-                          className={`border-t border-slate-100 ${
-                            active ? "bg-brand-50 font-semibold text-brand-800" : "text-slate-700"
-                          }`}
+                          className={`border-t border-slate-100 ${active ? "bg-brand-50 font-semibold text-brand-800" : "text-slate-700"
+                            }`}
                         >
                           <td className="px-2.5 py-1.5">{formatTierRange(tier)}</td>
                           <td className="px-2.5 py-1.5">{formatPrice(tier.price)}</td>
@@ -776,9 +768,8 @@ export default function ProductDetail() {
             ) : null}
 
             <p
-              className={`mt-4 text-sm font-semibold ${
-                outOfStock ? "text-red-600" : "text-emerald-700"
-              }`}
+              className={`mt-4 text-sm font-semibold ${outOfStock ? "text-red-600" : "text-emerald-700"
+                }`}
             >
               {outOfStock
                 ? "Currently unavailable"
@@ -821,9 +812,8 @@ export default function ProductDetail() {
               type="button"
               disabled={outOfStock}
               onClick={handleAddToCart}
-              className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
-                added ? "bg-emerald-500" : "bg-brand-500 hover:bg-brand-600"
-              }`}
+              className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 ${added ? "bg-emerald-500" : "bg-brand-500 hover:bg-brand-600"
+                }`}
             >
               {added ? <Check size={16} /> : <ShoppingBag size={16} />}
               {cartLabel}
@@ -884,11 +874,10 @@ export default function ProductDetail() {
                 role="tab"
                 aria-selected={tab === item.id}
                 onClick={() => setTab(item.id)}
-                className={`-mb-px shrink-0 cursor-pointer whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold transition sm:px-4 ${
-                  tab === item.id
-                    ? "border-brand-500 text-brand-600"
-                    : "border-transparent text-slate-500 hover:text-slate-900"
-                }`}
+                className={`-mb-px shrink-0 cursor-pointer whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold transition sm:px-4 ${tab === item.id
+                  ? "border-brand-500 text-brand-600"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+                  }`}
               >
                 {item.label}
               </button>
@@ -942,9 +931,8 @@ export default function ProductDetail() {
                       {product.specifications.slice(0, 6).map((spec, index) => (
                         <div
                           key={spec.label}
-                          className={`grid grid-cols-2 gap-4 px-4 py-3 text-sm ${
-                            index % 2 === 0 ? "bg-slate-50" : "bg-white"
-                          }`}
+                          className={`grid grid-cols-2 gap-4 px-4 py-3 text-sm ${index % 2 === 0 ? "bg-slate-50" : "bg-white"
+                            }`}
                         >
                           <span className="text-slate-500">{spec.label}</span>
                           <span className="text-right font-medium text-slate-900">{spec.value}</span>
@@ -963,9 +951,8 @@ export default function ProductDetail() {
                   {product.specifications.map((spec, index) => (
                     <div
                       key={spec.label}
-                      className={`grid grid-cols-2 gap-4 px-4 py-3.5 text-sm ${
-                        index % 2 === 0 ? "bg-slate-50" : "bg-white"
-                      }`}
+                      className={`grid grid-cols-2 gap-4 px-4 py-3.5 text-sm ${index % 2 === 0 ? "bg-slate-50" : "bg-white"
+                        }`}
                     >
                       <span className="text-slate-500">{spec.label}</span>
                       <span className="text-right font-medium text-slate-900">{spec.value}</span>
@@ -1025,11 +1012,10 @@ export default function ProductDetail() {
                     {instructions.dosAndDonts.map((rule, idx) => (
                       <div
                         key={idx}
-                        className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs leading-relaxed ${
-                          rule.type === "do"
-                            ? "border-emerald-100 bg-emerald-50/50 text-emerald-900"
-                            : "border-red-100 bg-red-50/50 text-red-900"
-                        }`}
+                        className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs leading-relaxed ${rule.type === "do"
+                          ? "border-emerald-100 bg-emerald-50/50 text-emerald-900"
+                          : "border-red-100 bg-red-50/50 text-red-900"
+                          }`}
                       >
                         {rule.type === "do" ? (
                           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
@@ -1081,20 +1067,18 @@ export default function ProductDetail() {
                           <div className="border-t border-slate-200 px-5 py-5 space-y-5">
                             {/* Summary Card */}
                             <div
-                              className={`rounded-xl border p-4 ${
-                                policy.isUsed
-                                  ? "border-amber-200 bg-amber-50/50"
-                                  : "border-emerald-200 bg-emerald-50/50"
-                              }`}
+                              className={`rounded-xl border p-4 ${policy.isUsed
+                                ? "border-amber-200 bg-amber-50/50"
+                                : "border-emerald-200 bg-emerald-50/50"
+                                }`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
-                                      policy.isUsed
-                                        ? "bg-amber-100 text-amber-900"
-                                        : "bg-emerald-100 text-emerald-900"
-                                    }`}
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${policy.isUsed
+                                      ? "bg-amber-100 text-amber-900"
+                                      : "bg-emerald-100 text-emerald-900"
+                                      }`}
                                   >
                                     {policy.condition}
                                   </span>
@@ -1104,11 +1088,10 @@ export default function ProductDetail() {
                                   </span>
                                 </div>
                                 <span
-                                  className={`rounded-md px-2 py-0.5 text-xs font-bold ${
-                                    policy.isUsed
-                                      ? "bg-amber-200/80 text-amber-900"
-                                      : "bg-emerald-200/80 text-emerald-900"
-                                  }`}
+                                  className={`rounded-md px-2 py-0.5 text-xs font-bold ${policy.isUsed
+                                    ? "bg-amber-200/80 text-amber-900"
+                                    : "bg-emerald-200/80 text-emerald-900"
+                                    }`}
                                 >
                                   {policy.badge}
                                 </span>
@@ -1281,9 +1264,8 @@ export default function ProductDetail() {
             type="button"
             disabled={outOfStock}
             onClick={handleAddToCart}
-            className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white sm:px-4 sm:text-sm ${
-              added ? "bg-emerald-500" : "bg-brand-500"
-            } disabled:bg-slate-300`}
+            className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white sm:px-4 sm:text-sm ${added ? "bg-emerald-500" : "bg-brand-500"
+              } disabled:bg-slate-300`}
           >
             <ShoppingBag size={15} />
             {outOfStock ? "Sold out" : added ? "Added" : "Add"}

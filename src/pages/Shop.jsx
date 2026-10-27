@@ -176,15 +176,15 @@ function FilterGroup({
                     aria-checked={showCheckbox ? active : undefined}
                     onClick={() => handleSelect(item)}
                     className={`shop-filter-item flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${active
-                        ? "bg-brand-50 font-semibold text-brand-700"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-brand-50 font-semibold text-brand-700"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                   >
                     {showCheckbox ? (
                       <span
                         className={`grid size-4 shrink-0 place-items-center rounded border transition ${active
-                            ? "border-brand-500 bg-brand-500 text-white"
-                            : "border-slate-300 bg-white"
+                          ? "border-brand-500 bg-brand-500 text-white"
+                          : "border-slate-300 bg-white"
                           }`}
                         aria-hidden="true"
                       >
@@ -194,8 +194,8 @@ function FilterGroup({
                     <span className="min-w-0 flex-1 truncate text-[13px]">{item}</span>
                     <span
                       className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px tabular-nums ${active
-                          ? "bg-brand-500 text-white"
-                          : "bg-slate-100 text-slate-500"
+                        ? "bg-brand-500 text-white"
+                        : "bg-slate-100 text-slate-500"
                         }`}
                     >
                       {count}
@@ -397,10 +397,10 @@ function CategoryFilterGroup({
                     type="button"
                     onClick={() => handleCategoryClick(item, hasSubcategories)}
                     className={`group flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left transition-all duration-200 ${isSelected
-                        ? "bg-brand-50/90 font-semibold text-brand-700 shadow-2xs ring-1 ring-brand-200/60"
-                        : hasSelectedSub
-                          ? "bg-slate-50 font-medium text-slate-900"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-brand-50/90 font-semibold text-brand-700 shadow-2xs ring-1 ring-brand-200/60"
+                      : hasSelectedSub
+                        ? "bg-slate-50 font-medium text-slate-900"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -409,8 +409,8 @@ function CategoryFilterGroup({
                       </span>
                       <span
                         className={`shop-chip-sm shrink-0 rounded-full px-1.5 py-px text-[10px] tabular-nums transition-colors ${isSelected
-                            ? "bg-brand-500 text-white font-bold"
-                            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/80"
+                          ? "bg-brand-500 text-white font-bold"
+                          : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/80"
                           }`}
                       >
                         {count}
@@ -467,16 +467,16 @@ function CategoryFilterGroup({
                             {/* Top Dot */}
                             <span
                               className={`absolute -top-1 -left-[3px] size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub || value === item
-                                  ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
-                                  : "bg-slate-300"
+                                ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
+                                : "bg-slate-300"
                                 }`}
                             />
 
                             {/* Bottom Dot */}
                             <span
                               className={`absolute -bottom-1 -left-[2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub && activeSubIndex === subcategories.length - 1
-                                  ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
-                                  : "bg-slate-300"
+                                ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
+                                : "bg-slate-300"
                                 }`}
                             />
                           </div>
@@ -493,8 +493,8 @@ function CategoryFilterGroup({
                                     type="button"
                                     onClick={() => onSelectSubcategory(item, sub)}
                                     className={`group/sub relative flex w-full cursor-pointer items-center justify-between gap-1.5 rounded-md px-2 py-1 text-left transition-all duration-150 ${isSubActive
-                                        ? "text-brand-600 font-semibold"
-                                        : "text-slate-600 hover:text-slate-900 font-medium"
+                                      ? "text-brand-600 font-semibold"
+                                      : "text-slate-600 hover:text-slate-900 font-medium"
                                       }`}
                                   >
                                     <span className="truncate text-[11.5px] leading-tight tracking-tight">
@@ -503,8 +503,8 @@ function CategoryFilterGroup({
                                     {subCount > 0 && (
                                       <span
                                         className={`shrink-0 rounded-full px-1.5 py-px text-[9.5px] font-medium tabular-nums leading-none ${isSubActive
-                                            ? "bg-brand-50 text-brand-600"
-                                            : "bg-slate-100 text-slate-400 group-hover/sub:bg-slate-200/80 group-hover/sub:text-slate-600"
+                                          ? "bg-brand-50 text-brand-600"
+                                          : "bg-slate-100 text-slate-400 group-hover/sub:bg-slate-200/80 group-hover/sub:text-slate-600"
                                           }`}
                                       >
                                         {subCount}
@@ -732,8 +732,8 @@ function FilterPanel({
                     setPriceLimit(preset.max);
                   }}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${active
-                      ? "border-brand-500 bg-brand-50 text-brand-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
+                    ? "border-brand-500 bg-brand-50 text-brand-700"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
                     }`}
                 >
                   {preset.label}
@@ -1587,7 +1587,7 @@ export default function Shop() {
                     </p>
                   </div>
                 </div>
-               
+
               </div>
               <FilterPanel {...filterProps} />
             </div>
@@ -1666,8 +1666,8 @@ export default function Shop() {
                       aria-pressed={viewMode === "grid"}
                       aria-label="Grid view"
                       className={`grid size-8 place-items-center rounded-lg transition ${viewMode === "grid"
-                          ? "bg-brand-500 text-white"
-                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                        ? "bg-brand-500 text-white"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                         }`}
                     >
                       <LayoutGrid size={15} />
@@ -1678,8 +1678,8 @@ export default function Shop() {
                       aria-pressed={viewMode === "list"}
                       aria-label="List view"
                       className={`grid size-8 place-items-center rounded-lg transition ${viewMode === "list"
-                          ? "bg-brand-500 text-white"
-                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                        ? "bg-brand-500 text-white"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                         }`}
                     >
                       <List size={15} />

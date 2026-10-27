@@ -54,23 +54,21 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
           reduceMotion
             ? { duration: 0 }
             : {
-                duration: 0.45,
-                delay: Math.min(index * 0.045, 0.32),
-                ease: [0.22, 1, 0.36, 1],
-              }
+              duration: 0.45,
+              delay: Math.min(index * 0.045, 0.32),
+              ease: [0.22, 1, 0.36, 1],
+            }
         }
-        className={`group relative overflow-hidden border border-slate-200/80 bg-white shadow-[0_8px_30px_-18px_rgba(15,23,42,0.35)] transition duration-300 hover:border-brand-300 hover:shadow-[0_28px_55px_-28px_rgba(44,154,255,0.55)] ${
-          isList
-            ? "flex flex-row rounded-2xl"
-            : "flex h-full flex-col rounded-[1.35rem]"
-        }`}
+        className={`group relative overflow-hidden border border-slate-200/80 bg-white shadow-[0_8px_30px_-18px_rgba(15,23,42,0.35)] transition duration-300 hover:border-brand-300 hover:shadow-[0_28px_55px_-28px_rgba(44,154,255,0.55)] ${isList
+          ? "flex flex-row rounded-2xl"
+          : "flex h-full flex-col rounded-[1.35rem]"
+          }`}
       >
         <Link
           to={`/products/${product.slug}`}
           viewTransition
-          className={`relative block shrink-0 cursor-pointer overflow-hidden bg-gradient-to-b from-slate-100 to-slate-50 ${
-            isList ? "w-[118px] sm:w-[148px] md:w-[168px]" : ""
-          }`}
+          className={`relative block shrink-0 cursor-pointer overflow-hidden bg-gradient-to-b from-slate-100 to-slate-50 ${isList ? "w-[118px] sm:w-[148px] md:w-[168px]" : ""
+            }`}
         >
           {product.badge ? (
             <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-slate-950 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
@@ -101,13 +99,11 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
                 : `Save ${product.title} to wishlist`
             }
             aria-pressed={Boolean(wished)}
-            className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${
-              isList ? "right-2 top-2 size-8" : "right-2.5 bottom-2.5 size-9"
-            } ${
-              wished
+            className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${isList ? "right-2 top-2 size-8" : "right-2.5 bottom-2.5 size-9"
+              } ${wished
                 ? "border-red-200 bg-white text-red-500"
                 : "border-white/80 bg-white/90 text-slate-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500"
-            }`}
+              }`}
           >
             <Heart size={isList ? 13 : 15} fill={wished ? "currentColor" : "none"} />
           </button>
@@ -120,9 +116,8 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
               e.currentTarget.onerror = null;
               e.currentTarget.src = "/products/gigabit-switch.jpg";
             }}
-            className={`w-full object-cover transition duration-700 ease-out group-hover:scale-110 ${
-              isList ? "aspect-square h-full" : "aspect-square"
-            } ${secondary ? "opacity-100 group-hover:opacity-0" : ""}`}
+            className={`w-full object-cover transition duration-700 ease-out group-hover:scale-110 ${isList ? "aspect-square h-full" : "aspect-square"
+              } ${secondary ? "opacity-100 group-hover:opacity-0" : ""}`}
           />
           {secondary ? (
             <img
@@ -137,9 +132,8 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
         </Link>
 
         <div
-          className={`flex min-w-0 flex-1 flex-col ${
-            isList ? "justify-center p-3 sm:p-4" : "p-3 sm:p-3.5"
-          }`}
+          className={`flex min-w-0 flex-1 flex-col ${isList ? "justify-center p-3 sm:p-4" : "p-3 sm:p-3.5"
+            }`}
         >
           <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-brand-600">
             {product.category}
@@ -151,11 +145,10 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
             className="rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-100"
           >
             <h2
-              className={`mt-1 font-semibold leading-snug text-slate-900 transition group-hover:text-brand-700 ${
-                isList
-                  ? "line-clamp-2 text-sm sm:text-[15px]"
-                  : "line-clamp-2 min-h-[2.4rem] text-[13px] sm:text-sm"
-              }`}
+              className={`mt-1 font-semibold leading-snug text-slate-900 transition group-hover:text-brand-700 ${isList
+                ? "line-clamp-2 text-sm sm:text-[15px]"
+                : "line-clamp-2 min-h-[2.4rem] text-[13px] sm:text-sm"
+                }`}
             >
               {product.title}
             </h2>
@@ -178,9 +171,8 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
           )}
 
           <div
-            className={`flex items-end justify-between gap-2 ${
-              isList ? "mt-3 pt-0" : "mt-auto pt-3"
-            }`}
+            className={`flex items-end justify-between gap-2 ${isList ? "mt-3 pt-0" : "mt-auto pt-3"
+              }`}
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-bold tracking-tight text-slate-900 sm:text-[15px]">
@@ -207,11 +199,10 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
                 disabled={outOfStock}
                 onClick={handleAddToCart}
                 aria-label={`Add ${product.title} to cart`}
-                className={`shrink-0 cursor-pointer place-items-center rounded-xl bg-brand-500 text-white shadow-[0_10px_24px_-12px_rgba(44,154,255,0.9)] transition hover:bg-brand-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none ${
-                  isList
-                    ? "hidden h-9 px-3 text-xs font-semibold sm:inline-flex sm:items-center sm:gap-1.5"
-                    : "grid size-9"
-                }`}
+                className={`shrink-0 cursor-pointer place-items-center rounded-xl bg-brand-500 text-white shadow-[0_10px_24px_-12px_rgba(44,154,255,0.9)] transition hover:bg-brand-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none ${isList
+                  ? "hidden h-9 px-3 text-xs font-semibold sm:inline-flex sm:items-center sm:gap-1.5"
+                  : "grid size-9"
+                  }`}
               >
                 {isList ? (
                   <>

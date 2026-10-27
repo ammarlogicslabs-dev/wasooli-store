@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import PageLoader from "../components/PageLoader";
+import StoreFooter from "../components/StoreFooter";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -16,6 +17,8 @@ export default function PageTransition() {
   const reduceMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const prevKey = useRef(null);
+
+  const isAdmin = location.pathname.startsWith("/admin");
 
   useEffect(() => {
     const next = locationKey(location);
@@ -36,10 +39,11 @@ export default function PageTransition() {
   }, [location, reduceMotion, navigationType]);
 
   return (
-    <div className="relative min-h-[50vh]">
+    <div className="relative flex min-h-screen flex-col justify-between">
       {loading ? <PageLoader overlay /> : null}
       <motion.div
         key={locationKey(location)}
+        className="flex-1"
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: loading ? 0 : 1, y: loading ? 6 : 0 }}
         transition={
@@ -50,6 +54,7 @@ export default function PageTransition() {
       >
         <Outlet />
       </motion.div>
+      {!isAdmin ? <StoreFooter /> : null}
     </div>
   );
 }

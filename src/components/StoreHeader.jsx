@@ -77,7 +77,7 @@ function navIconTo(category) {
 const TOP_THRESHOLD = 18;
 const SCROLL_DELTA = 2;
 const NAV_HIDE_AFTER = 80;
-const MOTION_EASE = [0.22, 1, 0.36, 1];
+const MOTION_EASE = [0.16, 1, 0.3, 1];
 const DEFAULT_PROGRAMMATIC_MS = 1600;
 
 function formatWishlistDate(value, emptyLabel = "Saved earlier") {
@@ -229,9 +229,20 @@ export default function StoreHeader() {
   const [prevPathname, setPrevPathname] = useState(location.pathname);
 
   const reduceMotion = useReducedMotion();
-  const motionTransition = reduceMotion
+  const headerTransition = reduceMotion
     ? { duration: 0 }
-    : { duration: 0.35, ease: MOTION_EASE };
+    : { duration: 0.42, ease: MOTION_EASE };
+
+  const headlineTransition = reduceMotion
+    ? { duration: 0 }
+    : {
+        height: { duration: 0.4, ease: MOTION_EASE },
+        opacity: {
+          duration: headlineHidden ? 0.22 : 0.3,
+          ease: "easeInOut",
+          delay: headlineHidden ? 0 : 0.08,
+        },
+      };
 
   const closeCart = () => setCartOpen(false);
   const closeWishlist = () => setWishlistOpen(false);
@@ -242,6 +253,11 @@ export default function StoreHeader() {
     setCartOpen(false);
     setWishlistOpen(false);
   }
+
+  useEffect(() => {
+    setHeadlineHidden(false);
+    setNavHidden(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     return subscribeCartOpen(() => {
@@ -264,16 +280,15 @@ export default function StoreHeader() {
   }, []);
 
   useEffect(() => {
-    const height =
-      (headlineHidden ? 0 : headlineHeight) + (navHidden ? 0 : navHeight);
+    const total = (headlineHeight || 36) + (navHeight || 72);
     document.documentElement.style.setProperty(
       "--store-header-height",
-      `${height}px`
+      `${total}px`
     );
     return () => {
       document.documentElement.style.removeProperty("--store-header-height");
     };
-  }, [headlineHidden, headlineHeight, navHidden, navHeight]);
+  }, [headlineHeight, navHeight]);
 
   /*
    * Scroll behaviour (staged):
@@ -287,6 +302,7 @@ export default function StoreHeader() {
   useEffect(() => {
     let lastY = window.scrollY;
     let downDistance = 0; // px scrolled down since the last upward scroll
+    let upDistance = 0; // px scrolled up to prevent jitter on trackpad inertia
     let headlineIsHidden = false;
     let ignoreUntil = 0;
 
@@ -299,6 +315,7 @@ export default function StoreHeader() {
       setNavHidden(false);
       lastY = window.scrollY;
       downDistance = 0;
+      upDistance = 0;
     }
 
     function onScroll() {
@@ -312,6 +329,7 @@ export default function StoreHeader() {
 
       if (y <= TOP_THRESHOLD) {
         downDistance = 0;
+        upDistance = 0;
         headlineIsHidden = false;
         setHeadlineHidden(false);
         setNavHidden(false);
@@ -321,6 +339,7 @@ export default function StoreHeader() {
       if (Math.abs(delta) < SCROLL_DELTA) return;
 
       if (delta > 0) {
+        upDistance = 0;
         downDistance += delta;
 
         if (!headlineIsHidden) {
@@ -334,7 +353,10 @@ export default function StoreHeader() {
         if (downDistance > NAV_HIDE_AFTER) setNavHidden(true);
       } else {
         downDistance = 0;
-        setNavHidden(false);
+        upDistance += Math.abs(delta);
+        if (upDistance > 8) {
+          setNavHidden(false);
+        }
       }
     }
 
@@ -385,19 +407,19 @@ export default function StoreHeader() {
       <motion.header
         initial={false}
         animate={{ y: navHidden ? "-100%" : "0%" }}
-        transition={motionTransition}
-        className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur ${navHidden ? "pointer-events-none" : ""
+        transition={headerTransition}
+        className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur will-change-transform ${navHidden ? "pointer-events-none" : ""
           }`}
       >
         {/* Headline bar: height collapses smoothly (outer), natural height measured (inner) */}
         <motion.div
           initial={false}
           animate={{
-            height: headlineHidden ? 0 : "auto",
+            height: headlineHidden ? 0 : (headlineHeight || "auto"),
             opacity: headlineHidden ? 0 : 1,
           }}
-          transition={motionTransition}
-          className="overflow-hidden"
+          transition={headlineTransition}
+          className="overflow-hidden will-change-[height,opacity]"
           aria-hidden={headlineHidden}
         >
           <div ref={headlineRef} className="bg-brand-500 text-white">
@@ -437,7 +459,7 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-2.5 sm:px-6 sm:py-3 lg:px-8">
+        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-1 sm:px-6 sm:py-2 lg:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
               <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white sm:size-12 shadow-xs">
@@ -539,7 +561,7 @@ export default function StoreHeader() {
                         {active && (
                           <motion.span
                             layoutId="activeCategoryPill"
-                            className="absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out cursor-pointer"
+                            className="absolute inset-y-0 left-0 rounded-2xl bg-linear-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out cursor-pointer"
                             style={{
                               width: `calc(100% + ${labelWidth}px)`,
                             }}
@@ -550,7 +572,7 @@ export default function StoreHeader() {
                         {/* Smooth expanding pill highlight on hover for non-active items */}
                         {!active && (
                           <span
-                            className={`absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out ${
+                            className={`absolute inset-y-0 left-0 rounded-2xl bg-linear-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out ${
                               isHovered ? "opacity-100 cursor-pointer" : "opacity-0 pointer-events-none"
                             }`}
                             style={{
@@ -561,7 +583,7 @@ export default function StoreHeader() {
 
                         {/* Icon container with depth & elevation on the LEFT */}
                         <span
-                          className={`relative z-10 grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border transition-all duration-200 ${
+                          className={`relative z-10 grid size-10 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 ${
                             active
                               ? "border-brand-300 shadow-xs from-white to-brand-50/50"
                               : "border-slate-200/90 shadow-2xs group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40"
@@ -572,7 +594,7 @@ export default function StoreHeader() {
 
                         {/* Smooth expanding pill name on the RIGHT */}
                         <span
-                          className={`absolute left-[46px] z-10 overflow-hidden transition-all duration-300 ease-out flex items-center ${
+                          className={`absolute left-11.5 z-10 overflow-hidden transition-all duration-300 ease-out flex items-center ${
                             isExpanded ? "cursor-pointer" : "pointer-events-none"
                           }`}
                           style={{
@@ -685,12 +707,12 @@ export default function StoreHeader() {
                   viewTransition
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className={`flex w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${active
+                  className={`flex w-18 shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${active
                     ? "bg-brand-50 ring-1 ring-brand-300 shadow-xs"
                     : "bg-white border border-slate-200/70 active:bg-slate-100 shadow-2xs"
                     }`}
                 >
-                  <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-2xs">
+                  <span className="grid size-10 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border border-slate-100 shadow-2xs">
                     <Icon size={26} />
                   </span>
                   <span className="w-full truncate text-center text-[10px] font-bold text-slate-700">
