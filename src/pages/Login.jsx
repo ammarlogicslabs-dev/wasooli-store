@@ -147,17 +147,12 @@ export default function Login() {
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
 
-        <div className="relative inline-flex items-center gap-3">
-          <span className="grid size-16 place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md ring-2 ring-brand-100">
-            <img
-              src="/wasooli.png"
-              alt="Wasooli Store"
-              className="h-full w-full object-cover"
-            />
-          </span>
-          <span className="text-xl font-bold tracking-tight text-white">
-            {STORE_NAME}
-          </span>
+        <div className="relative inline-flex items-center">
+          <img
+            src="/wasooli.png"
+            alt="Wasooli Store"
+            className="h-28 w-auto object-contain drop-shadow-lg xl:h-36"
+          />
         </div>
 
         <div className="relative">
@@ -191,17 +186,12 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile brand */}
           <div className="mb-7 flex flex-col items-center lg:hidden">
-            <Link className="flex flex-col items-center gap-3">
-              <span className="grid size-20 place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md ring-2 ring-brand-100">
-                <img
-                  src="/wasooli.png"
-                  alt="Wasooli Store"
-                  className="h-full w-full object-cover"
-                />
-              </span>
-              <span className="text-xl font-bold tracking-tight text-brand-700">
-                {STORE_NAME}
-              </span>
+            <Link className="flex flex-col items-center">
+              <img
+                src="/wasooli.png"
+                alt="Wasooli Store"
+                className="h-28 w-auto object-contain drop-shadow-md sm:h-32"
+              />
             </Link>
           </div>
 

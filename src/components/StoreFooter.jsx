@@ -2,19 +2,61 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  ArrowUp,
-  CheckCircle2,
-  Clock,
-  Headphones,
-  Mail,
-  MapPin,
+  Cable,
+  ChevronRight,
+  FileText,
+  Lock,
   Network,
-  Phone,
+  PhoneCall,
   RotateCcw,
+  Router,
   ShieldCheck,
   Truck,
-  Zap,
+  Wifi,
+  Wrench,
 } from "lucide-react";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaLinkedinIn,
+  FaXTwitter,
+  FaYoutube,
+} from "react-icons/fa6";
+
+function VisaBadge() {
+  return (
+    <span className="inline-flex h-6 w-11 items-center justify-center rounded bg-white px-1 shadow-xs border border-white/40">
+      <span className="text-[11px] font-black italic tracking-tighter text-[#1a1f71]">VISA</span>
+    </span>
+  );
+}
+
+function MastercardBadge() {
+  return (
+    <span className="inline-flex h-6 w-11 items-center justify-center rounded bg-white px-1 shadow-xs border border-white/40">
+      <span className="relative flex items-center justify-center">
+        <span className="size-3.5 rounded-full bg-[#eb001b]" />
+        <span className="-ml-1.5 size-3.5 rounded-full bg-[#f79e1b] opacity-95" />
+      </span>
+    </span>
+  );
+}
+
+function JazzCashBadge() {
+  return (
+    <span className="inline-flex h-6 w-13 items-center justify-center rounded bg-[#da1e28] px-1 shadow-xs border border-red-500/40">
+      <span className="text-[9px] font-black italic tracking-tight text-[#ffdd00]">JazzCash</span>
+    </span>
+  );
+}
+
+function EasypaisaBadge() {
+  return (
+    <span className="inline-flex h-6 w-13 items-center justify-center rounded bg-[#00a859] px-1 shadow-xs border border-emerald-500/40">
+      <span className="text-[9px] font-extrabold tracking-tight text-white">easypaisa</span>
+    </span>
+  );
+}
 
 const TICKER_ANNOUNCEMENTS = [
   "MON – SAT: 10:00 AM – 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
@@ -30,21 +72,17 @@ export default function StoreFooter() {
 
   function handleSubscribe(e) {
     e.preventDefault();
-    if (!email.trim() || !email.includes("@")) return;
-    setSubscribed(true);
-    setTimeout(() => {
+    if (email.trim()) {
+      setSubscribed(true);
       setEmail("");
-    }, 4000);
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => setSubscribed(false), 4000);
+    }
   }
 
   return (
-    <footer className="relative bg-slate-950 text-slate-300">
+    <footer className="relative bg-[#020b24] text-slate-300 overflow-hidden font-sans">
       {/* Top Announcement Ticker Strip */}
-      <div className="relative overflow-hidden border-y border-sky-200/90 bg-[#dbeafe] text-slate-800 py-2 sm:py-2.5 shadow-xs">
+      <div className="relative z-20 overflow-hidden border-y border-sky-200/90 bg-[#dbeafe] text-slate-800 py-2 sm:py-2.5 shadow-xs">
         <style>{`
           @keyframes footer-ticker {
             0% { transform: translateX(0); }
@@ -71,230 +109,213 @@ export default function StoreFooter() {
           ))}
         </div>
       </div>
-      {/* Top Value Banner */}
-      {/* <div className="border-b border-slate-900 bg-slate-900/40">
-        <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex items-center gap-3.5">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-500/10 text-brand-400 ring-1 ring-brand-500/25">
-                <Truck size={20} />
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-white">Nationwide Delivery</h4>
-                <p className="text-xs text-slate-400">Fast dispatch in 1–2 days across Pakistan</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3.5">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25">
-                <ShieldCheck size={20} />
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-white">100% Genuine Gear</h4>
-                <p className="text-xs text-slate-400">Tested &amp; verified networking equipment</p>
-              </div>
-            </div>
+      {/* Background Graphic */}
+      <img
+        src="/footer.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+      />
 
-            <div className="flex items-center gap-3.5">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/25">
-                <RotateCcw size={20} />
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-white">Easy Exchanges</h4>
-                <p className="text-xs text-slate-400">2-day sealed item return &amp; exchange</p>
-              </div>
-            </div>
+      {/* Subtle soft gradient overlay so text stays readable on all devices */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#020b24]/90 via-[#020b24]/65 to-transparent md:via-[#020b24]/40"
+      />
 
-            <div className="flex items-center gap-3.5">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/25">
-                <Headphones size={20} />
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-white">Networking Support</h4>
-                <p className="text-xs text-slate-400">Technical help for setup &amp; purchases</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> */}
-
-      {/* Main Footer Links */}
-      <div className="mx-auto max-w-8xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 2xl:max-w-[1536px]">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
-          {/* Col 1: Brand Info */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="inline-flex items-center gap-3">
-              <span className="grid size-11 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white p-1 shadow-md">
-                <img src="/wasooli.png" alt="Wasooli Store" className="h-full w-full object-contain" />
-              </span>
-              <div>
-                <span className="block text-lg font-black tracking-tight text-white">Wasooli Store</span>
-                <span className="block text-[11px] font-medium tracking-wider text-brand-400 uppercase">
-                  Networking Products HQ
-                </span>
-              </div>
+      {/* Main Footer Content */}
+      <div className="relative z-10 mx-auto max-w-[1536px] px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 lg:px-8 xl:px-10">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-start">
+          
+          {/* Column 1: Brand, Description & Socials */}
+          <div className="sm:col-span-2 lg:col-span-3">
+            <Link to="/" viewTransition className="inline-block py-1">
+              <img
+                src="/wasooli.png"
+                alt="Wasooli Store"
+                className="h-16 sm:h-20 lg:h-[76px] w-auto object-contain drop-shadow-md"
+              />
             </Link>
-
-            <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
-              Pakistan&apos;s premier online catalog for high-performance enterprise and home networking hardware.
-              Routers, PoE switches, Cat6/Cat8 patch cords, fiber optics, and accessories.
+            <p className="mt-3.5 max-w-sm text-xs sm:text-[13px] leading-relaxed text-slate-300/90 font-normal">
+              Your trusted source for networking &amp; ISP supplies.
+              <br />
+              Routers, switches, access points, cables and more.
             </p>
 
-            <div className="mt-6 flex flex-col gap-2.5 text-xs text-slate-300">
-              <a
-                href="tel:03001234567"
-                className="inline-flex items-center gap-2.5 transition hover:text-brand-300"
-              >
-                <Phone size={14} className="text-brand-400" />
-                <span>0300 1234567 (Mon–Sat 10am–8pm)</span>
-              </a>
-              <a
-                href="mailto:hello@wasooli.store"
-                className="inline-flex items-center gap-2.5 transition hover:text-brand-300"
-              >
-                <Mail size={14} className="text-brand-400" />
-                <span>hello@wasooli.store</span>
-              </a>
-              <div className="inline-flex items-center gap-2.5 text-slate-400">
-                <MapPin size={14} className="text-brand-400" />
-                <span>Karachi, Pakistan (Nationwide Delivery)</span>
-              </div>
+            {/* Social Icons (5 circular blue buttons) */}
+            <div className="mt-5 flex items-center gap-2.5">
+              {[
+                { Icon: FaFacebookF, href: "https://facebook.com", label: "Facebook" },
+                { Icon: FaInstagram, href: "https://instagram.com", label: "Instagram" },
+                { Icon: FaYoutube, href: "https://youtube.com", label: "YouTube" },
+                { Icon: FaLinkedinIn, href: "https://linkedin.com", label: "LinkedIn" },
+                { Icon: FaXTwitter, href: "https://x.com", label: "X" },
+              ].map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="grid size-8 place-items-center rounded-full bg-[#0066ff] text-white shadow-md shadow-[#0066ff]/30 transition-all duration-200 hover:scale-110 hover:bg-[#0052cc] hover:shadow-lg cursor-pointer"
+                >
+                  <Icon size={14} />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Col 2: Categories */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white">Hardware Catalog</h3>
-            <ul className="mt-4 space-y-2.5 text-sm">
+          {/* Column 2: Quick Links with chevron right */}
+          <div className="lg:col-span-2">
+            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Quick Links</h4>
+            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
               {[
-                { name: "Routing & Gateways", cat: "Routing" },
-                { name: "Switching & PoE", cat: "Switching" },
-                { name: "Wireless Access Points", cat: "Wireless" },
-                { name: "Network Security", cat: "Network Security" },
-                { name: "Optical & Fiber Optics", cat: "Optical & Fiber" },
-                { name: "Cabling & Patch Cords", cat: "Cabling & Connectivity" },
-                { name: "Power, Racks & Tools", cat: "Tools & Accessories" },
-              ].map((item) => (
-                <li key={item.name}>
+                { label: "Home", to: "/" },
+                { label: "Shop", to: "/shop" },
+                { label: "New Arrivals", to: "/shop?sort=newest", highlight: true },
+                { label: "Deals", to: "/shop?tag=deals" },
+                { label: "About Us", to: "/about" },
+                { label: "Contact", to: "/contact" },
+              ].map(({ label, to, highlight }) => (
+                <li key={label}>
                   <Link
-                    to={`/shop?category=${encodeURIComponent(item.cat)}`}
-                    className="text-slate-400 transition hover:text-white"
+                    to={to}
+                    viewTransition
+                    className={`flex items-center justify-between max-w-[130px] transition-colors hover:text-white ${
+                      highlight ? "text-[#38bdf8] font-medium" : "text-slate-300"
+                    }`}
                   >
-                    {item.name}
+                    <span>{label}</span>
+                    <ChevronRight size={13} className={highlight ? "text-[#38bdf8]" : "text-slate-400"} />
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Col 3: Customer Care & Policy */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white">Customer Support</h3>
-            <ul className="mt-4 space-y-2.5 text-sm">
-              <li>
-                <Link to="/shop" className="text-slate-400 transition hover:text-white">
-                  Browse All Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/account" className="text-slate-400 transition hover:text-white">
-                  Track Your Orders
-                </Link>
-              </li>
-              <li>
-                <Link to="/account" className="text-slate-400 transition hover:text-white">
-                  My Profile &amp; Addresses
-                </Link>
-              </li>
-              <li>
-                <Link to="/shop" className="text-slate-400 transition hover:text-white">
-                  Bulk &amp; Quantity Discounts
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="#categories"
-                  onClick={(e) => {
-                    if (window.location.pathname === "/") {
-                      e.preventDefault();
-                      document.getElementById("categories")?.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                  className="text-slate-400 transition hover:text-white"
-                >
-                  Category Directory
-                </a>
-              </li>
+          {/* Column 3: Categories with icons */}
+          <div className="lg:col-span-2">
+            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Categories</h4>
+            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
+              {[
+                { Icon: Router, label: "Routers", cat: "Routing" },
+                { Icon: Network, label: "Switches", cat: "Switching" },
+                { Icon: Wifi, label: "Access Points", cat: "Wireless" },
+                { Icon: Cable, label: "Cables", cat: "Cabling & Connectivity" },
+                { Icon: ShieldCheck, label: "Accessories", cat: "Tools & Accessories" },
+                { Icon: Wrench, label: "Tools", cat: "Tools & Accessories" },
+              ].map(({ Icon, label, cat }) => (
+                <li key={label}>
+                  <Link
+                    to={`/shop?category=${encodeURIComponent(cat)}`}
+                    viewTransition
+                    className="inline-flex items-center gap-2.5 text-slate-300 transition-colors hover:text-white group"
+                  >
+                    <Icon size={14} className="text-[#38bdf8] group-hover:text-white transition-colors shrink-0" />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Col 4: Newsletter & Wholesale Alerts */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white">Stock &amp; Price Alerts</h3>
-            <p className="mt-4 text-xs leading-5 text-slate-400">
-              Get notified when new networking equipment arrives or when bulk discounts are added.
-            </p>
-
-            {subscribed ? (
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
-                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
-                <span>Thank you! You are subscribed to Wasooli Store alerts.</span>
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="mt-4 space-y-2">
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                    className="w-full rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-1.5 top-1.5 inline-flex items-center justify-center rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-400"
+          {/* Column 4: Customer Care with icons */}
+          <div className="lg:col-span-2">
+            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Customer Care</h4>
+            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
+              {[
+                { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
+                { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
+                { Icon: RotateCcw, label: "Return & Refunds", to: "/returns" },
+                { Icon: ShieldCheck, label: "Privacy Policy", to: "/privacy" },
+                { Icon: FileText, label: "Terms & Conditions", to: "/terms" },
+              ].map(({ Icon, label, to }) => (
+                <li key={label}>
+                  <Link
+                    to={to}
+                    viewTransition
+                    className="inline-flex items-center gap-2.5 text-slate-300 transition-colors hover:text-white group"
                   >
-                    Join
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400">No spam, strictly hardware arrivals &amp; B2B drops.</p>
+                    <Icon size={14} className="text-[#38bdf8] group-hover:text-white transition-colors shrink-0" />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 5 & Hardware Area: Newsletter + Secure Payments + 100% Secure Shopping Badge */}
+          {/* <div className="sm:col-span-2 lg:col-span-3 flex flex-col justify-between">
+            <div>
+              <h4 className="text-sm sm:text-[16px] font-bold text-white tracking-wide">
+                Subscribe to Our Newsletter
+              </h4>
+              <p className="mt-1 text-xs sm:text-[13px] text-sky-200/80">
+                Get the latest updates on new products, offers and more.
+              </p>
+
+              <form onSubmit={handleSubscribe} className="relative mt-3.5 flex items-center max-w-sm rounded-full bg-white p-1 shadow-lg">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="w-full bg-transparent pl-4 pr-12 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+                  required
+                />
+                <button
+                  type="submit"
+                  aria-label="Subscribe to newsletter"
+                  className="absolute right-1 grid size-8 sm:size-8.5 place-items-center rounded-full bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold transition-all active:scale-95 cursor-pointer shadow-md"
+                >
+                  <ArrowRight size={15} />
+                </button>
               </form>
-            )}
+              {subscribed && (
+                <p className="mt-1.5 text-xs font-semibold text-emerald-400">
+                  Thank you for subscribing!
+                </p>
+              )}
 
-            {/* <div className="mt-6 rounded-xl border border-slate-800/80 bg-slate-900/60 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-                <Zap size={14} className="text-brand-400" />
-                <span>Payment Methods</span>
+              <div className="mt-5">
+                <p className="text-xs font-semibold text-slate-200 tracking-wide">
+                  Secure Payments
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
+                  <div className="flex items-center gap-2">
+                    <VisaBadge />
+                    <MastercardBadge />
+                    <JazzCashBadge />
+                    <EasypaisaBadge />
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-sky-400/35 bg-[#00173d]/85 px-3 py-1.5 backdrop-blur-md shadow-lg">
+                    <Lock size={18} className="text-sky-300 shrink-0" />
+                    <div className="leading-tight text-left">
+                      <div className="text-[10px] sm:text-[11px] font-bold text-white tracking-wide">100% Secure</div>
+                      <div className="text-[9px] sm:text-[10px] text-sky-200">Shopping</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">Cash on Delivery (COD) · IBFT / Bank Transfer</p>
-            </div> */}
-          </div>
+            </div>
+          </div> */}
+
         </div>
       </div>
 
-      {/* Bottom Legal & Back to Top */}
-      <div className="border-t border-slate-900 bg-slate-950 py-5">
-        <div className="mx-auto flex max-w-8xl flex-col items-center justify-between gap-4 px-4 text-xs text-slate-400 sm:flex-row sm:px-6 lg:px-8 2xl:max-w-[1536px]">
-          <p>
-            &copy; {new Date().getFullYear()} <strong className="text-slate-300">Wasooli Store</strong>. All rights reserved.
+      {/* Bottom Legal & Credits Bar */}
+      {/* <div className="relative z-10 border-t border-sky-500/20 bg-[#00081c]/85 backdrop-blur-sm py-3.5">
+        <div className="mx-auto flex max-w-[1536px] flex-col items-center justify-between gap-2 px-4 text-[11px] sm:text-xs text-slate-300/80 sm:flex-row sm:px-6 lg:px-8 xl:px-10">
+          <p className="text-center sm:text-left">
+            &copy; {new Date().getFullYear()} Wasooli Store. All rights reserved.
           </p>
-
-          <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              Nationwide Logistics Active
-            </span>
-            <button
-              onClick={scrollToTop}
-              className="group inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1 text-slate-300 transition hover:border-brand-500/50 hover:bg-slate-800 hover:text-white"
-            >
-              <span>Back to top</span>
-              <ArrowUp size={12} className="transition-transform group-hover:-translate-y-0.5" />
-            </button>
-          </div>
+          <p className="text-center sm:text-right">
+            Made with <span className="text-red-500">❤️</span> for a better connected world
+          </p>
         </div>
-      </div>
+      </div> */}
     </footer>
   );
 }

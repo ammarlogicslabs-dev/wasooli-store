@@ -228,11 +228,24 @@ function CountUp({ value, suffix = "" }) {
 
 /* ─── A. Hero ───────────────────────────────────────────────────────────────── */
 
+const HERO_BG_IMAGES = [
+  "/wasooli-hero.png",
+  "/playstore banner.png",
+];
+
 function HeroSection({ productCount, categoryCount }) {
   const reduce = useReducedMotion();
   const ref = useRef(null);
   const mouseX = useSpring(useMotionValue(0), { stiffness: 70, damping: 18 });
   const mouseY = useSpring(useMotionValue(0), { stiffness: 70, damping: 18 });
+  const [activeHeroBg, setActiveHeroBg] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHeroBg((prev) => (prev + 1) % HERO_BG_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
@@ -252,13 +265,26 @@ function HeroSection({ productCount, categoryCount }) {
     <section
       ref={ref}
       onPointerMove={onMove}
-      className="relative flex h-[calc(100vh-var(--store-header-height,108px))] max-h-[calc(100vh-var(--store-header-height,108px))] flex-col justify-between overflow-hidden bg-slate-950 text-white"
+      className="relative flex min-h-[calc(100vh-var(--store-header-height,80px))] lg:h-[calc(100vh-var(--store-header-height,108px))] lg:max-h-[calc(100vh-var(--store-header-height,108px))] flex-col justify-between overflow-hidden bg-slate-950 text-white"
     >
-      {/* BG parallax image */}
-      <motion.img src="/wasooli-hero.png" alt="" aria-hidden="true" fetchPriority="high"
-        style={reduce ? undefined : { y: bgY, scale: 1.1 }}
-        className="absolute inset-0 h-full w-full object-cover opacity-[0.18] sm:opacity-[0.22]"
-      />
+      {/* BG parallax images with smooth crossfade swap */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        {HERO_BG_IMAGES.map((src, index) => (
+          <motion.img
+            key={src}
+            src={src}
+            alt=""
+            fetchPriority={index === 0 ? "high" : "low"}
+            style={reduce ? undefined : { y: bgY, scale: 1.1 }}
+            initial={false}
+            animate={{
+              opacity: activeHeroBg === index ? 0.24 : 0,
+            }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ))}
+      </div>
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" aria-hidden="true" />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" aria-hidden="true" />
 
@@ -281,6 +307,12 @@ function HeroSection({ productCount, categoryCount }) {
       >
         {/* Left: copy */}
         <div className="py-1">
+          <motion.span {...fadeUp(0.1, reduce)}
+            className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-300 backdrop-blur-sm sm:text-[11px]"
+          >
+            <span className="wl-live-dot size-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+            Pakistan&apos;s networking store
+          </motion.span>
           <motion.h1 {...fadeUp(0.18, reduce)}
             className="max-w-xl text-2xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]"
           >
@@ -311,12 +343,12 @@ function HeroSection({ productCount, categoryCount }) {
           </motion.div>
 
           <motion.ul {...fadeUp(0.48, reduce)}
-            className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400 sm:mt-4 sm:gap-x-5 sm:text-xs"
+            className="mt-3.5 flex flex-wrap gap-1.5 text-[11px] text-slate-300 sm:mt-4 sm:gap-2 sm:text-xs"
             aria-label="Store highlights"
           >
             {["Nationwide delivery", "Cash on delivery", "Bulk pricing available"].map((item) => (
-              <li key={item} className="flex items-center gap-1.5">
-                <span className="size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden="true" />
+              <li key={item} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 backdrop-blur-sm">
+                <CheckCircle2 size={12} className="shrink-0 text-brand-400" aria-hidden="true" />
                 {item}
               </li>
             ))}
@@ -324,7 +356,7 @@ function HeroSection({ productCount, categoryCount }) {
 
           {productCount > 0 ? (
             <motion.dl {...fadeUp(0.58, reduce)}
-              className="mt-3.5 grid max-w-sm grid-cols-3 divide-x divide-white/[0.08] rounded-2xl border border-white/[0.08] bg-white/[0.03] py-2 backdrop-blur-sm sm:mt-4 sm:py-2.5"
+              className="mt-4 grid max-w-sm grid-cols-3 divide-x divide-white/[0.08] rounded-2xl border border-white/[0.1] bg-gradient-to-br from-white/[0.07] to-white/[0.02] py-2.5 shadow-[0_10px_30px_-12px_rgba(44,154,255,0.35)] backdrop-blur-md sm:mt-5 sm:py-3"
             >
               {[
                 { label: "Products", node: <CountUp value={productCount} suffix="+" /> },
@@ -332,8 +364,8 @@ function HeroSection({ productCount, categoryCount }) {
                 { label: "Dispatch days", node: "1–2" },
               ].map(({ label, node }) => (
                 <div key={label} className="px-3 text-center">
-                  <dd className="m-0 text-base font-bold text-white sm:text-lg">{node}</dd>
-                  <dt className="mt-0.5 text-[9px] font-medium uppercase tracking-wider text-slate-500">{label}</dt>
+                  <dd className="m-0 bg-gradient-to-b from-white to-sky-200 bg-clip-text text-lg font-extrabold text-transparent sm:text-xl">{node}</dd>
+                  <dt className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</dt>
                 </div>
               ))}
             </motion.dl>
@@ -348,6 +380,21 @@ function HeroSection({ productCount, categoryCount }) {
           <Hero3DCanvas className="h-full w-full" />
         </motion.div>
       </motion.div>
+
+      {/* Hero background image swap indicators */}
+      <div className="absolute bottom-11 right-6 z-20 hidden sm:flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/60 px-2.5 py-1 backdrop-blur-md">
+        {HERO_BG_IMAGES.map((_, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setActiveHeroBg(idx)}
+            aria-label={`Switch hero background ${idx + 1}`}
+            className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+              activeHeroBg === idx ? "w-5 bg-brand-400" : "w-1.5 bg-white/30 hover:bg-white/60"
+            }`}
+          />
+        ))}
+      </div>
 
       {/* Ticker */}
       <div className="relative shrink-0 overflow-hidden border-t border-white/[0.06] bg-white/[0.03] py-2" aria-hidden="true">
@@ -368,36 +415,71 @@ function HeroSection({ productCount, categoryCount }) {
   );
 }
 
-/* ─── B. Benefits strip ─────────────────────────────────────────────────────── */
+/* ─── B. Networking Solutions banner ────────────────────────────────────────── */
 
-function BenefitsStrip() {
+function ConnectionBanner() {
   const reduce = useReducedMotion();
+
   return (
-    <section className="relative z-10 border-b border-slate-200 bg-white" aria-label="Store benefits">
-      <div className="mx-auto max-w-8xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[1536px]">
-        <motion.ul
-          initial={reduce ? false : "hidden"}
-          whileInView="show"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-          className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+    <section className="relative z-10 bg-white py-3" aria-label="Networking Solutions banner">
+      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+        <motion.div
+          {...fadeUpInView(0, reduce)}
+          className="relative overflow-hidden rounded-[10px] border border-[#dce9f8] bg-gradient-to-r from-[#e6f0fb] via-[#eef5fd] to-[#e4eefb] px-4 py-3 sm:px-7 md:py-0 md:h-[76px] lg:px-9"
         >
-          {BENEFITS.map(({ icon: Icon, title, text }) => (
-            <motion.li
-              key={title}
-              variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } } }}
-              className="group flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white px-3 py-2.5 shadow-xs"
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-500 text-white shadow-[0_10px_20px_-10px_rgba(44,154,255,0.85)] transition duration-200 group-hover:-translate-y-0.5 group-hover:bg-brand-600">
-                <Icon size={16} aria-hidden="true" />
+          {/* Background glass design */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+            {/* soft light glow behind the cord */}
+            <div className="absolute left-[62%] top-1/2 h-40 w-[34%] -translate-y-1/2 rounded-full bg-white/55 blur-2xl" />
+            {/* wide diagonal light band rising to the right */}
+            <div className="absolute -bottom-10 left-[49%] h-32 w-[16%] -skew-x-[38deg] bg-gradient-to-r from-white/0 via-white/45 to-white/0" />
+            <div className="absolute -bottom-10 left-[56%] h-32 w-[7%] -skew-x-[38deg] bg-white/40" />
+            <div className="absolute -top-8 left-[74%] h-32 w-[9%] -skew-x-[38deg] bg-white/35" />
+            {/* top sheen */}
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
+            {/* minimal dot grid, fading out from the left */}
+            <div className="absolute inset-0 opacity-70 [background-image:radial-gradient(rgba(26,99,214,0.2)_1px,transparent_1px)] [background-size:14px_14px] [mask-image:linear-gradient(to_right,black,transparent_42%)]" />
+            {/* thin concentric rings behind the cord */}
+            <div className="absolute left-[69%] top-1/2 size-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/[0.12]" />
+            <div className="absolute left-[69%] top-1/2 size-[130px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/[0.14]" />
+            {/* hairline accent along the bottom edge */}
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#2f7fe8]/35 to-transparent" />
+          </div>
+
+          <div className="relative flex h-full flex-col items-center gap-3 py-3 md:flex-row md:justify-between md:gap-6 md:py-0">
+            {/* Left: eyebrow + headline + subtext */}
+            <div className="min-w-0 flex-1 text-center md:text-left">
+              <span className="block text-[10px] font-semibold leading-none tracking-[0.01em] text-[#1a63d6]">
+                Networking Solutions
               </span>
-              <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-slate-900">{title}</p>
-                <p className="line-clamp-1 text-[10px] leading-4 text-slate-500">{text}</p>
+              <div className="mt-[3px] flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-[18px]">
+                <h2 className="text-lg font-extrabold leading-tight tracking-[-0.01em] text-[#0a1f55] sm:text-[21px] sm:whitespace-nowrap lg:text-[22px]">
+                  Build a stronger connection
+                </h2>
+                <p className="text-[11px] font-normal leading-none text-[#5a72a0] lg:mt-[5px]">
+                  From home networks to business setups — we have the right equipment for you.
+                </p>
               </div>
-            </motion.li>
-          ))}
-        </motion.ul>
+            </div>
+
+            {/* Right: big cord + outlined pill button */}
+            <div className="flex shrink-0 items-center flex-wrap sm:flex-nowrap justify-center gap-4 sm:gap-8 lg:gap-12">
+              <img
+                src="/image-2.png"
+                alt="Fiber optic patch cord"
+                className="h-12 w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,80,200,0.18)] sm:h-16 md:h-[66px] lg:h-[70px]"
+              />
+              <Link
+                to="/shop"
+                viewTransition
+                className="group inline-flex h-[34px] items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-[#2f7fe8] bg-white/40 px-6 text-[11px] font-semibold text-[#1a63d6] transition-all duration-200 hover:bg-[#2f7fe8] hover:text-white"
+              >
+                <span>Explore All Products</span>
+                <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -408,10 +490,13 @@ function BenefitsStrip() {
 function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
   const reduce = useReducedMotion();
   return (
-    <div className="mb-5 flex items-end justify-between gap-3 sm:mb-6">
+    <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
       <motion.div {...fadeUpInView(0, reduce)}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-600">{eyebrow}</p>
-        <h2 id={id} className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h2>
+        <p className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">
+          <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
+          {eyebrow}
+        </p>
+        <h2 id={id} className="mt-2.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">{title}</h2>
         <motion.span aria-hidden="true"
           initial={reduce ? false : { scaleX: 0 }}
           whileInView={{ scaleX: 1 }}
@@ -421,7 +506,7 @@ function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
         />
       </motion.div>
       <Link to={linkTo}
-        className="group flex shrink-0 items-center gap-0.5 text-sm font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-100"
+        className="group inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-xs transition-all duration-200 hover:border-brand-500 hover:bg-brand-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
       >
         {linkLabel}
         <ChevronRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1" />
@@ -429,8 +514,6 @@ function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
     </div>
   );
 }
-
-/* ─── C. Category grid ──────────────────────────────────────────────────────── */
 
 /* ─── C. Category grid (Circular Premium Pods with Swiper & Pagination) ──────── */
 
@@ -444,7 +527,7 @@ function CategoryGrid({ items, loading }) {
   return (
     <section
       id="categories"
-      className="scroll-mt-[calc(var(--store-header-height,72px)+1rem)] border-b border-slate-200/80 bg-white"
+      className="scroll-mt-[calc(var(--store-header-height,72px)+1rem)] border-b border-slate-200/80 bg-gradient-to-b from-white via-white to-slate-50/70"
       aria-labelledby="categories-heading"
     >
       <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
@@ -533,7 +616,7 @@ function CategoryGrid({ items, loading }) {
                       aria-label={`Browse ${cat.name}`}
                     >
                       {/* Circle Avatar Pod - Slightly enlarged with full image fit */}
-                      <div className="relative flex aspect-square size-32 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-[#f1f3f6] shadow-xs transition-all duration-300 group-hover:border-[#2C9AFF] group-hover:bg-white group-hover:shadow-[0_14px_28px_-6px_rgba(44,154,255,0.28)]">
+                      <div className="relative flex aspect-square size-28 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-[#f1f3f6] shadow-xs transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[#2C9AFF] group-hover:bg-white group-hover:shadow-[0_18px_32px_-8px_rgba(44,154,255,0.35)]">
                         {cat.image ? (
                           <img
                             src={resolveMediaUrl(cat.image)}
@@ -554,13 +637,18 @@ function CategoryGrid({ items, loading }) {
                       <p className="mt-3 max-w-[130px] sm:max-w-[150px] lg:max-w-[170px] xl:max-w-[190px] text-center text-sm font-semibold leading-tight text-slate-800 transition-colors duration-200 group-hover:text-[#2C9AFF] line-clamp-2 min-h-[2.2rem]">
                         {cat.name}
                       </p>
+                      {cat.count > 0 ? (
+                        <span className="mt-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 transition-colors duration-200 group-hover:bg-[#2C9AFF]/10 group-hover:text-[#1875d1]">
+                          {cat.count} products
+                        </span>
+                      ) : null}
                     </Link>
                   </motion.div>
                 </SwiperSlide>
               ))}
             </Swiper>
 
-            {/* Pagination Dots (Matching reference image) */}
+            {/* Pagination Dots */}
             <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
               {displayItems.map((cat, idx) => {
                 const isActive = activeIndex === idx;
@@ -577,7 +665,7 @@ function CategoryGrid({ items, loading }) {
                     }}
                     aria-label={`Go to slide ${idx + 1}`}
                     className={`h-2 rounded-full transition-all duration-300 ${isActive
-                        ? "w-6 bg-slate-900"
+                        ? "w-7 bg-[#2C9AFF] shadow-[0_0_10px_rgba(44,154,255,0.55)]"
                         : "w-2 bg-slate-300 hover:bg-slate-400"
                       }`}
                   />
@@ -597,7 +685,11 @@ function FeaturedGrid({ products, loading }) {
   const displayProducts = (products || []).slice(0, 10);
 
   return (
-    <section className="border-b border-slate-200/80 bg-white" aria-labelledby="featured-heading">
+    <section className="relative border-b border-slate-200/80 bg-slate-50/70" aria-labelledby="featured-heading">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] [background-size:26px_26px] opacity-[0.035] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]"
+      />
       <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
         <SectionHeading eyebrow="Curated picks" title="Featured products" id="featured-heading" linkLabel="View all" />
 
@@ -699,18 +791,6 @@ function PromoBanner({ showcase }) {
         <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
           {/* Left Column: Headline, Interactive Tiers & CTAs */}
           <div>
-            {/* Live Program Badge */}
-            {/* <motion.div {...fadeUpInView(0, reduce)}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#2C9AFF]/40 bg-[#2C9AFF]/15 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#60B6FF] backdrop-blur-md shadow-[0_0_24px_rgba(44,154,255,0.22)]">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2C9AFF] opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-[#2C9AFF]" />
-                </span>
-                <Zap size={13} className="text-[#2C9AFF]" aria-hidden="true" />
-                Volume &amp; Contractor Program
-              </span>
-            </motion.div> */}
-
             {/* Headline */}
             <motion.h2
               {...fadeUpInView(0.08, reduce)}
@@ -768,16 +848,16 @@ function PromoBanner({ showcase }) {
 
             {/* Benefits Checklist */}
             <motion.div {...fadeUpInView(0.3, reduce)} className="mt-6 space-y-2">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300">
-                <CheckCircle2 size={16} className="text-[#2C9AFF] shrink-0" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
+                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
                 <span>Instant volume discount applied automatically in your shopping cart</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300">
-                <CheckCircle2 size={16} className="text-[#2C9AFF] shrink-0" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
+                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
                 <span>Official GST invoice &amp; tax receipts provided with every order</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300">
-                <CheckCircle2 size={16} className="text-[#2C9AFF] shrink-0" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
+                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
                 <span>Priority carton &amp; pallet packaging for zero-damage transit across Pakistan</span>
               </div>
             </motion.div>
@@ -804,10 +884,10 @@ function PromoBanner({ showcase }) {
             {/* Background Ambient Aura under cards */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 -m-8 rounded-full bg-gradient-to-tr from-[#2C9AFF]/15 to-sky-400/10 blur-2xl"
+              className="pointer-events-none absolute inset-0 -m-8 rounded-full bg-linear-to-tr from-[#2C9AFF]/15 to-sky-400/10 blur-2xl"
             />
 
-            <div className="relative min-h-[340px] sm:min-h-[380px] w-full">
+            <div className="relative min-h-85 sm:min-h-95 w-full">
               {/* Card 1: Top Right Satellite Card (e.g. Switch) */}
               <motion.div
                 style={reduce ? undefined : { y: yParallax }}
@@ -826,9 +906,9 @@ function PromoBanner({ showcase }) {
                 }}
                 className="absolute right-0 top-0 z-10 w-44 sm:w-56"
               >
-                <div className="group overflow-hidden rounded-2xl border border-white/20 bg-slate-900/90 backdrop-blur-xl shadow-[0_16px_36px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-[#2C9AFF]/60 hover:shadow-[0_20px_45px_rgba(44,154,255,0.25)]">
+                <div className="group overflow-hidden rounded-2xl border border-white/20 bg-slate-900/90 backdrop-blur-xl shadow-[0_16px_36px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-brand-500/60 hover:shadow-[0_20px_45px_rgba(44,154,255,0.25)]">
                   {/* Image full width with floating badges */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-800">
+                  <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-800">
                     <img
                       src={resolveMediaUrl(cards[1]?.image)}
                       alt={cards[1]?.title || "Switch"}
@@ -839,9 +919,9 @@ function PromoBanner({ showcase }) {
                         e.currentTarget.src = "/products/gigabit-switch.jpg";
                       }}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/40" />
+                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-black/40" />
                     <div className="absolute inset-x-2.5 top-2.5 z-10 flex items-center justify-between gap-1">
-                      <span className="font-semibold text-white text-[10px] drop-shadow-md line-clamp-1 max-w-[120px]">
+                      <span className="font-semibold text-white text-[10px] drop-shadow-md line-clamp-1 max-w-30">
                         {cards[1]?.title || "Gigabit Switch"}
                       </span>
                       <span className="shrink-0 rounded-full bg-emerald-500 px-2 py-0.5 font-bold text-white text-[9px] shadow-sm">
@@ -1007,6 +1087,14 @@ function HowItWorks() {
               className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-[#2C9AFF]/50 hover:shadow-[0_20px_45px_-12px_rgba(44,154,255,0.22)]"
             >
               <div>
+                {/* Large faint step number watermark */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-1 top-10 select-none text-[7.5rem] font-black leading-none text-slate-900/[0.035] transition-colors duration-300 group-hover:text-[#2C9AFF]/[0.08]"
+                >
+                  {step}
+                </span>
+
                 {/* Step Header: Icon + Step Pill Badge */}
                 <div className="flex items-center justify-between">
                   <span className="grid size-13 place-items-center rounded-2xl bg-gradient-to-br from-[#2C9AFF] to-[#1268c4] text-white shadow-[0_8px_20px_rgba(44,154,255,0.32)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-2">
@@ -1268,7 +1356,7 @@ export default function Home() {
       />
       <StoreHeader />
       <HeroSection productCount={products.length} categoryCount={categoryTotal} />
-      <BenefitsStrip />
+      <ConnectionBanner />
       <CategoryGrid items={categoryItems.length ? categoryItems : CATEGORY_FALLBACK} loading={catalogLoading} />
       <FeaturedGrid products={featuredProducts} loading={catalogLoading} />
       <ShopProductRail subtitle="What people buy" title="Trending now" products={trendingProducts} tone="light" autoplay />

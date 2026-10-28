@@ -8,6 +8,8 @@ import {
   LogIn,
   Mail,
   MapPin,
+  Menu,
+  ChevronRight,
   Phone,
   ShoppingBag,
   Trash2,
@@ -218,6 +220,7 @@ export default function StoreHeader() {
   const location = useLocation();
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const headlineRef = useRef(null);
   const navRef = useRef(null);
@@ -226,7 +229,7 @@ export default function StoreHeader() {
   // Headline collapses first, then the nav bar slides away.
   const [headlineHidden, setHeadlineHidden] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
-  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  
 
   const reduceMotion = useReducedMotion();
   const headerTransition = reduceMotion
@@ -246,15 +249,15 @@ export default function StoreHeader() {
 
   const closeCart = () => setCartOpen(false);
   const closeWishlist = () => setWishlistOpen(false);
-  const drawerOpen = cartOpen || wishlistOpen;
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const drawerOpen = cartOpen || wishlistOpen || mobileMenuOpen;
 
-  if (location.pathname !== prevPathname) {
-    setPrevPathname(location.pathname);
-    setCartOpen(false);
-    setWishlistOpen(false);
-  }
+  
 
   useEffect(() => {
+    setCartOpen(false);
+    setWishlistOpen(false);
+    setMobileMenuOpen(false);
     setHeadlineHidden(false);
     setNavHidden(false);
   }, [location.pathname]);
@@ -381,23 +384,42 @@ export default function StoreHeader() {
     0
   );
 
-  // Lock page scroll and allow Escape to close while a drawer is open
+  // Lock page scroll and allow Escape to close while ANY drawer is open
   useEffect(() => {
     if (!drawerOpen) return undefined;
 
     const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+
+    // Lock scrolling completely across Desktop, iOS Safari & Android
     document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
+
+    // Pause Lenis smooth scrolling so background is frozen
+    if (typeof window !== "undefined" && window.__lenis) {
+      window.__lenis.stop();
+    }
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         setCartOpen(false);
         setWishlistOpen(false);
+        setMobileMenuOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+      document.body.style.overscrollBehavior = previousOverscroll;
+      document.documentElement.style.overflow = "";
+
+      if (typeof window !== "undefined" && window.__lenis) {
+        window.__lenis.start();
+      }
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [drawerOpen]);
@@ -459,17 +481,29 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto max-w-8xl px-4 py-0.5 sm:px-6 sm:py-1 lg:px-8">
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <Link to="/" viewTransition className="flex shrink-0 items-center py-0.5 group">
-              <img
-                src="/wasooli.png"
-                alt="Wasooli Store - ISP Supplies"
-                className="h-14 w-auto object-contain sm:h-16 transition-transform duration-200 group-hover:scale-105"
-              />
-            </Link>
-            {/* Desktop: Vibrant 3D icon pods centered with active item expanding its text */}
-            {/* Desktop: Vibrant 3D icon pods centered with leftward shift so right icons stay fixed */}
+        <div ref={navRef} className="mx-auto max-w-8xl px-3 py-1 sm:px-6 sm:py-1.5 lg:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            {/* Left: Burger Button (Mobile/Tablet) + Logo */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open navigation menu"
+                className="grid size-9 sm:size-10 cursor-pointer place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600 lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+
+              <Link to="/" viewTransition className="flex shrink-0 items-center py-0.5 group">
+                <img
+                  src="/wasooli.png"
+                  alt="Wasooli Store - ISP Supplies"
+                  className="h-14 sm:h-16 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                />
+              </Link>
+            </div>
+
+            {/* Desktop: Vibrant 3D icon pods centered */}
             <nav
               aria-label="Shop categories"
               className="mx-2 hidden min-w-0 flex-1 items-center justify-center lg:flex overflow-visible"
@@ -612,7 +646,9 @@ export default function StoreHeader() {
               </div>
             </nav>
 
-            <div className="flex items-center gap-1.5 sm:gap-3">
+            {/* Right: Wishlist, Cart, Account */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Wishlist Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -620,7 +656,7 @@ export default function StoreHeader() {
                   setWishlistOpen(true);
                 }}
                 aria-label={`Open wishlist, ${wishlistItems.length} items`}
-                className="relative grid size-10 cursor-pointer place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+                className="relative grid size-9 sm:size-10 cursor-pointer place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
               >
                 <Heart
                   size={18}
@@ -628,12 +664,13 @@ export default function StoreHeader() {
                   fill={wishlistItems.length > 0 ? "currentColor" : "none"}
                 />
                 {wishlistItems.length > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                  <span className="absolute -right-1 -top-1 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white sm:-right-1.5 sm:-top-1.5 sm:h-5 sm:min-w-5 sm:text-[11px]">
                     {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
                   </span>
                 )}
               </button>
 
+              {/* Cart Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -641,82 +678,59 @@ export default function StoreHeader() {
                   setCartOpen(true);
                 }}
                 aria-label={`Open cart, ${cartCount} items`}
-                className="relative grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600"
+                className="relative grid size-9 sm:size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-brand-500 hover:text-brand-600 cursor-pointer"
               >
                 <ShoppingBag size={18} />
                 {cartCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                  <span className="absolute -right-1 -top-1 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white sm:-right-1.5 sm:-top-1.5 sm:h-5 sm:min-w-5 sm:text-[11px]">
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
               </button>
 
+              {/* Account / Login */}
               {isAuthenticated ? (
                 <Link
                   to="/account"
                   viewTransition
                   aria-label="My account"
-                  className={`relative grid size-10 place-items-center rounded-xl border transition ${location.pathname === "/account"
-                    ? "border-brand-500 bg-brand-50 text-brand-600"
-                    : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
-                    }`}
+                  className={`relative grid size-9 sm:size-10 place-items-center rounded-xl border transition ${
+                    location.pathname === "/account"
+                      ? "border-brand-500 bg-brand-50 text-brand-600"
+                      : "border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                  }`}
                 >
                   <User size={18} />
                   {notificationCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] font-bold leading-none text-white">
+                    <span className="absolute -right-1 -top-1 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white sm:-right-1.5 sm:-top-1.5 sm:h-5 sm:min-w-5 sm:text-[11px]">
                       {notificationCount > 99 ? "99+" : notificationCount}
                     </span>
                   )}
                 </Link>
               ) : (
-                <Link
-                  to="/login"
-                  viewTransition
-                  state={{ from: location }}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-brand-500 bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600 sm:px-4 sm:text-sm"
-                >
-                  <LogIn size={16} aria-hidden="true" />
-                  Login
-                </Link>
+                <>
+                  <Link
+                    to="/login"
+                    viewTransition
+                    state={{ from: location }}
+                    aria-label="Login"
+                    className="grid size-9 place-items-center rounded-xl border border-brand-500 bg-brand-500 text-white transition hover:bg-brand-600 sm:hidden"
+                  >
+                    <LogIn size={16} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    viewTransition
+                    state={{ from: location }}
+                    className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-brand-500 bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600 sm:px-4 sm:text-sm"
+                  >
+                    <LogIn size={16} aria-hidden="true" />
+                    Login
+                  </Link>
+                </>
               )}
             </div>
           </div>
-
-          {/* Mobile: Elevated 3D category cards */}
-          <nav
-            aria-label="Shop categories mobile"
-            className="mt-2.5 flex gap-2.5 sm:gap-3 overflow-x-auto pb-1 scrollbar-none lg:hidden"
-          >
-            {NAV_ICONS.map(({ Icon, label, category }) => {
-              const to = navIconTo(category);
-              const searchCat = new URLSearchParams(location.search).get("category");
-              const active =
-                location.pathname === "/shop" &&
-                Boolean(category) &&
-                (searchCat === category ||
-                  normalizeCategory(searchCat) === normalizeCategory(category));
-              return (
-                <Link
-                  key={`m-${label}`}
-                  to={to}
-                  viewTransition
-                  aria-label={label}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex w-18 shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${active
-                    ? "bg-brand-50 ring-1 ring-brand-300 shadow-xs"
-                    : "bg-white border border-slate-200/70 active:bg-slate-100 shadow-2xs"
-                    }`}
-                >
-                  <span className="grid size-10 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border border-slate-100 shadow-2xs">
-                    <Icon size={26} />
-                  </span>
-                  <span className="w-full truncate text-center text-[10px] font-bold text-slate-700">
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
         </div>
       </motion.header>
 
@@ -726,6 +740,162 @@ export default function StoreHeader() {
         className="[overflow-anchor:none]"
         style={{ height: headlineHeight + navHeight }}
       />
+
+      {/* Mobile Navigation Drawer with ALL 10 Navicons */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${
+          mobileMenuOpen ? "visible" : "invisible pointer-events-none"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        aria-hidden={!mobileMenuOpen}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={closeMobileMenu}
+          onTouchMove={(e) => e.preventDefault()}
+          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 ${
+            mobileMenuOpen ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Slide-in panel from left */}
+        <aside
+          className={`absolute inset-y-0 left-0 flex w-full sm:w-[88vw] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Drawer Top Header */}
+          <div className="flex items-center justify-between border-b border-slate-200/90 px-4 py-3.5 sm:px-5">
+            <Link to="/" onClick={closeMobileMenu} className="flex items-center">
+              <img
+                src="/wasooli.png"
+                alt="Wasooli Store"
+                className="h-10 w-auto object-contain"
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={closeMobileMenu}
+              aria-label="Close menu"
+              className="grid size-9 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Drawer Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
+            {/* Categories List with exact desktop 3D icon pod design */}
+            <div>
+              <p className="px-1 pb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Categories
+              </p>
+              <div className="space-y-1.5">
+                {NAV_ICONS.map(({ Icon, label, category }) => {
+                  const to = navIconTo(category);
+                  const searchCat = new URLSearchParams(location.search).get("category");
+                  const active =
+                    location.pathname === "/shop" &&
+                    Boolean(category) &&
+                    (searchCat === category ||
+                      normalizeCategory(searchCat) === normalizeCategory(category));
+
+                  return (
+                    <Link
+                      key={`drawer-${label}`}
+                      to={to}
+                      onClick={closeMobileMenu}
+                      className={`group relative flex items-center gap-3 rounded-2xl p-2 transition-all duration-200 ${
+                        active
+                          ? "bg-linear-to-r from-brand-50 via-brand-100/70 to-brand-50 border border-brand-200 shadow-xs text-brand-700"
+                          : "bg-white border border-slate-200/80 hover:border-brand-300 hover:bg-brand-50/40 shadow-2xs text-slate-800"
+                      }`}
+                    >
+                      {/* Exact desktop-style 3D icon pod container */}
+                      <span
+                        className={`relative z-10 grid size-10 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 shrink-0 ${
+                          active
+                            ? "border-brand-300 shadow-xs from-white to-brand-50/50"
+                            : "border-slate-200/90 shadow-2xs group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40"
+                        }`}
+                      >
+                        <Icon size={26} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
+                      </span>
+
+                      {/* Category label */}
+                      <span className={`flex-1 text-xs font-bold tracking-tight truncate ${
+                        active ? "text-brand-700" : "text-slate-800 group-hover:text-brand-600"
+                      }`}>
+                        {label}
+                      </span>
+
+                      {/* Chevron Right */}
+                      <ChevronRight
+                        size={15}
+                        className={`shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${
+                          active ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500"
+                        }`}
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Customer Care info */}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Need Help?
+              </p>
+              <div className="flex flex-col gap-1.5 text-xs text-slate-600">
+                <a
+                  href={`tel:${STORE_PHONE.replace(/\s/g, "")}`}
+                  className="inline-flex items-center gap-2 font-semibold text-slate-800 hover:text-brand-600"
+                >
+                  <Phone size={14} className="text-brand-500" />
+                  <span>{STORE_PHONE}</span>
+                </a>
+                <a
+                  href={`mailto:${STORE_EMAIL}`}
+                  className="inline-flex items-center gap-2 font-medium text-slate-600 hover:text-brand-600"
+                >
+                  <Mail size={14} className="text-brand-500" />
+                  <span>{STORE_EMAIL}</span>
+                </a>
+                <span className="inline-flex items-center gap-2 text-slate-500 text-[11px]">
+                  <MapPin size={14} className="text-brand-500" />
+                  Karachi, Pakistan
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Drawer Footer Account CTA */}
+          <div className="border-t border-slate-200/90 p-4 bg-white">
+            {isAuthenticated ? (
+              <Link
+                to="/account"
+                onClick={closeMobileMenu}
+                className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-semibold text-white shadow-md shadow-brand-500/20 transition hover:bg-brand-600"
+              >
+                <User size={18} />
+                <span>My Account</span>
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                onClick={closeMobileMenu}
+                className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-semibold text-white shadow-md shadow-brand-500/20 transition hover:bg-brand-600"
+              >
+                <LogIn size={18} />
+                <span>Sign In / Register</span>
+              </Link>
+            )}
+          </div>
+        </aside>
+      </div>
 
       {/* Cart drawer */}
       <div
@@ -738,6 +908,7 @@ export default function StoreHeader() {
       >
         <div
           onClick={closeCart}
+          onTouchMove={(e) => e.preventDefault()}
           className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${cartOpen ? "opacity-100" : "opacity-0"
             }`}
         />
@@ -848,6 +1019,7 @@ export default function StoreHeader() {
       >
         <div
           onClick={closeWishlist}
+          onTouchMove={(e) => e.preventDefault()}
           className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${wishlistOpen ? "opacity-100" : "opacity-0"
             }`}
         />
