@@ -27,6 +27,8 @@ import ProductCard from "../components/ProductCard";
 import { Link, useSearchParams } from "react-router-dom";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 
 
 const PAGE_SIZE = 12;
@@ -804,6 +806,35 @@ function FilterPanel({
 export default function Shop() {
   const { products, ready } = useCart();
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reduceMotion) return;
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
+    });
+
+    window.__lenis = lenis;
+
+    let rafId;
+    function raf(time) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+      window.__lenis = null;
+    };
+  }, [reduceMotion]);
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
   const [search, setSearch] = useState("");
@@ -1165,12 +1196,15 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
-    const fromUrl = searchParams.get("category");
-    setCategory(fromUrl && fromUrl.trim() ? fromUrl : "All");
-    const subFromUrl = searchParams.get("subcategory");
-    setSubcategory(subFromUrl && subFromUrl.trim() ? subFromUrl : "");
-    const condFromUrl = searchParams.get("condition");
-    setCondition(condFromUrl ? condFromUrl.split(",").filter(Boolean) : []);
+    const timer = setTimeout(() => {
+      const fromUrl = searchParams.get("category");
+      setCategory(fromUrl && fromUrl.trim() ? fromUrl : "All");
+      const subFromUrl = searchParams.get("subcategory");
+      setSubcategory(subFromUrl && subFromUrl.trim() ? subFromUrl : "");
+      const condFromUrl = searchParams.get("condition");
+      setCondition(condFromUrl ? condFromUrl.split(",").filter(Boolean) : []);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   function selectCategory(name, sub = "") {
@@ -1393,7 +1427,7 @@ export default function Shop() {
       <div className="border-b border-slate-200/80 bg-white">
         <nav
           aria-label="Breadcrumb"
-          className="page-crumb page-offset mx-auto flex max-w-8xl flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8 2xl:max-w-384"
+          className="page-crumb page-offset mx-auto flex max-w-8xl 2xl:max-w-[1536px] flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8"
         >
           <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>
@@ -1460,31 +1494,23 @@ export default function Shop() {
       </div>
 
       <section
-        className="border-b border-slate-200 bg-white"
+        className="border-b border-slate-200/90 bg-white"
         aria-label="Store benefits"
       >
-        <div className="shop-trust-marquee py-4 sm:py-5">
-          <div className="shop-trust-track">
-            {[0, 1].map((copy) => (
+        <div className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 sm:gap-3.5">
+            {TRUST.map(({ icon: Icon, title, text }) => (
               <div
-                key={copy}
-                className="shop-trust-set"
-                aria-hidden={copy === 1 ? true : undefined}
+                key={title}
+                className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-3 shadow-xs transition-all duration-200 hover:border-brand-200 hover:shadow-sm"
               >
-                {TRUST.map(({ icon: Icon, title, text }) => (
-                  <div
-                    key={`${copy}-${title}`}
-                    className="flex w-[220px] shrink-0 items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white px-3 py-3 shadow-xs sm:w-[240px]"
-                  >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-[0_12px_24px_-12px_rgba(44,154,255,0.9)]">
-                      <Icon size={18} />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-900">{title}</p>
-                      <p className="truncate text-xs text-slate-500">{text}</p>
-                    </div>
-                  </div>
-                ))}
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-[0_12px_24px_-12px_rgba(44,154,255,0.9)]">
+                  <Icon size={18} />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-slate-900">{title}</p>
+                  <p className="truncate text-xs text-slate-500">{text}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -1518,7 +1544,7 @@ export default function Shop() {
           </aside>
 
           <div className="min-w-0">
-            <div className="sticky top-(--store-header-height,0px) z-30 -mx-4 mb-5 border-b border-slate-200 bg-slate-50/95 px-4 py-2.5 shadow-sm backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-3 lg:static lg:top-auto lg:mx-0 lg:mb-5 lg:rounded-2xl lg:border lg:border-slate-200 lg:bg-white lg:px-4 lg:py-3.5 lg:shadow-sm lg:backdrop-blur-none">
+            <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:px-4 sm:py-3.5">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
                 <div className="relative min-w-0 flex-1">
                   <Search

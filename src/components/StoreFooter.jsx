@@ -45,8 +45,13 @@ function ColumnDivider() {
  * Footer column. On phones (< sm) it is a dropdown: tap the title to open or
  * close the links. From sm up it is always open and the title is a plain heading.
  */
-function FooterSection({ title, className = "", children }) {
-  const [open, setOpen] = useState(false);
+function FooterSection({
+  title,
+  className = "",
+  isOpen = false,
+  onToggle,
+  children,
+}) {
   const id = useId();
 
   return (
@@ -56,9 +61,9 @@ function FooterSection({ title, className = "", children }) {
         <button
           type="button"
           id={`${id}-button`}
-          aria-expanded={open}
+          aria-expanded={isOpen}
           aria-controls={`${id}-panel`}
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={onToggle}
           className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-sm font-bold tracking-wide text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8]/70 sm:pointer-events-none sm:cursor-default sm:py-0 sm:text-[15px]"
         >
           {title}
@@ -66,7 +71,7 @@ function FooterSection({ title, className = "", children }) {
             size={18}
             aria-hidden="true"
             className={`shrink-0 text-[#38bdf8] transition-transform duration-300 sm:hidden ${
-              open ? "rotate-180" : ""
+              isOpen ? "rotate-180" : ""
             }`}
           />
         </button>
@@ -77,7 +82,7 @@ function FooterSection({ title, className = "", children }) {
         role="region"
         aria-labelledby={`${id}-button`}
         className={`grid transition-[grid-template-rows,opacity,visibility] duration-300 ease-out sm:visible sm:grid-rows-[1fr] sm:opacity-100 ${
-          open ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0"
+          isOpen ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">{children}</div>
@@ -87,6 +92,11 @@ function FooterSection({ title, className = "", children }) {
 }
 
 export default function StoreFooter() {
+  const [openSection, setOpenSection] = useState(null);
+
+  const toggleSection = (sectionKey) => {
+    setOpenSection((prev) => (prev === sectionKey ? null : sectionKey));
+  };
   return (
     <footer className="relative bg-[#020b24] text-slate-300 overflow-hidden font-sans">
       {/* Top Announcement Ticker Strip */}
@@ -176,7 +186,12 @@ export default function StoreFooter() {
           </div>
 
           {/* Column 2: Quick Links with chevron right */}
-          <FooterSection title="Quick Links" className="lg:col-span-2 lg:px-4 xl:px-6">
+          <FooterSection
+            title="Quick Links"
+            className="lg:col-span-2 lg:px-4 xl:px-6"
+            isOpen={openSection === "quick-links"}
+            onToggle={() => toggleSection("quick-links")}
+          >
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { label: "Home", to: "/" },
@@ -203,7 +218,12 @@ export default function StoreFooter() {
           </FooterSection>
 
           {/* Column 3: Categories with icons */}
-          <FooterSection title="Categories" className="lg:col-span-2 lg:px-4 xl:px-6">
+          <FooterSection
+            title="Categories"
+            className="lg:col-span-2 lg:px-4 xl:px-6"
+            isOpen={openSection === "categories"}
+            onToggle={() => toggleSection("categories")}
+          >
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: Router, label: "Routers", cat: "Routing" },
@@ -228,7 +248,12 @@ export default function StoreFooter() {
           </FooterSection>
 
           {/* Column 4: Customer Care with icons */}
-          <FooterSection title="Customer Care" className="lg:col-span-2 lg:px-4 xl:px-6">
+          <FooterSection
+            title="Customer Care"
+            className="lg:col-span-2 lg:px-4 xl:px-6"
+            isOpen={openSection === "customer-care"}
+            onToggle={() => toggleSection("customer-care")}
+          >
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
