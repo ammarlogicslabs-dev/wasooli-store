@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight,
   Cable,
+  ChevronDown,
   ChevronRight,
   FileText,
-  Lock,
   Network,
   PhoneCall,
   RotateCcw,
@@ -23,62 +22,71 @@ import {
   FaYoutube,
 } from "react-icons/fa6";
 
-function VisaBadge() {
-  return (
-    <span className="inline-flex h-6 w-11 items-center justify-center rounded bg-white px-1 shadow-xs border border-white/40">
-      <span className="text-[11px] font-black italic tracking-tighter text-[#1a1f71]">VISA</span>
-    </span>
-  );
-}
-
-function MastercardBadge() {
-  return (
-    <span className="inline-flex h-6 w-11 items-center justify-center rounded bg-white px-1 shadow-xs border border-white/40">
-      <span className="relative flex items-center justify-center">
-        <span className="size-3.5 rounded-full bg-[#eb001b]" />
-        <span className="-ml-1.5 size-3.5 rounded-full bg-[#f79e1b] opacity-95" />
-      </span>
-    </span>
-  );
-}
-
-function JazzCashBadge() {
-  return (
-    <span className="inline-flex h-6 w-13 items-center justify-center rounded bg-[#da1e28] px-1 shadow-xs border border-red-500/40">
-      <span className="text-[9px] font-black italic tracking-tight text-[#ffdd00]">JazzCash</span>
-    </span>
-  );
-}
-
-function EasypaisaBadge() {
-  return (
-    <span className="inline-flex h-6 w-13 items-center justify-center rounded bg-[#00a859] px-1 shadow-xs border border-emerald-500/40">
-      <span className="text-[9px] font-extrabold tracking-tight text-white">easypaisa</span>
-    </span>
-  );
-}
 
 const TICKER_ANNOUNCEMENTS = [
-  "MON – SAT: 10:00 AM – 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
+  "MON - SAT: 10:00 AM - 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
   "PRICES & AVAILABILITY MAY VARY DUE TO CURRENCY & TARIFF FLUCTUATIONS",
   "WASOOLI STORE OPERATES ONLY ONE OFFICIAL PLATFORM — BEWARE OF FAKE CHANNELS",
-  "NATIONWIDE 1–2 DAY DISPATCH WITH LIVE TRACKING ACROSS ALL CITIES IN PAKISTAN",
+  "NATIONWIDE 1-2 DAY DISPATCH WITH LIVE TRACKING ACROSS ALL CITIES IN PAKISTAN",
   "100% GENUINE & QUALITY-TESTED NETWORKING HARDWARE WITH OFFICIAL STORE WARRANTY",
 ];
 
+
+function ColumnDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute right-0 top-1 bottom-1 hidden w-px bg-gradient-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)] lg:block"
+    />
+  );
+}
+
+/**
+ * Footer column. On phones (< sm) it is a dropdown: tap the title to open or
+ * close the links. From sm up it is always open and the title is a plain heading.
+ */
+function FooterSection({ title, className = "", children }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+
+  return (
+    <div className={`relative border-b border-white/10 sm:border-0 ${className}`}>
+      <ColumnDivider />
+      <h4 className="m-0">
+        <button
+          type="button"
+          id={`${id}-button`}
+          aria-expanded={open}
+          aria-controls={`${id}-panel`}
+          onClick={() => setOpen((prev) => !prev)}
+          className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-sm font-bold tracking-wide text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8]/70 sm:pointer-events-none sm:cursor-default sm:py-0 sm:text-[15px]"
+        >
+          {title}
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={`shrink-0 text-[#38bdf8] transition-transform duration-300 sm:hidden ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </h4>
+
+      <div
+        id={`${id}-panel`}
+        role="region"
+        aria-labelledby={`${id}-button`}
+        className={`grid transition-[grid-template-rows,opacity,visibility] duration-300 ease-out sm:visible sm:grid-rows-[1fr] sm:opacity-100 ${
+          open ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function StoreFooter() {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-
-  function handleSubscribe(e) {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
-      setEmail("");
-      setTimeout(() => setSubscribed(false), 4000);
-    }
-  }
-
   return (
     <footer className="relative bg-[#020b24] text-slate-300 overflow-hidden font-sans">
       {/* Top Announcement Ticker Strip */}
@@ -121,20 +129,21 @@ export default function StoreFooter() {
       {/* Subtle soft gradient overlay so text stays readable on all devices */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#020b24]/90 via-[#020b24]/65 to-transparent md:via-[#020b24]/40"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-[#020b24]/90 via-[#020b24]/65 to-transparent md:via-[#020b24]/40"
       />
 
       {/* Main Footer Content */}
       <div className="relative z-10 mx-auto max-w-[1536px] px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 lg:px-8 xl:px-10">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-start">
+        <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-0 items-start lg:items-stretch">
           
           {/* Column 1: Brand, Description & Socials */}
-          <div className="sm:col-span-2 lg:col-span-3">
+          <div className="relative border-b border-white/10 pb-6 sm:col-span-2 sm:border-0 sm:pb-0 lg:col-span-3 lg:pr-6 xl:pr-8">
+            <ColumnDivider />
             <Link to="/" viewTransition className="inline-block py-1">
               <img
                 src="/wasooli.png"
                 alt="Wasooli Store"
-                className="h-16 sm:h-20 lg:h-[76px] w-auto object-contain drop-shadow-md"
+                className="h-16 sm:h-20 lg:h-19 w-auto object-contain drop-shadow-md"
               />
             </Link>
             <p className="mt-3.5 max-w-sm text-xs sm:text-[13px] leading-relaxed text-slate-300/90 font-normal">
@@ -167,9 +176,8 @@ export default function StoreFooter() {
           </div>
 
           {/* Column 2: Quick Links with chevron right */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Quick Links</h4>
-            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
+          <FooterSection title="Quick Links" className="lg:col-span-2 lg:px-4 xl:px-6">
+            <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { label: "Home", to: "/" },
                 { label: "Shop", to: "/shop" },
@@ -182,7 +190,7 @@ export default function StoreFooter() {
                   <Link
                     to={to}
                     viewTransition
-                    className={`flex items-center justify-between max-w-[130px] transition-colors hover:text-white ${
+                    className={`flex items-center justify-between max-w-32.5 py-2 transition-colors hover:text-white sm:py-0 ${
                       highlight ? "text-[#38bdf8] font-medium" : "text-slate-300"
                     }`}
                   >
@@ -192,12 +200,11 @@ export default function StoreFooter() {
                 </li>
               ))}
             </ul>
-          </div>
+          </FooterSection>
 
           {/* Column 3: Categories with icons */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Categories</h4>
-            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
+          <FooterSection title="Categories" className="lg:col-span-2 lg:px-4 xl:px-6">
+            <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: Router, label: "Routers", cat: "Routing" },
                 { Icon: Network, label: "Switches", cat: "Switching" },
@@ -210,7 +217,7 @@ export default function StoreFooter() {
                   <Link
                     to={`/shop?category=${encodeURIComponent(cat)}`}
                     viewTransition
-                    className="inline-flex items-center gap-2.5 text-slate-300 transition-colors hover:text-white group"
+                    className="inline-flex items-center gap-2.5 py-2 text-slate-300 transition-colors hover:text-white group sm:py-0"
                   >
                     <Icon size={14} className="text-[#38bdf8] group-hover:text-white transition-colors shrink-0" />
                     <span>{label}</span>
@@ -218,12 +225,11 @@ export default function StoreFooter() {
                 </li>
               ))}
             </ul>
-          </div>
+          </FooterSection>
 
           {/* Column 4: Customer Care with icons */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm sm:text-[15px] font-bold text-white tracking-wide">Customer Care</h4>
-            <ul className="mt-4 space-y-2.5 text-xs sm:text-[13px]">
+          <FooterSection title="Customer Care" className="lg:col-span-2 lg:px-4 xl:px-6">
+            <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
                 { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
@@ -235,7 +241,7 @@ export default function StoreFooter() {
                   <Link
                     to={to}
                     viewTransition
-                    className="inline-flex items-center gap-2.5 text-slate-300 transition-colors hover:text-white group"
+                    className="inline-flex items-center gap-2.5 py-2 text-slate-300 transition-colors hover:text-white group sm:py-0"
                   >
                     <Icon size={14} className="text-[#38bdf8] group-hover:text-white transition-colors shrink-0" />
                     <span>{label}</span>
@@ -243,79 +249,9 @@ export default function StoreFooter() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          {/* Column 5 & Hardware Area: Newsletter + Secure Payments + 100% Secure Shopping Badge */}
-          {/* <div className="sm:col-span-2 lg:col-span-3 flex flex-col justify-between">
-            <div>
-              <h4 className="text-sm sm:text-[16px] font-bold text-white tracking-wide">
-                Subscribe to Our Newsletter
-              </h4>
-              <p className="mt-1 text-xs sm:text-[13px] text-sky-200/80">
-                Get the latest updates on new products, offers and more.
-              </p>
-
-              <form onSubmit={handleSubscribe} className="relative mt-3.5 flex items-center max-w-sm rounded-full bg-white p-1 shadow-lg">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="w-full bg-transparent pl-4 pr-12 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
-                  required
-                />
-                <button
-                  type="submit"
-                  aria-label="Subscribe to newsletter"
-                  className="absolute right-1 grid size-8 sm:size-8.5 place-items-center rounded-full bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold transition-all active:scale-95 cursor-pointer shadow-md"
-                >
-                  <ArrowRight size={15} />
-                </button>
-              </form>
-              {subscribed && (
-                <p className="mt-1.5 text-xs font-semibold text-emerald-400">
-                  Thank you for subscribing!
-                </p>
-              )}
-
-              <div className="mt-5">
-                <p className="text-xs font-semibold text-slate-200 tracking-wide">
-                  Secure Payments
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
-                  <div className="flex items-center gap-2">
-                    <VisaBadge />
-                    <MastercardBadge />
-                    <JazzCashBadge />
-                    <EasypaisaBadge />
-                  </div>
-
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-sky-400/35 bg-[#00173d]/85 px-3 py-1.5 backdrop-blur-md shadow-lg">
-                    <Lock size={18} className="text-sky-300 shrink-0" />
-                    <div className="leading-tight text-left">
-                      <div className="text-[10px] sm:text-[11px] font-bold text-white tracking-wide">100% Secure</div>
-                      <div className="text-[9px] sm:text-[10px] text-sky-200">Shopping</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> */}
-
+          </FooterSection>
         </div>
       </div>
-
-      {/* Bottom Legal & Credits Bar */}
-      {/* <div className="relative z-10 border-t border-sky-500/20 bg-[#00081c]/85 backdrop-blur-sm py-3.5">
-        <div className="mx-auto flex max-w-[1536px] flex-col items-center justify-between gap-2 px-4 text-[11px] sm:text-xs text-slate-300/80 sm:flex-row sm:px-6 lg:px-8 xl:px-10">
-          <p className="text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Wasooli Store. All rights reserved.
-          </p>
-          <p className="text-center sm:text-right">
-            Made with <span className="text-red-500">❤️</span> for a better connected world
-          </p>
-        </div>
-      </div> */}
     </footer>
   );
 }

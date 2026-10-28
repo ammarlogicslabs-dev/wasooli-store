@@ -25,12 +25,9 @@ import {
 } from "../data/categories";
 import ProductCard from "../components/ProductCard";
 import { Link, useSearchParams } from "react-router-dom";
-import ShopCategoryStrip from "../components/ShopCategoryStrip";
-import ShopProductRail from "../components/ShopProductRail";
 import StoreHeader from "../components/StoreHeader";
 import { useCart } from "../cart/CartContext";
-import { getRecentlyViewedIds } from "../utils/recentlyViewed";
-import { smoothScrollTo } from "../utils/smoothScroll";
+
 
 const PAGE_SIZE = 12;
 const VIEW_STORAGE_KEY = "wasooli-shop-view";
@@ -224,13 +221,6 @@ function FilterGroup({
   );
 }
 
-export {
-  CANONICAL_CATEGORIES,
-  CATEGORY_SUBCATEGORIES,
-  normalizeCategory,
-};
-
-export { getProductCondition };
 
 function CategoryFilterGroup({
   title = "Categories",
@@ -240,12 +230,9 @@ function CategoryFilterGroup({
   subcategory = "",
   onSelectCategory,
   onSelectSubcategory,
-  products = [],
-  defaultOpen = true,
-  searchable = true,
+  products = [],  defaultOpen = true,
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [query, setQuery] = useState("");
   const [expandedCategory, setExpandedCategory] = useState(() => {
     return value && value !== "All" ? value : null;
   });
@@ -326,16 +313,7 @@ function CategoryFilterGroup({
     return countsMap;
   }, [subcategoriesMap, products]);
 
-  const filteredOptions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((cat) => {
-      if (cat === "All") return true;
-      if (cat.toLowerCase().includes(q)) return true;
-      const subs = subcategoriesMap[cat] || [];
-      return subs.some((sub) => sub.toLowerCase().includes(q));
-    });
-  }, [options, query, subcategoriesMap]);
+  const filteredOptions = options;
 
   return (
     <div className="border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
@@ -389,7 +367,7 @@ function CategoryFilterGroup({
               const count = counts[item] || 0;
               const subcategories = subcategoriesMap[item] || [];
               const hasSubcategories = !isAll && subcategories.length > 0;
-              const isExpanded = expandedCategory === item || Boolean(query.trim());
+              const isExpanded = expandedCategory === item;
 
               return (
                 <li key={item} className="flex flex-col">
@@ -883,33 +861,9 @@ export default function Shop() {
     setPriceLimit(maxPrice);
   }
 
-  const priceBounds = useMemo(() => {
-    const rawMin = minPriceLimit === "" ? minPrice : Number(minPriceLimit);
-    const rawMax = priceLimit === "" ? maxPrice : Number(priceLimit);
-    return {
-      min: Math.min(rawMin, rawMax),
-      max: Math.max(rawMin, rawMax),
-    };
-  }, [minPriceLimit, priceLimit, minPrice, maxPrice]);
-
-  const searchQuery = debouncedSearch.trim().toLowerCase();
 
   // Faceted pool: apply every filter except the one being counted.
   const facetPool = useMemo(() => {
-    function matchesSearch(product) {
-      if (!searchQuery) return true;
-      return (
-        product.title.toLowerCase().includes(searchQuery) ||
-        product.category.toLowerCase().includes(searchQuery) ||
-        product.brand.toLowerCase().includes(searchQuery) ||
-        product.portType.toLowerCase().includes(searchQuery)
-      );
-    }
-
-    function matchesPrice(product) {
-      const price = Number(product.price);
-      return price >= priceBounds.min && price <= priceBounds.max;
-    }
 
     function matchesAvailabilitySelected(product, selected) {
       if (!selected.length) return true;
@@ -1045,8 +999,8 @@ export default function Shop() {
     };
   }, [
     products,
-    searchQuery,
-    priceBounds,
+
+
     category,
     brand,
     availability,
@@ -1394,39 +1348,9 @@ export default function Shop() {
     clearFilters();
   };
 
-  const categoryStripItems = useMemo(() => {
-    const map = new Map();
-    products.forEach((product) => {
-      const name = product.category;
-      if (!name) return;
-      const entry = map.get(name) || { name, count: 0, image: null };
-      entry.count += 1;
-      if (!entry.image && product.image) entry.image = product.image;
-      map.set(name, entry);
-    });
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [products]);
 
-  const featuredProducts = useMemo(() => {
-    return [...products]
-      .filter((product) => !Number.isFinite(product.stock) || product.stock > 0)
-      .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
-      .slice(0, 10);
-  }, [products]);
 
-  const trendingProducts = useMemo(() => {
-    return [...products]
-      .filter((product) => !Number.isFinite(product.stock) || product.stock > 0)
-      .sort((a, b) => (Number(b.reviews) || 0) - (Number(a.reviews) || 0))
-      .slice(0, 10);
-  }, [products]);
 
-  const recentProducts = useMemo(() => {
-    const ids = getRecentlyViewedIds();
-    if (!ids.length || !products.length) return [];
-    const byId = new Map(products.map((product) => [String(product.id), product]));
-    return ids.map((id) => byId.get(id)).filter(Boolean).slice(0, 10);
-  }, [products]);
 
   const filterProps = {
     categories,

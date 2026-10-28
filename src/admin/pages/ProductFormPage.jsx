@@ -22,7 +22,6 @@ import {
   CATEGORY_SUBCATEGORIES,
   normalizeCategory,
 } from "../../data/categories";
-import { getProductPolicy } from "../../utils/productPolicy";
 
 const CATEGORY_PORT_SUGGESTIONS = {
   "Routing": ["Gigabit RJ45", "10G SFP+ / RJ45", "Cellular 4G/5G SIM", "Console RJ45"],
@@ -111,7 +110,7 @@ function toForm(product) {
 export default function ProductFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { categories, products, loading } = useAdminData();
+  const { products, loading } = useAdminData();
   const existing = id ? products.find((item) => Number(item.id) === Number(id)) || getProduct(id) : null;
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
@@ -259,11 +258,7 @@ export default function ProductFormPage() {
       []
     : [];
 
-  const policy = getProductPolicy({
-    category: form.category,
-    condition: form.condition,
-  });
-
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <PageHeader

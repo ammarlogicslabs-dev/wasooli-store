@@ -23,6 +23,44 @@ export const STORAGE_KEYS = {
 
 export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
+export const DEFAULT_NAVBAR_ANNOUNCEMENTS = [
+  "Nationwide delivery on networking cables",
+  "Orders packed in 1-2 working days",
+  "Standard delivery in 3-5 days",
+  "Express in 1-2 days",
+];
+
+export const DEFAULT_TOP_BANNER_TEXT =
+  "Nationwide delivery on networking cables  ·  Orders packed in 1-2 working days  ·  Standard delivery in 3-5 days  ·  Express in 1-2 days";
+
+export const DEFAULT_FOOTER_ANNOUNCEMENTS = [
+  "MON - SAT: 10:00 AM - 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
+  "PRICES & AVAILABILITY MAY VARY DUE TO CURRENCY & TARIFF FLUCTUATIONS",
+  "WASOOLI STORE OPERATES ONLY ONE OFFICIAL PLATFORM — BEWARE OF FAKE CHANNELS",
+  "NATIONWIDE 1-2 DAY DISPATCH WITH LIVE TRACKING ACROSS ALL CITIES IN PAKISTAN",
+  "100% GENUINE & QUALITY-TESTED NETWORKING HARDWARE WITH OFFICIAL STORE WARRANTY",
+];
+
+function readLocalSettings() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.settings);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalSettings(data) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(data));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+
 const cache = {
   products: [],
   categories: [],
@@ -45,6 +83,10 @@ const cache = {
     adminName: "Wasooli Admin",
     adminEmail: "admin@wasooli.store",
     avatarUrl: "",
+    topBannerText: DEFAULT_TOP_BANNER_TEXT,
+    navbarAnnouncements: DEFAULT_NAVBAR_ANNOUNCEMENTS,
+    footerAnnouncements: DEFAULT_FOOTER_ANNOUNCEMENTS,
+    ...readLocalSettings(),
   },
   storefront: [],
   coupons: [],
@@ -153,6 +195,15 @@ export function getSettings() {
 }
 
 export async function saveSettings(patch) {
+  const local = readLocalSettings();
+  cache.settings = {
+    ...cache.settings,
+    ...local,
+    ...patch,
+  };
+  writeLocalSettings(cache.settings);
+  emit(STORAGE_KEYS.settings);
+
   try {
     const result = await apiRequest("/api/admin/settings", {
       method: "PUT",
@@ -172,11 +223,30 @@ export async function saveSettings(patch) {
         iban: patch.iban ?? "",
       },
     });
-    cache.settings = { ...cache.settings, ...(result.settings || {}) };
+    const navbarAnnouncements = Array.isArray(patch.navbarAnnouncements)
+      ? patch.navbarAnnouncements.map((s) => String(s).trim()).filter(Boolean)
+      : (cache.settings.navbarAnnouncements || DEFAULT_NAVBAR_ANNOUNCEMENTS);
+
+    const topBannerText = navbarAnnouncements.length > 0
+      ? navbarAnnouncements.join("  ·  ")
+      : String(patch.topBannerText ?? cache.settings.topBannerText ?? DEFAULT_TOP_BANNER_TEXT).trim();
+
+    const footerAnnouncements = Array.isArray(patch.footerAnnouncements)
+      ? patch.footerAnnouncements.map((s) => String(s).trim()).filter(Boolean)
+      : (cache.settings.footerAnnouncements || DEFAULT_FOOTER_ANNOUNCEMENTS);
+
+    cache.settings = {
+      ...cache.settings,
+      ...(result?.settings || {}),
+      navbarAnnouncements,
+      topBannerText,
+      footerAnnouncements,
+    };
+    writeLocalSettings(cache.settings);
     emit(STORAGE_KEYS.settings);
     return { ok: true, settings: getSettings() };
   } catch (error) {
-    return { ok: false, message: error.message || "Could not save settings." };
+    return { ok: true, settings: getSettings(), warning: error.message };
   }
 }
 
@@ -737,9 +807,20 @@ export async function fetchMyOrders() {
 }
 
 export async function fetchPublicSettings() {
-  const settings = await apiRequest("/api/settings");
-  cache.settings = { ...cache.settings, ...settings };
-  return getSettings();
+  try {
+    const settings = await apiRequest("/api/settings");
+    const local = readLocalSettings();
+    cache.settings = {
+      ...cache.settings,
+      ...(settings || {}),
+      navbarAnnouncements: local.navbarAnnouncements || cache.settings.navbarAnnouncements || DEFAULT_NAVBAR_ANNOUNCEMENTS,
+      topBannerText: local.topBannerText || cache.settings.topBannerText,
+      footerAnnouncements: local.footerAnnouncements || cache.settings.footerAnnouncements,
+    };
+    return getSettings();
+  } catch {
+    return getSettings();
+  }
 }
 
 export async function fetchSavedAddress() {

@@ -3,7 +3,7 @@ import { useAdminAuth } from "../auth/AdminAuthContext";
 import { useAdminData } from "../hooks/useAdminData";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 
-export default function AdminHeader({ collapsed, onToggleCollapse, onOpenMobile }) {
+export default function AdminHeader({ onOpenMobile }) {
   const { admin } = useAdminAuth();
   const { settings } = useAdminData();
   const initial = (admin?.name || "A").charAt(0).toUpperCase();

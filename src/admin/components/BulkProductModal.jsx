@@ -10,7 +10,6 @@ import {
   PackageCheck,
   Upload,
   UploadCloud,
-  X,
 } from "lucide-react";
 import { CANONICAL_CATEGORIES, CATEGORY_SUBCATEGORIES, normalizeCategory } from "../../data/categories";
 import { formatPrice } from "../../data/product";

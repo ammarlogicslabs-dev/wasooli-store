@@ -13,22 +13,13 @@ import {
 } from "framer-motion";
 import {
   ArrowRight,
-  BadgePercent,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Headphones,
-  Mail,
-  MapPin,
   Network,
-  Phone,
-  RotateCcw,
   ShieldCheck,
   ShoppingBag,
-  Sparkles,
-  Star,
   Truck,
-  Zap,
 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { A11y, Autoplay, Keyboard } from "swiper/modules";
@@ -40,7 +31,6 @@ import ShopProductRail from "../components/ShopProductRail";
 import ProductCard from "../components/ProductCard";
 import Hero3DCanvas from "../components/home/Hero3DCanvas";
 import { useCart } from "../cart/CartContext";
-import { formatPrice } from "../data/product";
 import { normalizeCategory } from "../data/categories";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { smoothScrollTo } from "../utils/smoothScroll";
@@ -50,19 +40,6 @@ import ScrollProduct from "../components/ScrollProduct";
 
 const EASE = [0.22, 1, 0.36, 1];
 
-const BENEFITS = [
-  { icon: Truck, title: "Fast Dispatch", text: "Packed in 1–2 working days" },
-  { icon: ShieldCheck, title: "Secure Checkout", text: "Protected payments" },
-  { icon: RotateCcw, title: "Easy Exchanges", text: "Sealed items within 2 days" },
-  { icon: Headphones, title: "Expert Support", text: "Networking help available" },
-  { icon: BadgePercent, title: "Bulk Pricing", text: "Save more on higher quantities" },
-];
-
-const SHOWCASE_FALLBACK = [
-  { id: "showcase-router", title: "Wi-Fi 6 Router", image: "/products/wifi6-router.jpg" },
-  { id: "showcase-switch", title: "Gigabit Switch", image: "/products/gigabit-switch.jpg" },
-  { id: "showcase-ap", title: "Ceiling Access Point", image: "/products/ceiling-access-point.jpg" },
-];
 
 const CATEGORY_FALLBACK = [
   { name: "Cabling & Connectivity", image: "/products/cat6-cable.jpg" },
@@ -215,7 +192,7 @@ function CountUp({ value, suffix = "" }) {
 
   useEffect(() => {
     if (!inView) return undefined;
-    if (reduce) { setShown(value); return undefined; }
+    if (reduce) return undefined;
     const controls = animate(0, value, {
       duration: 1.4, ease: EASE,
       onUpdate: (latest) => setShown(Math.round(latest)),
@@ -285,17 +262,17 @@ function HeroSection({ productCount, categoryCount }) {
           />
         ))}
       </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" aria-hidden="true" />
+      <div className="absolute inset-0 bg-linear-to-r from-slate-950 via-slate-950/85 to-slate-950/15" aria-hidden="true" />
+      <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 via-transparent to-transparent" aria-hidden="true" />
 
       {/* Subtle grid */}
       <div aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_65%_35%,black,transparent_65%)]"
+        className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-size-[56px_56px] mask-[radial-gradient(ellipse_at_65%_35%,black,transparent_65%)]"
       />
 
       {/* Glows */}
       <motion.div aria-hidden="true" style={reduce ? undefined : { x: glowX, y: glowY }}
-        className="pointer-events-none absolute -right-20 -top-8 h-[22rem] w-[22rem] rounded-full bg-brand-500/18 blur-3xl"
+        className="pointer-events-none absolute -right-20 -top-8 h-88 w-88 rounded-full bg-brand-500/18 blur-3xl"
       />
       <motion.div aria-hidden="true" style={reduce ? undefined : { x: glowY, y: glowX }}
         className="pointer-events-none absolute bottom-0 left-1/4 h-52 w-52 rounded-full bg-sky-400/8 blur-3xl"
@@ -307,17 +284,17 @@ function HeroSection({ productCount, categoryCount }) {
       >
         {/* Left: copy */}
         <div className="py-1">
-          <motion.span {...fadeUp(0.1, reduce)}
+          {/* <motion.span {...fadeUp(0.1, reduce)}
             className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-300 backdrop-blur-sm sm:text-[11px]"
           >
             <span className="wl-live-dot size-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
             Pakistan&apos;s networking store
-          </motion.span>
+          </motion.span> */}
           <motion.h1 {...fadeUp(0.18, reduce)}
             className="max-w-xl text-2xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]"
           >
             <span className="block">Your Networking</span>
-            <span className="block bg-gradient-to-r from-white via-sky-100 to-brand-300 bg-clip-text text-transparent">
+            <span className="block bg-linear-to-r from-white via-sky-100 to-brand-300 bg-clip-text text-transparent">
               Products HQ.
             </span>
           </motion.h1>
@@ -347,7 +324,7 @@ function HeroSection({ productCount, categoryCount }) {
             aria-label="Store highlights"
           >
             {["Nationwide delivery", "Cash on delivery", "Bulk pricing available"].map((item) => (
-              <li key={item} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 backdrop-blur-sm">
+              <li key={item} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/4 px-2.5 py-1 backdrop-blur-sm">
                 <CheckCircle2 size={12} className="shrink-0 text-brand-400" aria-hidden="true" />
                 {item}
               </li>
@@ -356,7 +333,7 @@ function HeroSection({ productCount, categoryCount }) {
 
           {productCount > 0 ? (
             <motion.dl {...fadeUp(0.58, reduce)}
-              className="mt-4 grid max-w-sm grid-cols-3 divide-x divide-white/[0.08] rounded-2xl border border-white/[0.1] bg-gradient-to-br from-white/[0.07] to-white/[0.02] py-2.5 shadow-[0_10px_30px_-12px_rgba(44,154,255,0.35)] backdrop-blur-md sm:mt-5 sm:py-3"
+              className="mt-4 grid max-w-sm grid-cols-3 divide-x divide-white/8 rounded-2xl border border-white/10 bg-linear-to-br from-white/[0.07] to-white/2 py-2.5 shadow-[0_10px_30px_-12px_rgba(44,154,255,0.35)] backdrop-blur-md sm:mt-5 sm:py-3"
             >
               {[
                 { label: "Products", node: <CountUp value={productCount} suffix="+" /> },
@@ -364,7 +341,7 @@ function HeroSection({ productCount, categoryCount }) {
                 { label: "Dispatch days", node: "1–2" },
               ].map(({ label, node }) => (
                 <div key={label} className="px-3 text-center">
-                  <dd className="m-0 bg-gradient-to-b from-white to-sky-200 bg-clip-text text-lg font-extrabold text-transparent sm:text-xl">{node}</dd>
+                  <dd className="m-0 bg-linear-to-b from-white to-sky-200 bg-clip-text text-lg font-extrabold text-transparent sm:text-xl">{node}</dd>
                   <dt className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</dt>
                 </div>
               ))}
@@ -397,7 +374,7 @@ function HeroSection({ productCount, categoryCount }) {
       </div>
 
       {/* Ticker */}
-      <div className="relative shrink-0 overflow-hidden border-t border-white/[0.06] bg-white/[0.03] py-2" aria-hidden="true">
+      <div className="relative shrink-0 overflow-hidden border-t border-white/6 bg-white/3 py-2" aria-hidden="true">
         <div className="wl-ticker-track">
           {[0, 1].map((set) => (
             <span key={set} className="flex shrink-0 items-center gap-5 pr-6">
@@ -425,25 +402,25 @@ function ConnectionBanner() {
       <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
         <motion.div
           {...fadeUpInView(0, reduce)}
-          className="relative overflow-hidden rounded-[10px] border border-[#dce9f8] bg-gradient-to-r from-[#e6f0fb] via-[#eef5fd] to-[#e4eefb] px-4 py-3 sm:px-7 md:py-0 md:h-[76px] lg:px-9"
+          className="relative overflow-hidden rounded-[10px] border border-[#dce9f8] bg-linear-to-r from-[#e6f0fb] via-[#eef5fd] to-[#e4eefb] px-4 py-3 sm:px-7 md:py-0 md:h-19 lg:px-9"
         >
           {/* Background glass design */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {/* soft light glow behind the cord */}
             <div className="absolute left-[62%] top-1/2 h-40 w-[34%] -translate-y-1/2 rounded-full bg-white/55 blur-2xl" />
             {/* wide diagonal light band rising to the right */}
-            <div className="absolute -bottom-10 left-[49%] h-32 w-[16%] -skew-x-[38deg] bg-gradient-to-r from-white/0 via-white/45 to-white/0" />
-            <div className="absolute -bottom-10 left-[56%] h-32 w-[7%] -skew-x-[38deg] bg-white/40" />
-            <div className="absolute -top-8 left-[74%] h-32 w-[9%] -skew-x-[38deg] bg-white/35" />
+            <div className="absolute -bottom-10 left-[49%] h-32 w-[16%] skew-x-[-38deg] bg-linear-to-r from-white/0 via-white/45 to-white/0" />
+            <div className="absolute -bottom-10 left-[56%] h-32 w-[7%] skew-x-[-38deg] bg-white/40" />
+            <div className="absolute -top-8 left-[74%] h-32 w-[9%] skew-x-[-38deg] bg-white/35" />
             {/* top sheen */}
-            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/35 to-transparent" />
             {/* minimal dot grid, fading out from the left */}
-            <div className="absolute inset-0 opacity-70 [background-image:radial-gradient(rgba(26,99,214,0.2)_1px,transparent_1px)] [background-size:14px_14px] [mask-image:linear-gradient(to_right,black,transparent_42%)]" />
+            <div className="absolute inset-0 opacity-70 bg-[radial-gradient(rgba(26,99,214,0.2)_1px,transparent_1px)] bg-size-[14px_14px] mask-[linear-gradient(to_right,black,transparent_42%)]" />
             {/* thin concentric rings behind the cord */}
-            <div className="absolute left-[69%] top-1/2 size-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/[0.12]" />
-            <div className="absolute left-[69%] top-1/2 size-[130px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/[0.14]" />
+            <div className="absolute left-[69%] top-1/2 size-52.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/12" />
+            <div className="absolute left-[69%] top-1/2 size-32.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#2f7fe8]/[0.14]" />
             {/* hairline accent along the bottom edge */}
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#2f7fe8]/35 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-[#2f7fe8]/35 to-transparent" />
           </div>
 
           <div className="relative flex h-full flex-col items-center gap-3 py-3 md:flex-row md:justify-between md:gap-6 md:py-0">
@@ -452,11 +429,11 @@ function ConnectionBanner() {
               <span className="block text-[10px] font-semibold leading-none tracking-[0.01em] text-[#1a63d6]">
                 Networking Solutions
               </span>
-              <div className="mt-[3px] flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-[18px]">
+              <div className="mt-0.75 flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-4.5">
                 <h2 className="text-lg font-extrabold leading-tight tracking-[-0.01em] text-[#0a1f55] sm:text-[21px] sm:whitespace-nowrap lg:text-[22px]">
                   Build a stronger connection
                 </h2>
-                <p className="text-[11px] font-normal leading-none text-[#5a72a0] lg:mt-[5px]">
+                <p className="text-[11px] font-normal leading-none text-[#5a72a0] lg:mt-1.25">
                   From home networks to business setups — we have the right equipment for you.
                 </p>
               </div>
@@ -467,7 +444,7 @@ function ConnectionBanner() {
               <img
                 src="/image-2.png"
                 alt="Fiber optic patch cord"
-                className="h-12 w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,80,200,0.18)] sm:h-16 md:h-[66px] lg:h-[70px]"
+                className="h-12 w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,80,200,0.18)] sm:h-16 md:h-16.5 lg:h-17.5"
               />
               <Link
                 to="/shop"
@@ -502,7 +479,7 @@ function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.18, ease: EASE }}
-          className="mt-2.5 block h-[3px] w-10 origin-left rounded-full bg-gradient-to-r from-brand-500 to-brand-300"
+          className="mt-2.5 block h-[3px] w-10 origin-left rounded-full bg-linear-to-r from-brand-500 to-brand-300"
         />
       </motion.div>
       <Link to={linkTo}
@@ -523,6 +500,12 @@ function CategoryGrid({ items, loading }) {
   const reduce = useReducedMotion();
 
   const displayItems = items && items.length > 0 ? items : CATEGORY_FALLBACK;
+  const loopCategories = useMemo(() => {
+    if (displayItems.length > 0 && displayItems.length < 16) {
+      return [...displayItems, ...displayItems];
+    }
+    return displayItems;
+  }, [displayItems]);
 
   return (
     <section
@@ -594,12 +577,13 @@ function CategoryGrid({ items, loading }) {
                 768: { slidesPerView: 5.5, spaceBetween: 12 },
                 1024: { slidesPerView: 7, spaceBetween: 12 },
                 1280: { slidesPerView: 7, spaceBetween: 14 },
-                1536: { slidesPerView: 7, spaceBetween: 14 },
+                1536: { slidesPerView: 8, spaceBetween: 16 },
+                1920: { slidesPerView: 9, spaceBetween: 16 },
               }}
-              className="!overflow-visible py-2"
+              className="overflow-hidden py-3 px-1"
             >
-              {displayItems.map((cat, index) => (
-                <SwiperSlide key={cat.name} className="!h-auto">
+              {loopCategories.map((cat, index) => (
+                <SwiperSlide key={`${cat.name}-${index}`} className="!h-auto">
                   <motion.div
                     initial={reduce ? false : { opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -616,7 +600,7 @@ function CategoryGrid({ items, loading }) {
                       aria-label={`Browse ${cat.name}`}
                     >
                       {/* Circle Avatar Pod - Slightly enlarged with full image fit */}
-                      <div className="relative flex aspect-square size-28 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-[#f1f3f6] shadow-xs transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[#2C9AFF] group-hover:bg-white group-hover:shadow-[0_18px_32px_-8px_rgba(44,154,255,0.35)]">
+                      <div className="relative flex aspect-square size-28 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-[#f1f3f6] shadow-xs transition-all duration-300 group-hover:-translate-y-1 group-hover:border-brand-500 group-hover:bg-white group-hover:shadow-[0_18px_32px_-8px_rgba(44,154,255,0.35)]">
                         {cat.image ? (
                           <img
                             src={resolveMediaUrl(cat.image)}
@@ -634,11 +618,11 @@ function CategoryGrid({ items, loading }) {
                       </div>
 
                       {/* Title Below Circle */}
-                      <p className="mt-3 max-w-[130px] sm:max-w-[150px] lg:max-w-[170px] xl:max-w-[190px] text-center text-sm font-semibold leading-tight text-slate-800 transition-colors duration-200 group-hover:text-[#2C9AFF] line-clamp-2 min-h-[2.2rem]">
+                      <p className="mt-3 max-w-32.5 sm:max-w-37.5 lg:max-w-42.5 xl:max-w-47.5 text-center text-sm font-semibold leading-tight text-slate-800 transition-colors duration-200 group-hover:text-brand-500 line-clamp-2 min-h-[2.2rem]">
                         {cat.name}
                       </p>
                       {cat.count > 0 ? (
-                        <span className="mt-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 transition-colors duration-200 group-hover:bg-[#2C9AFF]/10 group-hover:text-[#1875d1]">
+                        <span className="mt-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 transition-colors duration-200 group-hover:bg-brand-500/10 group-hover:text-[#1875d1]">
                           {cat.count} products
                         </span>
                       ) : null}
@@ -651,7 +635,7 @@ function CategoryGrid({ items, loading }) {
             {/* Pagination Dots */}
             <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
               {displayItems.map((cat, idx) => {
-                const isActive = activeIndex === idx;
+                const isActive = (activeIndex % displayItems.length) === idx;
                 return (
                   <button
                     key={`dot-${cat.name}`}
@@ -665,7 +649,7 @@ function CategoryGrid({ items, loading }) {
                     }}
                     aria-label={`Go to slide ${idx + 1}`}
                     className={`h-2 rounded-full transition-all duration-300 ${isActive
-                        ? "w-7 bg-[#2C9AFF] shadow-[0_0_10px_rgba(44,154,255,0.55)]"
+                        ? "w-7 bg-brand-500 shadow-[0_0_10px_rgba(44,154,255,0.55)]"
                         : "w-2 bg-slate-300 hover:bg-slate-400"
                       }`}
                   />
@@ -688,9 +672,9 @@ function FeaturedGrid({ products, loading }) {
     <section className="relative border-b border-slate-200/80 bg-slate-50/70" aria-labelledby="featured-heading">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] [background-size:26px_26px] opacity-[0.035] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] bg-size-[26px_26px] opacity-[0.035] mask-[linear-gradient(to_bottom,black,transparent_70%)]"
       />
-      <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
+      <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-384">
         <SectionHeading eyebrow="Curated picks" title="Featured products" id="featured-heading" linkLabel="View all" />
 
         {loading ? (
@@ -707,7 +691,7 @@ function FeaturedGrid({ products, loading }) {
             ))}
           </div>
         ) : displayProducts.length === 0 ? (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-brand-50 via-white to-white px-6 py-8 text-center shadow-sm">
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-50 via-white to-white px-6 py-8 text-center shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-600">Catalog</p>
             <h3 className="mt-2 text-xl font-bold text-slate-900">Products are on the way.</h3>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
@@ -738,66 +722,41 @@ function FeaturedGrid({ products, loading }) {
 
 /* ─── E. Promo Banner ───────────────────────────────────────────────────────── */
 
-const BULK_TIERS = [
-  { range: "10 – 24 units", discount: "8% OFF", label: "Small Project", benefit: "Standard Spools & Patch" },
-  { range: "25 – 49 units", discount: "15% OFF", label: "Installer Pack", benefit: "Rackmount & Switches", popular: true },
-  { range: "50+ units", discount: "25% OFF", label: "Enterprise Bulk", benefit: "Full Infrastructure Deploy" },
-];
-
-function PromoBanner({ showcase }) {
+function PromoBanner() {
   const reduce = useReducedMotion();
   const ref = useRef(null);
-  const [selectedTier, setSelectedTier] = useState(1);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const yParallax = useTransform(scrollYProgress, [0, 1], [30, -30]);
-
-  const cards = (showcase && showcase.length > 0 ? showcase : SHOWCASE_FALLBACK)
-    .filter((p) => p?.image)
-    .slice(0, 3);
-
-  while (cards.length < 3 && SHOWCASE_FALLBACK[cards.length]) {
-    cards.push(SHOWCASE_FALLBACK[cards.length]);
-  }
-
-  const activeTier = BULK_TIERS[selectedTier] || BULK_TIERS[1];
 
   return (
     <section
       ref={ref}
-      className="relative overflow-hidden border-y border-slate-800/80 bg-gradient-to-br from-[#061224] via-[#0a1e3b] to-[#040e1c] text-white"
+      className="relative overflow-hidden border-y border-slate-800/80 bg-[#030c1c] text-white"
       aria-label="Bulk pricing promotion"
     >
-      {/* Ambient Lighting Spheres */}
-      <div
+      {/* Background Graphic Asset */}
+      <img
+        src="/order-save.png"
+        alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute -top-32 -left-20 h-96 w-96 rounded-full bg-[#2C9AFF]/20 blur-[130px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 right-10 h-96 w-96 -translate-y-1/2 rounded-full bg-sky-500/15 blur-[120px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-24 left-1/3 h-80 w-80 rounded-full bg-blue-700/20 blur-[120px]"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right select-none"
       />
 
-      {/* Tech Grid Pattern with Radial Mask */}
+      {/* Readability Gradient Overlay */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_40%,transparent_100%)]"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-[#030c1c] via-[#030c1c]/85 to-[#030c1c]/30 sm:to-transparent lg:via-[#030c1c]/40"
       />
 
-      <div className="relative mx-auto max-w-8xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
-          {/* Left Column: Headline, Interactive Tiers & CTAs */}
+      <div className="relative mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-13 xl:py-15 2xl:max-w-384">
+        <div className="grid items-center lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
+          {/* Left Column: Headline, Checklist & CTAs */}
           <div>
             {/* Headline */}
             <motion.h2
               {...fadeUpInView(0.08, reduce)}
-              className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl leading-[1.12]"
+              className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl leading-tight"
             >
               Order more,{" "}
-              <span className="bg-gradient-to-r from-[#60B6FF] via-[#9ad0ff] to-white bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-[#60B6FF] via-[#9ad0ff] to-white bg-clip-text text-transparent">
                 save more.
               </span>
             </motion.h2>
@@ -805,242 +764,46 @@ function PromoBanner({ showcase }) {
             {/* Description */}
             <motion.p
               {...fadeUpInView(0.16, reduce)}
-              className="mt-3.5 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-[15px]"
+              className="mt-2.5 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-300"
             >
               Equip your entire deployment for less. Automated tiered wholesale discounts apply directly at checkout on Cat6 patch rolls, managed switches, and enterprise Wi-Fi gear.
             </motion.p>
 
-            {/* Interactive Tier Selector */}
-            <motion.div {...fadeUpInView(0.24, reduce)} className="mt-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                Select your order volume to preview discount:
-              </p>
-              <div className="mt-2.5 grid grid-cols-3 gap-2 sm:gap-3 max-w-lg">
-                {BULK_TIERS.map((tier, idx) => {
-                  const isSelected = selectedTier === idx;
-                  return (
-                    <button
-                      key={tier.range}
-                      type="button"
-                      onClick={() => setSelectedTier(idx)}
-                      className={`relative flex flex-col items-center justify-center rounded-xl p-2.5 sm:p-3 text-center transition-all duration-200 focus:outline-none cursor-pointer ${isSelected
-                          ? "border-2 border-[#2C9AFF] bg-[#2C9AFF]/20 text-white shadow-[0_0_20px_rgba(44,154,255,0.35)]"
-                          : "border border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:bg-white/[0.08] hover:text-slate-200"
-                        }`}
-                    >
-                      {tier.popular ? (
-                        <span className="absolute -top-2.5 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-xs uppercase tracking-wider">
-                          Popular
-                        </span>
-                      ) : null}
-                      <span className="text-[11px] sm:text-xs font-semibold">{tier.range}</span>
-                      <span className={`mt-0.5 text-xs sm:text-sm font-extrabold ${isSelected ? "text-[#60B6FF]" : "text-slate-300"}`}>
-                        {tier.discount}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] text-slate-400 leading-none mt-0.5">
-                        {tier.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-
             {/* Benefits Checklist */}
-            <motion.div {...fadeUpInView(0.3, reduce)} className="mt-6 space-y-2">
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
-                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+            <motion.div {...fadeUpInView(0.24, reduce)} className="mt-4 space-y-1.5 sm:space-y-2">
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/4 px-3 py-1.5 text-xs text-slate-200 backdrop-blur-sm sm:text-sm leading-snug">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
                 <span>Instant volume discount applied automatically in your shopping cart</span>
               </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
-                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/4 px-3 py-1.5 text-xs text-slate-200 backdrop-blur-sm sm:text-sm leading-snug">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
                 <span>Official GST invoice &amp; tax receipts provided with every order</span>
               </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 backdrop-blur-sm sm:text-sm">
-                <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/4 px-3 py-1.5 text-xs text-slate-200 backdrop-blur-sm sm:text-sm leading-snug">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
                 <span>Priority carton &amp; pallet packaging for zero-damage transit across Pakistan</span>
               </div>
             </motion.div>
 
             {/* Action Buttons */}
-            <motion.div {...fadeUpInView(0.36, reduce)} className="mt-7 flex flex-wrap items-center gap-3">
+            <motion.div {...fadeUpInView(0.32, reduce)} className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
               <Link
                 to="/shop"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(44,154,255,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#208ef3] hover:shadow-[0_8px_28px_rgba(44,154,255,0.55)] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2C9AFF]/50"
+                className="inline-flex h-10 sm:h-11 items-center gap-2 rounded-xl bg-brand-500 px-5 sm:px-6 text-xs sm:text-sm font-semibold text-white shadow-[0_4px_20px_rgba(44,154,255,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#208ef3] hover:shadow-[0_8px_28px_rgba(44,154,255,0.55)] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2C9AFF]/50"
               >
-                Browse all products <ArrowRight size={16} aria-hidden="true" />
+                Browse all products <ArrowRight size={15} aria-hidden="true" />
               </Link>
               <Link
                 to="/shop?category=Cabling%20%26%20Connectivity"
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+                className="inline-flex h-10 sm:h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 sm:px-5 text-xs sm:text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
               >
                 Bulk Cables &amp; Patch
               </Link>
             </motion.div>
           </div>
 
-          {/* Right Column: 3D Floating Hardware Showcase */}
-          <div className="relative mx-auto w-full max-w-lg lg:max-w-none pt-4 pb-2 lg:py-0">
-            {/* Background Ambient Aura under cards */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 -m-8 rounded-full bg-linear-to-tr from-[#2C9AFF]/15 to-sky-400/10 blur-2xl"
-            />
-
-            <div className="relative min-h-85 sm:min-h-95 w-full">
-              {/* Card 1: Top Right Satellite Card (e.g. Switch) */}
-              <motion.div
-                style={reduce ? undefined : { y: yParallax }}
-                animate={
-                  reduce
-                    ? undefined
-                    : {
-                      y: [-6, 6, -6],
-                      rotate: [2, 3.5, 2],
-                    }
-                }
-                transition={{
-                  duration: 5.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="absolute right-0 top-0 z-10 w-44 sm:w-56"
-              >
-                <div className="group overflow-hidden rounded-2xl border border-white/20 bg-slate-900/90 backdrop-blur-xl shadow-[0_16px_36px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-brand-500/60 hover:shadow-[0_20px_45px_rgba(44,154,255,0.25)]">
-                  {/* Image full width with floating badges */}
-                  <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-800">
-                    <img
-                      src={resolveMediaUrl(cards[1]?.image)}
-                      alt={cards[1]?.title || "Switch"}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/products/gigabit-switch.jpg";
-                      }}
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-black/40" />
-                    <div className="absolute inset-x-2.5 top-2.5 z-10 flex items-center justify-between gap-1">
-                      <span className="font-semibold text-white text-[10px] drop-shadow-md line-clamp-1 max-w-30">
-                        {cards[1]?.title || "Gigabit Switch"}
-                      </span>
-                      <span className="shrink-0 rounded-full bg-emerald-500 px-2 py-0.5 font-bold text-white text-[9px] shadow-sm">
-                        -{activeTier.discount}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 sm:p-3 flex items-center justify-between text-[11px] border-t border-white/5">
-                    <span className="text-slate-400 font-medium">Wholesale tier</span>
-                    <span className="font-bold text-white">In Stock</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Card 2: Main Center Hero Card (e.g. Wi-Fi Router / Spool) */}
-              <motion.div
-                animate={
-                  reduce
-                    ? undefined
-                    : {
-                      y: [0, -10, 0],
-                      rotate: [-1.5, -0.5, -1.5],
-                    }
-                }
-                transition={{
-                  duration: 4.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="absolute left-4 sm:left-12 top-14 sm:top-16 z-20 w-52 sm:w-64"
-              >
-                <div className="group overflow-hidden rounded-3xl border border-white/25 bg-slate-900/95 backdrop-blur-2xl shadow-[0_25px_60px_-10px_rgba(0,0,0,0.7)] transition-all duration-300 hover:border-[#2C9AFF] hover:shadow-[0_25px_65px_rgba(44,154,255,0.35)]">
-                  {/* Product Image full fill */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-slate-800">
-                    <img
-                      src={resolveMediaUrl(cards[0]?.image)}
-                      alt={cards[0]?.title || "Router"}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/products/wifi6-router.jpg";
-                      }}
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-black/45" />
-
-                    {/* Floating top badges */}
-                    <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2C9AFF]/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                        <Sparkles size={11} />
-                        Top Volume Seller
-                      </span>
-                      <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
-                        SAVE {activeTier.discount.replace(" OFF", "")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Product Details & Tier Benefit */}
-                  <div className="p-3.5 sm:p-4 bg-slate-900/95 border-t border-white/10">
-                    <h4 className="text-sm font-bold text-white line-clamp-1">
-                      {cards[0]?.title || "Cat6 Bulk Packaging (305m)"}
-                    </h4>
-                    <div className="mt-1.5 flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Order {activeTier.range}</span>
-                      <span className="font-extrabold text-[#60B6FF]">Tier Discount Active</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Card 3: Bottom Right Satellite Card (e.g. Access Point) */}
-              <motion.div
-                animate={
-                  reduce
-                    ? undefined
-                    : {
-                      y: [6, -6, 6],
-                      rotate: [-3, -1, -3],
-                    }
-                }
-                transition={{
-                  duration: 5.2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="absolute right-4 sm:right-10 bottom-2 z-15 w-44 sm:w-54"
-              >
-                <div className="group overflow-hidden rounded-2xl border border-white/20 bg-slate-900/90 backdrop-blur-xl shadow-[0_16px_36px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-[#2C9AFF]/60 hover:shadow-[0_20px_45px_rgba(44,154,255,0.25)]">
-                  {/* Image full width with floating badges */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-800">
-                    <img
-                      src={resolveMediaUrl(cards[2]?.image)}
-                      alt={cards[2]?.title || "Access Point"}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/products/ceiling-access-point.jpg";
-                      }}
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/40" />
-                    <div className="absolute inset-x-2.5 top-2.5 z-10 flex items-center justify-between gap-1">
-                      <span className="font-semibold text-white text-[10px] drop-shadow-md line-clamp-1 max-w-[110px]">
-                        {cards[2]?.title || "Ceiling Access Point"}
-                      </span>
-                      <span className="shrink-0 rounded-full bg-[#2C9AFF] px-2 py-0.5 font-bold text-white text-[9px] shadow-sm">
-                        B2B Pack
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 sm:p-3 flex items-center justify-between text-[11px] border-t border-white/5">
-                    <span className="text-slate-400 font-medium">Warranty</span>
-                    <span className="font-bold text-emerald-400">Official Wasooli</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+          {/* Right Column: Spacer for 3D graphic in order-save.png (hidden on mobile to prevent bottom gap) */}
+          <div className="hidden lg:block relative min-h-72.5 xl:min-h-82.5 w-full" aria-hidden="true" />
         </div>
       </div>
     </section>
@@ -1052,19 +815,19 @@ function PromoBanner({ showcase }) {
 function HowItWorks() {
   const reduce = useReducedMotion();
   return (
-    <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-slate-50 via-slate-100/60 to-slate-50 py-14 sm:py-20" aria-labelledby="home-steps-heading">
+    <section className="relative overflow-hidden border-b border-slate-200/80 bg-linear-to-b from-slate-50 via-slate-100/60 to-slate-50 py-14 sm:py-20" aria-labelledby="home-steps-heading">
       {/* Background ambient light */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-full max-w-4xl rounded-full bg-[#2C9AFF]/5 blur-[100px]"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-full max-w-4xl rounded-full bg-brand-500/5 blur-[100px]"
       />
       {/* Subtle blueprint dot grid */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] bg-size-[28px_28px] opacity-[0.04]"
       />
 
-      <div className="relative mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+      <div className="relative mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-384">
         <SectionHeading
           eyebrow="How ordering works"
           title="From cart to your door in 3 simple steps"
@@ -1073,10 +836,16 @@ function HowItWorks() {
         />
 
         <div className="relative mt-8 sm:mt-12 grid gap-6 md:grid-cols-3">
-          {/* Connecting line on desktop */}
+          {/* Top Connecting Line (Step 01 -> Step 02) on desktop */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-14 left-16 right-16 hidden h-[2px] bg-gradient-to-r from-[#2C9AFF]/20 via-[#2C9AFF]/60 to-[#2C9AFF]/20 md:block"
+            className="pointer-events-none absolute top-14 left-16 right-[38%] hidden h-0.5 bg-linear-to-r from-[#2C9AFF]/30 via-[#2C9AFF] to-[#2C9AFF]/30 md:block"
+          />
+
+          {/* Bottom Connecting Line (Step 02 -> Step 03) on desktop */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-12 left-[38%] right-16 hidden h-0.5 bg-linear-to-r from-[#2C9AFF]/30 via-[#2C9AFF] to-[#2C9AFF]/30 md:block"
           />
 
           {STEPS.map(({ icon: Icon, step, tag, title, text, features }, index) => (
@@ -1084,33 +853,33 @@ function HowItWorks() {
               key={title}
               {...fadeUpInView(0.08 * index, reduce)}
               whileHover={reduce ? undefined : { y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-[#2C9AFF]/50 hover:shadow-[0_20px_45px_-12px_rgba(44,154,255,0.22)]"
+              className="group relative z-10 flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-brand-500/50 hover:shadow-[0_20px_45px_-12px_rgba(44,154,255,0.22)]"
             >
               <div>
                 {/* Large faint step number watermark */}
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute -right-1 top-10 select-none text-[7.5rem] font-black leading-none text-slate-900/[0.035] transition-colors duration-300 group-hover:text-[#2C9AFF]/[0.08]"
+                  className="pointer-events-none absolute -right-1 top-10 select-none text-[7.5rem] font-black leading-none text-slate-900/[0.035] transition-colors duration-300 group-hover:text-brand-500/8"
                 >
                   {step}
                 </span>
 
                 {/* Step Header: Icon + Step Pill Badge */}
                 <div className="flex items-center justify-between">
-                  <span className="grid size-13 place-items-center rounded-2xl bg-gradient-to-br from-[#2C9AFF] to-[#1268c4] text-white shadow-[0_8px_20px_rgba(44,154,255,0.32)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-2">
+                  <span className="grid size-13 place-items-center rounded-2xl bg-linear-to-br from-[#2C9AFF] to-[#1268c4] text-white shadow-[0_8px_20px_rgba(44,154,255,0.32)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-2">
                     <Icon size={24} aria-hidden="true" />
                   </span>
-                  <span className="inline-flex items-center rounded-full border border-[#2C9AFF]/20 bg-[#2C9AFF]/8 px-3 py-1 font-mono text-xs font-black tracking-wider text-[#2C9AFF] transition-colors duration-300 group-hover:border-[#2C9AFF] group-hover:bg-[#2C9AFF] group-hover:text-white">
+                  <span className="inline-flex items-center rounded-full border border-brand-500/20 bg-brand-500/8 px-3 py-1 font-mono text-xs font-black tracking-wider text-brand-500 transition-colors duration-300 group-hover:border-brand-500 group-hover:bg-brand-500 group-hover:text-white">
                     STEP {step}
                   </span>
                 </div>
 
                 {/* Subtag & Title */}
                 <div className="mt-6">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#2C9AFF]">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-brand-500">
                     {tag}
                   </span>
-                  <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-[#2C9AFF]">
+                  <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-brand-500">
                     {title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -1123,7 +892,7 @@ function HowItWorks() {
                   {features?.map((f) => (
                     <span
                       key={f}
-                      className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors duration-200 group-hover:bg-[#2C9AFF]/10 group-hover:text-[#1875d1]"
+                      className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors duration-200 group-hover:bg-brand-500/10 group-hover:text-[#1875d1]"
                     >
                       <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
                       {f}
@@ -1133,7 +902,7 @@ function HowItWorks() {
               </div>
 
               {/* Bottom active indicator */}
-              <div className="mt-6 h-1 w-10 rounded-full bg-slate-100 transition-all duration-300 group-hover:w-20 group-hover:bg-[#2C9AFF]" />
+              <div className="mt-6 h-1 w-10 rounded-full bg-slate-100 transition-all duration-300 group-hover:w-20 group-hover:bg-brand-500" />
             </motion.article>
           ))}
         </div>
@@ -1144,120 +913,6 @@ function HowItWorks() {
 
 /* ─── H. Closing CTA ────────────────────────────────────────────────────────── */
 
-function ClosingCTA() {
-  const reduce = useReducedMotion();
-  return (
-    <section className="relative overflow-hidden bg-slate-50 py-12 sm:py-16 lg:py-20" aria-labelledby="home-cta-heading">
-      <div className="relative mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
-        {/* Luxury Dark Sapphire Container Card */}
-        <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-[#061224] via-[#091b35] to-[#040e1c] px-6 py-14 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.5)] sm:px-12 sm:py-18 lg:px-16 lg:py-20">
-          {/* Ambient cyan-blue background glow meshes */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 -right-20 h-96 w-96 rounded-full bg-[#2C9AFF]/25 blur-[120px]"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-[#2C9AFF]/20 blur-[130px]"
-          />
-
-          {/* Subtle blueprint dot grid overlay */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(#2C9AFF_1px,transparent_1px)] [background-size:28px_28px] opacity-15"
-          />
-
-          <div className="relative mx-auto max-w-3xl text-center">
-            {/* Pill Badge */}
-            <motion.div {...fadeUpInView(0, reduce)}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#2C9AFF]/35 bg-[#2C9AFF]/15 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#60B6FF] backdrop-blur-md shadow-sm">
-                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-                Ready to Deploy • Nationwide in Pakistan
-              </span>
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h2
-              {...fadeUpInView(0.08, reduce)}
-              id="home-cta-heading"
-              className="mt-5 text-3xl font-black tracking-tight sm:text-4xl md:text-5xl"
-            >
-              Ready to build your{" "}
-              <span className="bg-gradient-to-r from-sky-200 via-white to-[#60B6FF] bg-clip-text text-transparent">
-                high-performance network?
-              </span>
-            </motion.h2>
-
-            {/* Subtitle */}
-            <motion.p
-              {...fadeUpInView(0.16, reduce)}
-              className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base sm:leading-relaxed"
-            >
-              Explore our full catalog — Cat6 patch cables to PoE switches and Wi-Fi 6 access points. Fast dispatch, verified genuine stock, and direct support across Pakistan.
-            </motion.p>
-
-            {/* Action Buttons */}
-            <motion.div
-              {...fadeUpInView(0.24, reduce)}
-              className="mt-8 flex flex-wrap items-center justify-center gap-4"
-            >
-              <Link
-                to="/shop"
-                className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-[#2C9AFF] px-7 text-sm font-bold text-white shadow-[0_0_30px_rgba(44,154,255,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1a85ea] hover:shadow-[0_0_45px_rgba(44,154,255,0.7)] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2C9AFF]/30 sm:h-13 sm:px-8 sm:text-base"
-              >
-                Browse full catalog <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-              <Link
-                to="/account"
-                className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/15 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/20 sm:h-13 sm:px-7 sm:text-base"
-              >
-                My account
-              </Link>
-            </motion.div>
-
-            {/* Trust Micro-Metrics Row */}
-            <motion.div
-              {...fadeUpInView(0.32, reduce)}
-              className="mt-12 grid grid-cols-2 gap-4 border-t border-white/10 pt-8 sm:grid-cols-4 sm:gap-6"
-            >
-              <div className="flex flex-col items-center text-center">
-                <span className="grid size-9 place-items-center rounded-xl bg-[#2C9AFF]/15 text-[#60B6FF] ring-1 ring-[#2C9AFF]/30 mb-2">
-                  <Truck size={17} />
-                </span>
-                <span className="text-xs font-bold text-white">1–2 Day Dispatch</span>
-                <span className="text-[11px] text-slate-400">Nationwide courier</span>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <span className="grid size-9 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 mb-2">
-                  <ShieldCheck size={17} />
-                </span>
-                <span className="text-xs font-bold text-white">100% Genuine</span>
-                <span className="text-[11px] text-slate-400">Tested hardware</span>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <span className="grid size-9 place-items-center rounded-xl bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30 mb-2">
-                  <CheckCircle2 size={17} />
-                </span>
-                <span className="text-xs font-bold text-white">Cash on Delivery</span>
-                <span className="text-[11px] text-slate-400">Doorstep payment</span>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <span className="grid size-9 place-items-center rounded-xl bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30 mb-2">
-                  <Headphones size={17} />
-                </span>
-                <span className="text-xs font-bold text-white">Expert Support</span>
-                <span className="text-[11px] text-slate-400">Direct assistance</span>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─── Page root ─────────────────────────────────────────────────────────────── */
 
@@ -1341,18 +996,14 @@ export default function Home() {
     };
   }, [reduce]);
 
-  const promoProducts = useMemo(
-    () => trendingProducts.filter((p) => p.image).slice(0, 3),
-    [trendingProducts]
-  );
-
+  
   return (
     <main className="min-h-screen bg-slate-50">
       <style>{ANIMATIONS}</style>
       {/* Smooth Scroll Progress Indicator */}
       <motion.div
         style={{ scaleX }}
-        className="fixed top-0 left-0 right-0 z-[100] h-[3px] origin-left bg-gradient-to-r from-[#2C9AFF] via-sky-400 to-[#2C9AFF] shadow-[0_0_12px_rgba(44,154,255,0.85)] pointer-events-none"
+        className="fixed top-0 left-0 right-0 z-100 h-0.75 origin-left bg-linear-to-r from-[#2C9AFF] via-sky-400 to-[#2C9AFF] shadow-[0_0_12px_rgba(44,154,255,0.85)] pointer-events-none"
       />
       <StoreHeader />
       <HeroSection productCount={products.length} categoryCount={categoryTotal} />
@@ -1360,9 +1011,8 @@ export default function Home() {
       <CategoryGrid items={categoryItems.length ? categoryItems : CATEGORY_FALLBACK} loading={catalogLoading} />
       <FeaturedGrid products={featuredProducts} loading={catalogLoading} />
       <ShopProductRail subtitle="What people buy" title="Trending now" products={trendingProducts} tone="light" autoplay />
-      <PromoBanner showcase={promoProducts.length ? promoProducts : SHOWCASE_FALLBACK} />
+      <PromoBanner />
       <HowItWorks />
-      {/* <ClosingCTA /> */}
-    </main>
+          </main>
   );
 }

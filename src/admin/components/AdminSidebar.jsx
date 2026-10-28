@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart3,
@@ -28,8 +28,7 @@ export default function AdminSidebar({
   onToggleCollapse,
 }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { products, orders } = useAdminData();
+  const { orders } = useAdminData();
 
   const isProductsActive = location.pathname.startsWith("/admin/products");
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
@@ -306,7 +305,7 @@ export default function AdminSidebar({
 
                           {/* Top Dot */}
                           <span
-                            className={`absolute -top-1 -left-[3px] size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${
+                            className={`absolute -top-1 -left-0.75 size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${
                               hasActiveProductSub || isProductsActive
                                 ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"
@@ -315,7 +314,7 @@ export default function AdminSidebar({
 
                           {/* Bottom Dot */}
                           <span
-                            className={`absolute -bottom-1 -left-[2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${
+                            className={`absolute -bottom-1 left-[-2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${
                               productSubIndex === 1
                                 ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"
@@ -505,7 +504,7 @@ export default function AdminSidebar({
 
                           {/* Top Dot */}
                           <span
-                            className={`absolute -top-1 -left-[3px] size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${
+                            className={`absolute -top-1 -left-0.75 size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${
                               hasActiveOrderSub || isOrdersActive
                                 ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"
@@ -514,7 +513,7 @@ export default function AdminSidebar({
 
                           {/* Bottom Dot */}
                           <span
-                            className={`absolute -bottom-1 -left-[2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${
+                            className={`absolute -bottom-1 left-[-2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${
                               orderSubIndex === 1
                                 ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"

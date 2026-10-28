@@ -12,7 +12,7 @@ import {
   Heart,
   MapPin,
   Minus,
-  Package,
+
   Plus,
   RotateCcw,
   Share2,

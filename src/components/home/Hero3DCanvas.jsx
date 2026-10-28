@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { motion, useReducedMotion } from "framer-motion";
-import { Activity, Cpu, Network, Radio, Shield, Wifi, Zap } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 
 // 10 Vector SVG strings for the Wasooli Store Navigation Items
 const NAV_SVG_STRINGS = [
@@ -110,15 +109,6 @@ export default function Hero3DCanvas({ className = "" }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const reduce = useReducedMotion();
-  const [activeTelemetry, setActiveTelemetry] = useState(0);
-
-  // Telemetry status rotation
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveTelemetry((prev) => (prev + 1) % 3);
-    }, 3800);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -508,86 +498,6 @@ export default function Hero3DCanvas({ className = "" }) {
         className="pointer-events-none absolute size-60 sm:size-72 rounded-full border border-dashed border-brand-500/20 [animation:spin_28s_linear_infinite_reverse]"
       />
 
-      {/* Holographic HUD Badge - Top Left: 10G SFP+ Optical Link */}
-      {/* <motion.div
-        initial={reduce ? false : { opacity: 0, x: -20, y: -10 }}
-        animate={{ opacity: 1, x: 0, y: [0, -6, 0] }}
-        transition={{
-          opacity: { duration: 0.6, delay: 0.2 },
-          y: { duration: 4.8, repeat: Infinity, ease: "easeInOut" },
-        }}
-        className="absolute top-4 left-2 sm:left-6 z-20 flex items-center gap-2.5 rounded-2xl border border-white/15 bg-slate-950/75 px-3.5 py-2.5 backdrop-blur-md shadow-[0_16px_36px_-10px_rgba(0,0,0,0.6)]"
-      >
-        <span className="grid size-8 place-items-center rounded-xl bg-brand-500/20 text-brand-300 ring-1 ring-brand-500/40">
-          <Activity size={15} className="animate-pulse" />
-        </span>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-            <p className="text-[11px] font-bold text-white tracking-wide">10G SFP+ Link</p>
-          </div>
-          <p className="text-[9px] font-medium text-slate-400">99.99% Uptime · 0.8ms</p>
-        </div>
-      </motion.div> */}
-
-      {/* Holographic HUD Badge - Bottom Right: Wi-Fi 6 OFDMA Hub */}
-      {/* <motion.div
-        initial={reduce ? false : { opacity: 0, x: 20, y: 15 }}
-        animate={{ opacity: 1, x: 0, y: [0, 7, 0] }}
-        transition={{
-          opacity: { duration: 0.6, delay: 0.4 },
-          y: { duration: 5.2, repeat: Infinity, ease: "easeInOut", delay: 1 },
-        }}
-        className="absolute bottom-6 right-2 sm:right-6 z-20 flex items-center gap-2.5 rounded-2xl border border-white/15 bg-slate-950/75 px-3.5 py-2.5 backdrop-blur-md shadow-[0_16px_36px_-10px_rgba(0,0,0,0.6)]"
-      >
-        <span className="grid size-8 place-items-center rounded-xl bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/40">
-          <Wifi size={15} />
-        </span>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_#38bdf8]" />
-            <p className="text-[11px] font-bold text-white tracking-wide">Wi-Fi 6 Mesh Core</p>
-          </div>
-          <p className="text-[9px] font-medium text-slate-400">Tri-Band 9.6 Gbps AX</p>
-        </div>
-      </motion.div> */}
-
-      {/* Holographic HUD Badge - Bottom Left: PoE+ Managed Power */}
-      {/* <motion.div
-        initial={reduce ? false : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: [0, -5, 0] }}
-        transition={{
-          opacity: { duration: 0.6, delay: 0.6 },
-          y: { duration: 4.4, repeat: Infinity, ease: "easeInOut", delay: 2 },
-        }}
-        className="absolute bottom-4 left-4 sm:left-10 z-20 hidden sm:flex items-center gap-2.5 rounded-2xl border border-white/15 bg-slate-950/75 px-3 py-2 backdrop-blur-md shadow-[0_14px_30px_-10px_rgba(0,0,0,0.5)]"
-      >
-        <span className="grid size-7 place-items-center rounded-lg bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40">
-          <Zap size={13} />
-        </span>
-        <div>
-          <p className="text-[10px] font-bold text-white">PoE+ 370W Auto-Sense</p>
-          <p className="text-[9px] text-slate-400">Gigabit Layer-2/3</p>
-        </div>
-      </motion.div> */}
-
-      {/* Interactive Status Pill - Top Right */}
-      {/* <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.8 }}
-        className="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-300 backdrop-blur-md"
-      >
-        <Radio size={11} className="animate-pulse text-sky-400" />
-        <span>Hardware Engine Live</span>
-      </motion.div> */}
-
-      {/* Subtle Hint */}
-      {/* <div className="absolute bottom-1 z-10 text-center pointer-events-none">
-        <p className="text-[9px] font-medium tracking-widest uppercase text-slate-500">
-          Interactive 3D Network Topology · Move mouse to rotate
-        </p>
-      </div> */}
     </div>
   );
 }

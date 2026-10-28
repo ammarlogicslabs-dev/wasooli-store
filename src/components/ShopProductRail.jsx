@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,6 +19,13 @@ export default function ShopProductRail({
   const reduceMotion = useReducedMotion();
   const dark = tone === "dark";
   const enableAutoplay = autoplay && !reduceMotion && products.length > 2;
+
+  const railProducts = useMemo(() => {
+    if (enableAutoplay && products.length > 0 && products.length < 12) {
+      return [...products, ...products];
+    }
+    return products;
+  }, [products, enableAutoplay]);
 
   if (!products.length) return null;
 
@@ -127,10 +134,12 @@ export default function ShopProductRail({
               768: { slidesPerView: 3.05, spaceBetween: 16 },
               1024: { slidesPerView: 4.05, spaceBetween: 18 },
               1280: { slidesPerView: 4.5, spaceBetween: 18 },
+              1536: { slidesPerView: 5.2, spaceBetween: 20 },
+              1920: { slidesPerView: 6.2, spaceBetween: 20 },
             }}
-            className="!overflow-visible"
+            className="overflow-hidden py-3 px-1 -mx-1"
           >
-            {products.map((product) => {
+            {railProducts.map((product, idx) => {
               const outOfStock = Number.isFinite(product.stock) && product.stock <= 0;
               const hasDiscount = product.oldPrice > product.price;
               const discountPct = hasDiscount
@@ -138,7 +147,7 @@ export default function ShopProductRail({
                 : 0;
 
               return (
-                <SwiperSlide key={product.id}>
+                <SwiperSlide key={`${product.id}-${idx}`}>
                   <Link
                     to={`/products/${product.slug}`}
                     viewTransition

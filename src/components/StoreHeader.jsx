@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowRight,
+
   Heart,
   LogIn,
   Mail,
@@ -16,6 +16,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import { useStoreSettings } from "../hooks/useStoreSettings";
 import { useAuth } from "../auth/AuthContext";
 import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
@@ -37,7 +38,7 @@ import {
   WirelessIcon,
 } from "./NavIcons";
 
-const STORE_NAME = "Wasooli Store";
+
 const STORE_PHONE = "0300 1234567";
 const STORE_EMAIL = "hello@wasooli.store";
 const STORE_HEADLINE =
@@ -214,6 +215,11 @@ export default function StoreHeader() {
     notificationCount = 0,
     subscribeCartOpen,
   } = useCart();
+  const storeSettings = useStoreSettings();
+  const headlineText =
+    Array.isArray(storeSettings?.navbarAnnouncements) && storeSettings.navbarAnnouncements.length > 0
+      ? storeSettings.navbarAnnouncements.join("  ·  ")
+      : storeSettings?.topBannerText || STORE_HEADLINE;
   const { isAuthenticated } = useAuth();
   const ensureLogin = useEnsureLogin("Please log in first to continue to checkout.");
   const navigate = useSmoothNavigate();
@@ -255,11 +261,14 @@ export default function StoreHeader() {
   
 
   useEffect(() => {
-    setCartOpen(false);
-    setWishlistOpen(false);
-    setMobileMenuOpen(false);
-    setHeadlineHidden(false);
-    setNavHidden(false);
+    const timer = setTimeout(() => {
+      setCartOpen(false);
+      setWishlistOpen(false);
+      setMobileMenuOpen(false);
+      setHeadlineHidden(false);
+      setNavHidden(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -445,15 +454,15 @@ export default function StoreHeader() {
           aria-hidden={headlineHidden}
         >
           <div ref={headlineRef} className="bg-brand-500 text-white">
-            <div className="mx-auto flex max-w-8xl flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
+            <div className="mx-auto flex max-w-8xl 2xl:max-w-[1536px] flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
               <div
                 className="store-headline min-w-0 flex-1 overflow-hidden"
-                aria-label={STORE_HEADLINE}
+                aria-label={headlineText}
               >
                 <div className="store-headline-track text-[11px] font-medium sm:text-xs">
-                  <span className="whitespace-nowrap">{STORE_HEADLINE}</span>
+                  <span className="whitespace-nowrap">{headlineText}</span>
                   <span className="whitespace-nowrap" aria-hidden="true">
-                    {STORE_HEADLINE}
+                    {headlineText}
                   </span>
                 </div>
               </div>
@@ -481,7 +490,7 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto max-w-8xl px-3 py-1 sm:px-6 sm:py-1.5 lg:px-8">
+        <div ref={navRef} className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-3 py-1 sm:px-6 sm:py-1.5 lg:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             {/* Left: Burger Button (Mobile/Tablet) + Logo */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -510,7 +519,7 @@ export default function StoreHeader() {
             >
               <div
                 onMouseLeave={() => setHoveredIndex(null)}
-                className="flex max-w-full items-center justify-center gap-1.5 xl:gap-2 p-1 overflow-visible"
+                className="flex max-w-full items-center justify-center gap-1.5 xl:gap-2.5 2xl:gap-3 p-1 overflow-visible"
               >
                 {(() => {
                   const searchCat = new URLSearchParams(location.search).get("category");
