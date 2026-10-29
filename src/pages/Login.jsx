@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Eye,
   EyeOff,
@@ -13,6 +14,7 @@ import {
   Lock,
   RotateCcw,
   ShieldCheck,
+  Store,
   Truck,
   User,
 } from "lucide-react";
@@ -148,11 +150,13 @@ export default function Login() {
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
 
         <div className="relative inline-flex items-center">
-          <img
-            src="/wasooli.png"
-            alt="Wasooli Store"
-            className="h-28 w-auto object-contain drop-shadow-lg xl:h-36"
-          />
+          <Link to="/" className="inline-block transition-transform hover:scale-105" title="Go to Wasooli Store Home">
+            <img
+              src="/wasooli.png"
+              alt="Wasooli Store"
+              className="h-28 w-auto object-contain drop-shadow-lg xl:h-36"
+            />
+          </Link>
         </div>
 
         <div className="relative">
@@ -185,14 +189,34 @@ export default function Login() {
       <section className="flex min-h-screen items-start justify-center px-4 pt-8 pb-10 sm:px-6 sm:pt-28 lg:min-h-0 lg:items-center lg:pt-10">
         <div className="w-full max-w-md">
           {/* Mobile brand */}
-          <div className="mb-7 flex flex-col items-center lg:hidden">
-            <Link className="flex flex-col items-center">
+          <div className="mb-6 flex flex-col items-center lg:hidden">
+            <Link to="/" className="flex flex-col items-center transition-transform hover:scale-105" title="Go to Wasooli Store Home">
               <img
                 src="/wasooli.png"
                 alt="Wasooli Store"
-                className="h-28 w-auto object-contain drop-shadow-md sm:h-32"
+                className="h-24 w-auto object-contain drop-shadow-md sm:h-28"
               />
             </Link>
+          </div>
+
+          <div className="mb-4 flex items-center justify-between">
+            <Link
+              to="/"
+              className="group inline-flex items-center gap-2.5 rounded-full border border-slate-200/90 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition-all duration-200 hover:border-brand-300 hover:bg-brand-50/40 hover:text-brand-600 hover:shadow-sm"
+            >
+              <span className="grid size-6 place-items-center rounded-full bg-slate-100 text-slate-500 transition-all duration-200 group-hover:bg-brand-500 group-hover:text-white group-hover:-translate-x-0.5">
+                <ArrowLeft size={13} />
+              </span>
+              <span>Back to shop</span>
+            </Link>
+
+            {/* <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-brand-600"
+            >
+              <Store size={13} />
+              <span>Store Home</span>
+            </Link> */}
           </div>
 
           <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
@@ -339,8 +363,17 @@ export default function Login() {
               </button>
             </form>
 
-
-
+            <div className="mt-5 border-t border-slate-100 pt-4 text-center">
+              <p className="text-xs text-slate-500">
+                Want to continue without signing in?{" "}
+                <Link
+                  to="/shop"
+                  className="font-semibold text-brand-600 transition hover:text-brand-700 hover:underline"
+                >
+                  Browse Products &rarr;
+                </Link>
+              </p>
+            </div>
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-200 pt-5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">

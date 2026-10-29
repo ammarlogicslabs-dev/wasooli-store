@@ -14,11 +14,11 @@
     --color-brand-800: #0e4a86;
     --color-brand-900: #0c3a68;
     --color-brand-950: #0f172a;
-    --font-sans: "Inter", sans-serif;
+    --font-sans: "Poppins", sans-serif;
 }
 
 :root {
-    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans);
     color: #171717;
     background: #faf9f6;
     font-synthesis: none;
