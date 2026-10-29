@@ -196,7 +196,7 @@ export default function StoreFooter() {
               {[
                 { label: "Home", to: "/" },
                 { label: "Shop", to: "/shop" },
-                { label: "New Arrivals", to: "/shop?sort=newest", highlight: true },
+                // { label: "New Arrivals", to: "/shop?sort=newest", highlight: true },
                 { label: "Deals", to: "/shop?tag=deals" },
                 { label: "About Us", to: "/about" },
                 { label: "Contact", to: "/contact" },
@@ -205,12 +205,17 @@ export default function StoreFooter() {
                   <Link
                     to={to}
                     viewTransition
-                    className={`flex items-center justify-between max-w-32.5 py-2 transition-colors hover:text-white sm:py-0 ${
+                    className={`inline-flex items-center gap-2.5 py-2 transition-colors hover:text-white group sm:py-0 ${
                       highlight ? "text-[#38bdf8] font-medium" : "text-slate-300"
                     }`}
                   >
+                    <ChevronRight
+                      size={13}
+                      className={`shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${
+                        highlight ? "text-[#38bdf8]" : "text-slate-400 group-hover:text-white"
+                      }`}
+                    />
                     <span>{label}</span>
-                    <ChevronRight size={13} className={highlight ? "text-[#38bdf8]" : "text-slate-400"} />
                   </Link>
                 </li>
               ))}
@@ -231,7 +236,7 @@ export default function StoreFooter() {
                 { Icon: Wifi, label: "Access Points", cat: "Wireless" },
                 { Icon: Cable, label: "Cables", cat: "Cabling & Connectivity" },
                 { Icon: ShieldCheck, label: "Accessories", cat: "Tools & Accessories" },
-                { Icon: Wrench, label: "Tools", cat: "Tools & Accessories" },
+                // { Icon: Wrench, label: "Tools", cat: "Tools & Accessories" },
               ].map(({ Icon, label, cat }) => (
                 <li key={label}>
                   <Link

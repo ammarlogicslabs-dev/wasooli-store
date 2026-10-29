@@ -363,7 +363,7 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-5 border-t border-slate-100 pt-4 text-center">
+            {/* <div className="mt-5 border-t border-slate-100 pt-4 text-center">
               <p className="text-xs text-slate-500">
                 Want to continue without signing in?{" "}
                 <Link
@@ -373,7 +373,7 @@ export default function Login() {
                   Browse Products &rarr;
                 </Link>
               </p>
-            </div>
+            </div> */}
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-200 pt-5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">

@@ -49,7 +49,7 @@ export default function ShopProductRail({
         />
       )}
 
-      <div className="relative mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
+      <div className="relative mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-384">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div className="min-w-0">
             {subtitle ? (
@@ -175,7 +175,7 @@ export default function ShopProductRail({
                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                       />
                       {hasDiscount ? (
-                        <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                        <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-linear-to-r from-red-500 to-orange-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                           −{discountPct}%
                         </span>
                       ) : null}
@@ -184,7 +184,7 @@ export default function ShopProductRail({
                           Out of stock
                         </span>
                       ) : null}
-                      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-slate-950/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+                      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-linear-to-t from-slate-950/20 to-transparent opacity-0 transition group-hover:opacity-100" />
                     </span>
 
                     <span className="flex flex-1 flex-col justify-between p-3.5">

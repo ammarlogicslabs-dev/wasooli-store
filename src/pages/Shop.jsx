@@ -1427,7 +1427,7 @@ export default function Shop() {
       <div className="border-b border-slate-200/80 bg-white">
         <nav
           aria-label="Breadcrumb"
-          className="page-crumb page-offset mx-auto flex max-w-8xl 2xl:max-w-[1536px] flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8"
+          className="page-crumb page-offset mx-auto flex max-w-8xl 2xl:max-w-384 flex-wrap items-center gap-x-0 px-4 py-3 sm:px-6 lg:px-8"
         >
           <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>

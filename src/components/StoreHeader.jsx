@@ -507,7 +507,7 @@ export default function StoreHeader() {
                 <img
                   src="/wasooli.png"
                   alt="Wasooli Store - ISP Supplies"
-                  className="h-14 sm:h-16 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                  className="h-14 sm:h-16 w-auto object-contain transition-transform duration-200"
                 />
               </Link>
             </div>

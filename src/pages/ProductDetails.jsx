@@ -231,13 +231,21 @@ export default function ProductDetail() {
 
   const priceTiers = getActiveTier(product);
   const unitPrice = getUnitPrice(product, quantity);
-  const hasDiscount = product.oldPrice > product.price;
+  const basePrice = Number(product.price) || 0;
+  const originalOldPrice = Number(product.oldPrice) || 0;
+  const anchorPrice =
+    originalOldPrice > unitPrice
+      ? originalOldPrice
+      : basePrice > unitPrice
+      ? basePrice
+      : 0;
+  const hasDiscount = anchorPrice > unitPrice;
   const discount = hasDiscount
-    ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+    ? Math.round(((anchorPrice - unitPrice) / anchorPrice) * 100)
     : 0;
   const saveVsBase =
-    priceTiers.length > 0 && Number(product.price) > unitPrice
-      ? Number(product.price) - unitPrice
+    priceTiers.length > 0 && basePrice > unitPrice
+      ? basePrice - unitPrice
       : 0;
   const nextTier = priceTiers.find((tier) => quantity < tier.minQty);
   const nextTierSave =
@@ -351,7 +359,9 @@ export default function ProductDetail() {
           <span aria-hidden="true">/</span>
           <Link to="/shop">Shop</Link>
           <span aria-hidden="true">/</span>
-          <Link to="/shop">{product.category}</Link>
+          <Link to={`/shop?category=${encodeURIComponent(product.category)}`}>
+            {product.category}
+          </Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page" className="max-w-48 truncate sm:max-w-md">
             {product.title}
@@ -486,7 +496,12 @@ export default function ProductDetail() {
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600">
             {product.brand ? `${product.brand} · ` : ""}
-            {product.category}
+            <Link
+              to={`/shop?category=${encodeURIComponent(product.category)}`}
+              className="hover:underline transition-colors hover:text-brand-700"
+            >
+              {product.category}
+            </Link>
           </p>
           <h1 className="mt-2 text-xl font-bold leading-snug tracking-tight text-slate-900 sm:text-2xl lg:text-[1.7rem]">
             {product.title}
@@ -533,7 +548,7 @@ export default function ProductDetail() {
               {hasDiscount ? (
                 <>
                   <span className="pb-1 text-sm text-slate-400 line-through">
-                    {formatPrice(product.oldPrice)}
+                    {formatPrice(anchorPrice)}
                   </span>
                   <span className="mb-0.5 rounded-md bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">
                     −{discount}%
@@ -567,7 +582,14 @@ export default function ProductDetail() {
                             }`}
                         >
                           <td className="px-3 py-2">{formatTierRange(tier)}</td>
-                          <td className="px-3 py-2">{formatPrice(tier.price)}</td>
+                          <td className="px-3 py-2">
+                            <span>{formatPrice(tier.price)}</span>
+                            {anchorPrice > tier.price ? (
+                              <span className="ml-1.5 rounded bg-red-50 px-1 py-0.5 text-[10px] font-bold text-red-600">
+                                −{Math.round(((anchorPrice - tier.price) / anchorPrice) * 100)}%
+                              </span>
+                            ) : null}
+                          </td>
                         </tr>
                       );
                     })}
@@ -723,7 +745,7 @@ export default function ProductDetail() {
             {hasDiscount ? (
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-sm text-slate-400 line-through">
-                  {formatPrice(product.oldPrice)}
+                  {formatPrice(anchorPrice)}
                 </span>
                 <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600">
                   −{discount}%
@@ -758,7 +780,14 @@ export default function ProductDetail() {
                             }`}
                         >
                           <td className="px-2.5 py-1.5">{formatTierRange(tier)}</td>
-                          <td className="px-2.5 py-1.5">{formatPrice(tier.price)}</td>
+                          <td className="px-2.5 py-1.5">
+                            <span>{formatPrice(tier.price)}</span>
+                            {anchorPrice > tier.price ? (
+                              <span className="ml-1.5 rounded bg-red-50 px-1 py-0.5 text-[10px] font-bold text-red-600">
+                                −{Math.round(((anchorPrice - tier.price) / anchorPrice) * 100)}%
+                              </span>
+                            ) : null}
+                          </td>
                         </tr>
                       );
                     })}

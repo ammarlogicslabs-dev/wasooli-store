@@ -42,16 +42,16 @@ const EASE = [0.22, 1, 0.36, 1];
 
 
 const CATEGORY_FALLBACK = [
-  { name: "Cabling & Connectivity", image: "/products/cat6-cable.jpg" },
-  { name: "Wireless", image: "/products/ceiling-access-point.jpg" },
-  { name: "Routing", image: "/products/wifi6-router.jpg" },
-  { name: "Optical & Fiber", image: "/products/media-converter.jpg" },
-  { name: "Switching", image: "/products/gigabit-switch.jpg" },
-  { name: "Network Security", image: "/products/datacenter-switch.jpg" },
-  { name: "PoE", image: "/products/poe-injector.jpg" },
-  { name: "Adapters & NICs", image: "/products/pcie-network-card.jpg" },
-  { name: "Power & Racks", image: "/products/bulk-rack.jpg" },
-  { name: "Tools & Accessories", image: "/products/cable-test-2.jpg" },
+  { name: "Tools & Accessories", image: "/categories/transparent/tools.png", fallbackCount: 12 },
+  { name: "Cabling & Connectivity", image: "/categories/transparent/cable.png", fallbackCount: 11 },
+  { name: "Wireless", image: "/categories/transparent/wireless.png", fallbackCount: 6 },
+  { name: "Optical & Fiber", image: "/categories/transparent/optical.png", fallbackCount: 6 },
+  { name: "Switching", image: "/categories/transparent/switch.png", fallbackCount: 10 },
+  { name: "Network Security", image: "/categories/transparent/network.png", fallbackCount: 7 },
+  { name: "PoE", image: "/categories/transparent/PoE.png", fallbackCount: 8 },
+  { name: "Routing", image: "/categories/transparent/router.png", fallbackCount: 15 },
+  { name: "Adapters & NICs", image: "/categories/transparent/adapter.png", fallbackCount: 9 },
+  { name: "Power & Racks", image: "/categories/transparent/power-racks.png", fallbackCount: 5 },
 ];
 
 const STEPS = [
@@ -510,7 +510,7 @@ function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
   );
 }
 
-/* ─── C. Category grid (Circular Premium Pods with Swiper & Pagination) ──────── */
+/* ─── C. Category grid (Glowing 3D Glass Orbs with Swiper & Pagination) ──────── */
 
 function CategoryGrid({ items, loading }) {
   const [swiper, setSwiper] = useState(null);
@@ -528,154 +528,265 @@ function CategoryGrid({ items, loading }) {
   return (
     <section
       id="categories"
-      className="scroll-mt-[calc(var(--store-header-height,72px)+1rem)] border-b border-slate-200/80 bg-gradient-to-b from-white via-white to-slate-50/70"
+      className="scroll-mt-[calc(var(--store-header-height,72px)+1rem)] bg-[#f8fafc] py-4 sm:py-6 lg:py-8"
       aria-labelledby="categories-heading"
     >
-      <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:max-w-[1536px]">
-        <SectionHeading
-          eyebrow="Shop by category"
-          title="Find the right gear faster"
-          id="categories-heading"
-          linkLabel="All categories"
-        />
-
-        {loading ? (
-          <div className="flex gap-4 overflow-hidden py-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`cat-skel-${i}`} className="flex flex-col items-center shrink-0 w-28">
-                <div className="size-32 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 rounded-full animate-pulse bg-slate-100" />
-                <div className="mt-3 h-3 w-16 animate-pulse rounded bg-slate-200" />
+      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+        {/* Main Rounded White Container Card matching image */}
+        {/* <div className="relative rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 lg:p-10 shadow-[0_12px_45px_-15px_rgba(0,112,243,0.08)]"> */}
+          {/* Header Inside Card */}
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:mb-8">
+            <div>
+              {/* Pill Tag: • SHOP BY CATEGORY */}
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#eaf3ff] px-3.5 py-1 text-[11px] font-bold tracking-[0.16em] uppercase text-[#0070f3]">
+                <span className="size-1.5 rounded-full bg-[#0070f3]" aria-hidden="true" />
+                <span>SHOP BY CATEGORY</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="group/cat-rail relative mt-3 sm:mt-5">
-            {/* Left navigation arrow */}
-            <button
-              type="button"
-              aria-label="Previous categories"
-              onClick={() => swiper?.slidePrev()}
-              className="absolute left-0 top-16 sm:top-[72px] md:top-20 lg:top-[88px] xl:top-24 2xl:top-[104px] z-20 grid size-10 -translate-x-2 sm:-translate-x-3 -translate-y-1/2 place-items-center rounded-full border border-slate-200/90 bg-white/95 text-slate-700 shadow-md backdrop-blur-sm transition-all duration-200 hover:border-[#2C9AFF] hover:text-[#2C9AFF] hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C9AFF]/50 opacity-100 sm:opacity-0 sm:group-hover/cat-rail:opacity-100"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {/* Right navigation arrow */}
-            <button
-              type="button"
-              aria-label="Next categories"
-              onClick={() => swiper?.slideNext()}
-              className="absolute right-0 top-16 sm:top-[72px] md:top-20 lg:top-[88px] xl:top-24 2xl:top-[104px] z-20 grid size-10 translate-x-2 sm:translate-x-3 -translate-y-1/2 place-items-center rounded-full border border-slate-200/90 bg-white/95 text-slate-700 shadow-md backdrop-blur-sm transition-all duration-200 hover:border-[#2C9AFF] hover:text-[#2C9AFF] hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C9AFF]/50 opacity-100 sm:opacity-0 sm:group-hover/cat-rail:opacity-100"
-            >
-              <ChevronRight size={18} />
-            </button>
-
-            {/* Circular Category Slider (Auto-slider with 7 visible cards on PC screen) */}
-            <Swiper
-              modules={[Keyboard, A11y, Autoplay]}
-              onSwiper={setSwiper}
-              onSlideChange={(s) => setActiveIndex(s.realIndex ?? s.activeIndex)}
-              keyboard={{ enabled: true }}
-              loop={displayItems.length > 7}
-              speed={750}
-              autoplay={
-                reduce
-                  ? false
-                  : {
-                    delay: 2600,
-                    disableOnInteraction: false,
-                    pauseOnMouseEnter: true,
-                  }
-              }
-              spaceBetween={10}
-              slidesPerView={2.8}
-              breakpoints={{
-                480: { slidesPerView: 3.5, spaceBetween: 10 },
-                640: { slidesPerView: 4.5, spaceBetween: 12 },
-                768: { slidesPerView: 5.5, spaceBetween: 12 },
-                1024: { slidesPerView: 7, spaceBetween: 12 },
-                1280: { slidesPerView: 7, spaceBetween: 14 },
-                1536: { slidesPerView: 8, spaceBetween: 16 },
-                1920: { slidesPerView: 9, spaceBetween: 16 },
-              }}
-              className="overflow-hidden py-3 px-1"
-            >
-              {loopCategories.map((cat, index) => (
-                <SwiperSlide key={`${cat.name}-${index}`} className="!h-auto">
-                  <motion.div
-                    initial={reduce ? false : { opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{
-                      duration: 0.35,
-                      delay: Math.min(index * 0.04, 0.28),
-                      ease: EASE,
-                    }}
-                  >
-                    <Link
-                      to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                      className="group flex flex-col items-center focus:outline-none"
-                      aria-label={`Browse ${cat.name}`}
-                    >
-                      {/* Circle Avatar Pod - Slightly enlarged with full image fit */}
-                      <div className="relative flex aspect-square size-28 sm:size-36 md:size-40 lg:size-44 xl:size-48 2xl:size-52 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-[#f1f3f6] shadow-xs transition-all duration-300 group-hover:-translate-y-1 group-hover:border-brand-500 group-hover:bg-white group-hover:shadow-[0_18px_32px_-8px_rgba(44,154,255,0.35)]">
-                        {cat.image ? (
-                          <img
-                            src={resolveMediaUrl(cat.image)}
-                            alt={cat.name}
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = "/products/gigabit-switch.jpg";
-                            }}
-                            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-                          />
-                        ) : (
-                          <Network size={34} className="text-slate-400" />
-                        )}
-                      </div>
-
-                      {/* Title Below Circle */}
-                      <p className="mt-3 max-w-32.5 sm:max-w-37.5 lg:max-w-42.5 xl:max-w-47.5 text-center text-sm font-semibold leading-tight text-slate-800 transition-colors duration-200 group-hover:text-brand-500 line-clamp-2 min-h-[2.2rem]">
-                        {cat.name}
-                      </p>
-                      {/* {cat.count > 0 ? (
-                        <span className="mt-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 transition-colors duration-200 group-hover:bg-brand-500/10 group-hover:text-[#1875d1]">
-                          {cat.count} products
-                        </span>
-                      ) : null} */}
-                    </Link>
-                  </motion.div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-
-            {/* Pagination Dots */}
-            <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
-              {displayItems.map((cat, idx) => {
-                const isActive = (activeIndex % displayItems.length) === idx;
-                return (
-                  <button
-                    key={`dot-${cat.name}`}
-                    type="button"
-                    onClick={() => {
-                      if (swiper?.params?.loop) {
-                        swiper.slideToLoop(idx);
-                      } else {
-                        swiper?.slideTo(idx);
-                      }
-                    }}
-                    aria-label={`Go to slide ${idx + 1}`}
-                    className={`h-2 rounded-full transition-all duration-300 ${isActive
-                        ? "w-7 bg-brand-500 shadow-[0_0_10px_rgba(44,154,255,0.55)]"
-                        : "w-2 bg-slate-300 hover:bg-slate-400"
-                      }`}
-                  />
-                );
-              })}
+              {/* Title */}
+              <h2
+                id="categories-heading"
+                className="mt-2.5 text-2xl font-black tracking-tight text-[#0a1e3f] sm:text-3xl lg:text-[32px]"
+              >
+                Find the right gear faster
+              </h2>
+              {/* Blue accent underline */}
+              <div className="mt-2.5 h-1 w-9 rounded-full bg-[#0070f3]" aria-hidden="true" />
             </div>
+
+            {/* All categories > Button */}
+            <Link
+              to="/shop"
+              className="hidden sm:inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sky-300/80 bg-white px-4 py-1.5 text-xs sm:text-sm font-bold text-[#0070f3] shadow-xs transition-all duration-200 hover:border-[#0070f3] hover:bg-sky-50 active:scale-95"
+            >
+              <span>All categories</span>
+              <ChevronRight size={15} aria-hidden="true" />
+            </Link>
           </div>
-        )}
+
+          {loading ? (
+            <div className="flex gap-4 overflow-hidden py-6">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={`cat-skel-${i}`} className="flex flex-col items-center shrink-0 w-32">
+                  <div className="size-28 sm:size-32 rounded-full animate-pulse bg-slate-100" />
+                  <div className="mt-3 h-3.5 w-20 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-1.5 h-3 w-14 animate-pulse rounded bg-slate-100" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative mt-2">
+              {/* Left Circular Arrow */}
+              <button
+                type="button"
+                aria-label="Previous categories"
+                onClick={() => swiper?.slidePrev()}
+                className="absolute left-0 top-[68px] sm:top-[76px] md:top-[80px] lg:top-[83px] xl:top-[86px] z-30 flex size-9 sm:size-10 -translate-x-3 sm:-translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
+              >
+                <ChevronLeft size={19} />
+              </button>
+
+              {/* Right Circular Arrow */}
+              <button
+                type="button"
+                aria-label="Next categories"
+                onClick={() => swiper?.slideNext()}
+                className="absolute right-0 top-[68px] sm:top-[76px] md:top-[80px] lg:top-[83px] xl:top-[86px] z-30 flex size-9 sm:size-10 translate-x-3 sm:translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
+              >
+                <ChevronRight size={19} />
+              </button>
+
+              {/* Swiper with 7 items visible on PC desktop */}
+              <Swiper
+                modules={[Keyboard, A11y, Autoplay]}
+                onSwiper={setSwiper}
+                onSlideChange={(s) => setActiveIndex(s.realIndex ?? s.activeIndex)}
+                keyboard={{ enabled: true }}
+                loop={displayItems.length > 7}
+                speed={700}
+                autoplay={
+                  reduce
+                    ? false
+                    : {
+                        delay: 2800,
+                        disableOnInteraction: false,
+                        pauseOnMouseEnter: true,
+                      }
+                }
+                spaceBetween={12}
+                slidesPerView={2.5}
+                breakpoints={{
+                  480: { slidesPerView: 3.2, spaceBetween: 14 },
+                  640: { slidesPerView: 4.2, spaceBetween: 16 },
+                  768: { slidesPerView: 5.2, spaceBetween: 16 },
+                  1024: { slidesPerView: 7, spaceBetween: 16 },
+                  1280: { slidesPerView: 7, spaceBetween: 18 },
+                  1536: { slidesPerView: 7, spaceBetween: 20 },
+                }}
+                className="overflow-visible py-5 px-1"
+              >
+                {loopCategories.map((cat, index) => {
+                  const productCount = cat.count || cat.fallbackCount || 10;
+                  return (
+                    <SwiperSlide key={`${cat.name}-${index}`} className="!h-auto">
+                      <motion.div
+                        initial={reduce ? false : { opacity: 0, scale: 0.92 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{
+                          duration: 0.35,
+                          delay: Math.min(index * 0.04, 0.25),
+                          ease: EASE,
+                        }}
+                      >
+                        <Link
+                          to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                          className="group flex flex-col items-center focus:outline-none pt-1 pb-2"
+                          aria-label={`Browse ${cat.name}`}
+                        >
+                          {/* 3D Glass Bubble Orb with Concentric #0070F3 Water-Ripples */}
+                          <div className="relative flex aspect-square size-24 sm:size-28 md:size-[120px] lg:size-[126px] xl:size-[132px] items-center justify-center">
+                            {/* 3D Translucent Glass Orb Sphere with #0070F3 Shade */}
+                            <div
+                              className="relative size-full rounded-full border-[1.5px] border-white/95 p-2.5 sm:p-3 md:p-3.5 backdrop-blur-xs flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1.5 shadow-[inset_0_0_24px_rgba(0,112,243,0.38),inset_0_10px_18px_rgba(255,255,255,0.98),inset_0_-16px_26px_rgba(0,85,210,0.55)] group-hover:shadow-[inset_0_0_26px_rgba(0,112,243,0.48),inset_0_10px_18px_rgba(255,255,255,1),inset_0_-16px_26px_rgba(0,85,210,0.7)]"
+                              style={{
+                                background:
+                                  "radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 35%, rgba(210, 235, 255, 0.15) 60%, rgba(0, 112, 243, 0.25) 85%, rgba(0, 85, 210, 0.5) 100%)",
+                              }}
+                            >
+                              {/* Primary upper-left tilted curved specular gloss */}
+                              <div
+                                className="pointer-events-none absolute left-[12%] top-[8%] h-[35%] w-[48%] -rotate-[28deg] rounded-full z-20"
+                                style={{
+                                  background:
+                                    "radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0) 80%)",
+                                  filter: "blur(0.5px)",
+                                }}
+                              />
+
+                              {/* Top rim specular edge highlight */}
+                              <div
+                                className="pointer-events-none absolute inset-x-[18%] top-[3%] h-[20%] rounded-t-full z-20"
+                                style={{
+                                  background:
+                                    "radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                                }}
+                              />
+
+                              {/* Secondary pinpoint specular sparkle */}
+                              <div className="pointer-events-none absolute left-[24%] top-[14%] size-1.5 rounded-full bg-white shadow-[0_0_5px_2px_rgba(255,255,255,0.9)] z-20" />
+
+                              {/* Bottom-right internal caustic light bounce */}
+                              <div
+                                className="pointer-events-none absolute right-[12%] bottom-[10%] h-[30%] w-[46%] rotate-[25deg] rounded-full z-20"
+                                style={{
+                                  background:
+                                    "radial-gradient(ellipse at 50% 70%, rgba(190, 230, 255, 0.8) 0%, rgba(0, 112, 243, 0.35) 55%, transparent 80%)",
+                                  filter: "blur(1px)",
+                                }}
+                              />
+
+                              {/* Bottom inner glass rim crescent */}
+                              <div
+                                className="pointer-events-none absolute inset-x-[20%] bottom-[4%] h-[15%] rounded-b-full z-20"
+                                style={{
+                                  background:
+                                    "radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(160, 215, 255, 0.35) 50%, transparent 85%)",
+                                }}
+                              />
+
+                              {/* Floating Product Image inside Glass Bubble */}
+                              {cat.image ? (
+                                <img
+                                  src={resolveMediaUrl(cat.image)}
+                                  alt={cat.name}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = "/categories/transparent/router.png";
+                                  }}
+                                  className="relative z-10 max-h-[74%] max-w-[74%] object-contain drop-shadow-[0_8px_16px_rgba(0,40,110,0.22)] transition-transform duration-300 ease-out group-hover:scale-110"
+                                />
+                              ) : (
+                                <Network size={32} className="text-[#0070f3]" />
+                              )}
+                            </div>
+
+                            {/* Concentric #0070F3 Glowing Floor Water-Ripples */}
+                            <div className="pointer-events-none absolute -bottom-4.5 inset-x-[-15%] flex items-center justify-center h-8 z-0">
+                              <svg viewBox="0 0 180 40" className="w-full h-full overflow-visible">
+                                <defs>
+                                  <radialGradient id={`glow-${index}`} cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stopColor="#0070f3" stopOpacity="0.65" />
+                                    <stop offset="45%" stopColor="#0070f3" stopOpacity="0.32" />
+                                    <stop offset="80%" stopColor="#0055c8" stopOpacity="0.1" />
+                                    <stop offset="100%" stopColor="#0055c8" stopOpacity="0" />
+                                  </radialGradient>
+                                  <linearGradient id={`ringGrad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#0070f3" stopOpacity="0.1" />
+                                    <stop offset="25%" stopColor="#0070f3" stopOpacity="0.8" />
+                                    <stop offset="50%" stopColor="#80bfff" stopOpacity="1" />
+                                    <stop offset="75%" stopColor="#0070f3" stopOpacity="0.8" />
+                                    <stop offset="100%" stopColor="#0070f3" stopOpacity="0.1" />
+                                  </linearGradient>
+                                </defs>
+                                {/* Ambient #0070F3 floor glow */}
+                                <ellipse cx="90" cy="20" rx="80" ry="17" fill={`url(#glow-${index})`} filter="blur(3px)" />
+                                {/* Outer faint wave ripple */}
+                                <ellipse cx="90" cy="20" rx="72" ry="14" fill="none" stroke="#0070f3" strokeWidth="1.2" strokeOpacity="0.45" />
+                                {/* Middle wave ripple */}
+                                <ellipse cx="90" cy="20" rx="52" ry="10.5" fill="none" stroke={`url(#ringGrad-${index})`} strokeWidth="1.6" strokeOpacity="0.85" />
+                                {/* Inner bright wave ripple */}
+                                <ellipse cx="90" cy="20" rx="32" ry="6.5" fill="none" stroke="#d6e9ff" strokeWidth="1.8" strokeOpacity="0.95" />
+                                {/* Shadow right at contact point */}
+                                <ellipse cx="90" cy="18" rx="16" ry="4" fill="#003882" fillOpacity="0.25" filter="blur(1.5px)" />
+                              </svg>
+                            </div>
+                          </div>
+
+                          {/* Category Title */}
+                          <p className="mt-3.5 text-center text-xs sm:text-[13px] font-bold leading-tight text-[#0a1e3f] transition-colors duration-200 group-hover:text-[#0070f3] line-clamp-1">
+                            {cat.name}
+                          </p>
+
+                          {/* Product Count Pill */}
+                          <span className="mt-1.5 inline-block rounded-full border border-sky-200/90 bg-[#f0f7ff] px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#0070f3] transition-colors duration-200 group-hover:bg-[#0070f3] group-hover:text-white">
+                            {productCount} products
+                          </span>
+                        </Link>
+                      </motion.div>
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+
+              {/* Pagination Dots at Bottom */}
+              <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
+                {displayItems.slice(0, 7).map((cat, idx) => {
+                  const isActive = (activeIndex % displayItems.length) === idx;
+                  return (
+                    <button
+                      key={`dot-${cat.name}`}
+                      type="button"
+                      onClick={() => {
+                        if (swiper?.params?.loop) {
+                          swiper.slideToLoop(idx);
+                        } else {
+                          swiper?.slideTo(idx);
+                        }
+                      }}
+                      aria-label={`Go to slide ${idx + 1}`}
+                      className={`rounded-full transition-all duration-300 cursor-pointer ${
+                        isActive
+                          ? "w-4 h-1.5 bg-[#0070f3]"
+                          : "size-1.5 bg-sky-200 hover:bg-sky-300"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        {/* </div> */}
       </div>
     </section>
   );
@@ -945,7 +1056,7 @@ export default function Home() {
   const { categoryItems } = useMemo(() => {
     const map = new Map();
     CATEGORY_FALLBACK.forEach((fb) => {
-      map.set(fb.name, { name: fb.name, count: 0, image: fb.image });
+      map.set(fb.name, { name: fb.name, count: 0, image: fb.image, fallbackCount: fb.fallbackCount });
     });
     products.forEach((p) => {
       const name = normalizeCategory(p.category);
@@ -1031,6 +1142,6 @@ export default function Home() {
       <ShopProductRail subtitle="What people buy" title="Trending now" products={trendingProducts} tone="light" autoplay />
       <PromoBanner />
       <HowItWorks />
-          </main>
+    </main> 
   );
 }
