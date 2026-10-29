@@ -55,7 +55,7 @@ const EMPTY = {
   slug: "",
   category: "",
   subcategory: "",
-  brand: "Wasooli",
+  brand: "",
   portType: "",
   condition: "New Product",
   price: "",
@@ -407,7 +407,7 @@ export default function ProductFormPage() {
               </div>
             ) : null} */}
 
-            {field("brand", "Brand", { placeholder: "e.g. Cisco, TP-Link, Ubiquiti, Wasooli" })}
+            {field("brand", "Brand", { placeholder: "e.g. Cisco, TP-Link, Ubiquiti" })}
 
             <label className="block text-sm font-semibold text-slate-900">
               Port type

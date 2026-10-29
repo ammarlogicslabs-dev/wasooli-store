@@ -12,21 +12,27 @@ import {
   Heart,
   KeyRound,
   LogOut,
+  Mail,
   MapPin,
   Navigation,
   Package,
   PackageCheck,
   Phone,
+  Save,
   ShoppingBag,
+  Star,
   Trash2,
   Truck,
+  User,
+  X,
 } from "lucide-react";
 import QuantityStepper from "../components/QuantityStepper";
 import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
-import { fetchMyOrders } from "../services/storage/adminDataService";
+import { fetchMyOrders, fetchSavedAddress, saveSavedAddress } from "../services/storage/adminDataService";
+import { getUserReviewedOrderMap, submitReview } from "../services/storage/reviewService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { PASSWORD_HINT, passwordPolicyError } from "../utils/passwordPolicy";
@@ -147,7 +153,7 @@ function Section({ icon: Icon, title, detail, children }) {
 }
 
 export default function Account() {
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout, changePassword, updateProfile } = useAuth();
   const {
     products,
     items,
@@ -168,6 +174,31 @@ export default function Account() {
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
+
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    address: user?.address || "",
+    city: user?.city || "",
+    province: user?.province || "Punjab",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [reviewModal, setReviewModal] = useState({
+    open: false,
+    order: null,
+    item: null,
+    rating: 5,
+    hoverRating: 0,
+    comment: "",
+    submitting: false,
+  });
+
+  const [reviewedMap, setReviewedMap] = useState(() =>
+    getUserReviewedOrderMap(user?.email || user?.id)
+  );
+
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     next: "",
@@ -176,10 +207,113 @@ export default function Account() {
   const [passwordError, setPasswordError] = useState("");
   // Each password field has its own show/hide state, so they work independently.
   const [visiblePassword, setVisiblePassword] = useState(HIDDEN_PASSWORDS);
-  const [section, setSection] = useState("password");
+  const [section, setSection] = useState("profile");
 
   const toggleVisible = (field) =>
     setVisiblePassword((current) => ({ ...current, [field]: !current[field] }));
+
+  useEffect(() => {
+    setReviewedMap(getUserReviewedOrderMap(user?.email || user?.id));
+    const handleReviewAdded = () => {
+      setReviewedMap(getUserReviewedOrderMap(user?.email || user?.id));
+    };
+    window.addEventListener("wasooli-review-added", handleReviewAdded);
+    return () => window.removeEventListener("wasooli-review-added", handleReviewAdded);
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSavedAddress()
+      .then((addr) => {
+        if (!cancelled && addr) {
+          setProfileForm((prev) => ({
+            ...prev,
+            name: user?.name || addr.fullName || prev.name,
+            email: user?.email || prev.email,
+            phone: addr.phone || user?.phone || prev.phone,
+            address: addr.address || user?.address || prev.address,
+            city: addr.city || user?.city || prev.city,
+            province: addr.province || user?.province || prev.province,
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  async function handleProfileSubmit(e) {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      if (updateProfile) {
+        await updateProfile({
+          name: profileForm.name.trim(),
+          email: profileForm.email.trim(),
+          phone: profileForm.phone.trim(),
+          address: profileForm.address.trim(),
+          city: profileForm.city.trim(),
+          province: profileForm.province.trim(),
+        });
+      }
+      await saveSavedAddress({
+        fullName: profileForm.name.trim(),
+        phone: profileForm.phone.trim(),
+        address: profileForm.address.trim(),
+        city: profileForm.city.trim(),
+        province: profileForm.province.trim(),
+      });
+      toast.success("Profile & shipping address updated successfully!");
+    } catch {
+      toast.error("Could not update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  function openReviewModal(order, item) {
+    setReviewModal({
+      open: true,
+      order,
+      item,
+      rating: 5,
+      hoverRating: 0,
+      comment: "",
+      submitting: false,
+    });
+  }
+
+  function handleReviewSubmit(e) {
+    e.preventDefault();
+    if (!reviewModal.item || !reviewModal.order) return;
+    setReviewModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      submitReview({
+        orderId: reviewModal.order.id,
+        productId: reviewModal.item.id || reviewModal.item.productId || reviewModal.item.slug,
+        productSlug: reviewModal.item.slug || reviewModal.item.id,
+        productTitle: reviewModal.item.title || "Product",
+        productImage: reviewModal.item.image || "",
+        rating: reviewModal.rating,
+        comment: reviewModal.comment,
+        user,
+      });
+      toast.success("Thank you! Your verified product review has been submitted.");
+      setReviewModal({
+        open: false,
+        order: null,
+        item: null,
+        rating: 5,
+        hoverRating: 0,
+        comment: "",
+        submitting: false,
+      });
+    } catch {
+      toast.error("Failed to submit review.");
+      setReviewModal((prev) => ({ ...prev, submitting: false }));
+    }
+  }
 
   useEffect(() => {
     document.title = "My account | Wasooli Store";
@@ -307,18 +441,19 @@ export default function Account() {
   }
 
   const links = [
-    { id: "password", label: "Change password" },
+    { id: "profile", label: "My Profile", detail: user?.name || "Edit details" },
+    {
+      id: "orders",
+      label: "Order history",
+      detail: orders.length === 0 ? "No orders yet" : `${orders.length} orders`,
+    },
     {
       id: "notifications",
       label: "Notifications",
       detail: null,
       badge: notificationCount,
     },
-    {
-      id: "orders",
-      label: "Order history",
-      detail: orders.length === 0 ? "No orders yet" : `${orders.length} orders`,
-    },
+    { id: "password", label: "Change password" },
     {
       id: "wishlist",
       label: "Wishlist",
@@ -329,7 +464,6 @@ export default function Account() {
       label: "Cart",
       detail: cartCount === 0 ? "Empty" : `${cartCount} ${cartCount === 1 ? "item" : "items"}`,
     },
-    
   ];
 
   return (
@@ -423,6 +557,131 @@ export default function Account() {
           </aside>
 
           <div>
+            {section === "profile" ? (
+              <Section
+                icon={User}
+                title="Customer Profile & Address"
+                detail="Manage your personal details and default shipping address for faster checkout."
+              >
+                <form onSubmit={handleProfileSubmit} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                        Full Name
+                      </label>
+                      <input
+                        id="profile-name"
+                        type="text"
+                        required
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                        placeholder="e.g. Muhammad Ammar"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="profile-phone" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                        Phone Number
+                      </label>
+                      <input
+                        id="profile-phone"
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        placeholder="e.g. 0300 1234567"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="profile-email" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                      Email Address
+                    </label>
+                    <input
+                      id="profile-email"
+                      type="email"
+                      required
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                      placeholder="e.g. name@example.com"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-4">
+                    <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                      <MapPin size={15} className="text-brand-500" />
+                      Default Shipping Address
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="profile-address" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                          Street / Office Address
+                        </label>
+                        <input
+                          id="profile-address"
+                          type="text"
+                          value={profileForm.address}
+                          onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                          placeholder="e.g. Office #12, 3rd Floor, Commercial Plaza"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                        />
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label htmlFor="profile-city" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                            City
+                          </label>
+                          <input
+                            id="profile-city"
+                            type="text"
+                            value={profileForm.city}
+                            onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                            placeholder="e.g. Lahore, Karachi, Islamabad"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="profile-province" className="mb-1.5 block text-sm font-semibold text-slate-900">
+                            Province
+                          </label>
+                          <select
+                            id="profile-province"
+                            value={profileForm.province}
+                            onChange={(e) => setProfileForm({ ...profileForm, province: e.target.value })}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                          >
+                            <option value="Punjab">Punjab</option>
+                            <option value="Sindh">Sindh</option>
+                            <option value="Khyber Pakhtunkhwa">Khyber Pakhtunkhwa</option>
+                            <option value="Balochistan">Balochistan</option>
+                            <option value="Islamabad Capital Territory">Islamabad Capital Territory</option>
+                            <option value="Azad Kashmir">Azad Kashmir</option>
+                            <option value="Gilgit-Baltistan">Gilgit-Baltistan</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60 shadow-xs"
+                    >
+                      <Save size={16} />
+                      {savingProfile ? "Saving changes..." : "Save Profile"}
+                    </button>
+                  </div>
+                </form>
+              </Section>
+            ) : null}
+
             {section === "password" ? (
             <Section
               icon={KeyRound}
@@ -637,12 +896,56 @@ export default function Account() {
                           </div>
                         </div>
 
-                        <ul className="mt-3 space-y-1">
-                          {(order.items || []).map((item) => (
-                            <li key={`${order.id}-${item.id}`} className="text-sm text-slate-600">
-                              {item.title} · Qty {item.quantity}
-                            </li>
-                          ))}
+                        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/50 p-2 sm:p-2.5 space-y-1.5">
+                          {(order.items || []).map((item) => {
+                            const revKey1 = `${order.id}_${item.id}`;
+                            const revKey2 = `${order.id}_${item.slug}`;
+                            const revKey3 = `${order.id}_${item.productId}`;
+                            const userReview = reviewedMap[revKey1] || reviewedMap[revKey2] || reviewedMap[revKey3];
+
+                            return (
+                              <li
+                                key={`${order.id}-${item.id || item.title}`}
+                                className="flex flex-wrap items-center justify-between gap-2.5 pt-1.5 first:pt-0"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  {item.image && (
+                                    <img
+                                      src={resolveMediaUrl(item.image)}
+                                      alt=""
+                                      className="size-9 rounded-lg border border-slate-200 object-cover bg-white shrink-0"
+                                    />
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="truncate text-xs sm:text-sm font-semibold text-slate-900">{item.title}</p>
+                                    <p className="text-[11px] text-slate-500">
+                                      Qty: {item.quantity} · {formatPrice(item.price)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {isDelivered && (
+                                  <div className="shrink-0">
+                                    {userReview ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                                        <CheckCircle2 size={12} className="text-emerald-600" />
+                                        Reviewed ({userReview.rating}★)
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => openReviewModal(order, item)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-amber-500 to-amber-600 px-3 py-1 text-xs font-bold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 cursor-pointer"
+                                      >
+                                        <Star size={12} fill="currentColor" />
+                                        Write Review
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                           <div className="flex items-center justify-between gap-2">
                           <p className="mt-2.5 text-xs text-slate-500">
@@ -999,6 +1302,101 @@ export default function Account() {
           </div>
         </div>
       </div>
+      {/* Review Modal Dialog */}
+      {reviewModal.open && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setReviewModal({ ...reviewModal, open: false })}
+              className="absolute right-4 top-4 grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <span className="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-500">
+                <Star size={20} fill="currentColor" />
+              </span>
+              <div className="min-w-0 pr-6">
+                <h3 className="text-base font-bold text-slate-900 truncate">Rate & Review Product</h3>
+                <p className="text-xs text-slate-500 truncate">{reviewModal.item?.title}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} className="mt-4 space-y-4">
+              {/* Star selector */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Overall Rating
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const active = (reviewModal.hoverRating || reviewModal.rating) >= star;
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setReviewModal((prev) => ({ ...prev, hoverRating: star }))}
+                        onMouseLeave={() => setReviewModal((prev) => ({ ...prev, hoverRating: 0 }))}
+                        onClick={() => setReviewModal((prev) => ({ ...prev, rating: star }))}
+                        className="cursor-pointer transition-transform hover:scale-115 focus:outline-none"
+                      >
+                        <Star
+                          size={28}
+                          className={active ? "text-amber-400" : "text-slate-200"}
+                          fill={active ? "currentColor" : "none"}
+                        />
+                      </button>
+                    );
+                  })}
+                  <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
+                    {reviewModal.rating === 5 && "5 Stars — Excellent"}
+                    {reviewModal.rating === 4 && "4 Stars — Good"}
+                    {reviewModal.rating === 3 && "3 Stars — Average"}
+                    {reviewModal.rating === 2 && "2 Stars — Poor"}
+                    {reviewModal.rating === 1 && "1 Star — Terrible"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Review Comment */}
+              <div>
+                <label htmlFor="review-comment" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Your Feedback / Comment
+                </label>
+                <textarea
+                  id="review-comment"
+                  rows={4}
+                  required
+                  value={reviewModal.comment}
+                  onChange={(e) => setReviewModal((prev) => ({ ...prev, comment: e.target.value }))}
+                  placeholder="Share details about product performance, speed, build quality, and delivery experience..."
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setReviewModal({ ...reviewModal, open: false })}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={reviewModal.submitting}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:from-amber-600 hover:to-amber-700 transition disabled:opacity-60 cursor-pointer"
+                >
+                  <Star size={13} fill="currentColor" />
+                  {reviewModal.submitting ? "Submitting..." : "Submit Verified Review"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

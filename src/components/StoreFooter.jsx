@@ -100,7 +100,7 @@ export default function StoreFooter() {
   return (
     <footer className="relative bg-[#020b24] text-slate-300 overflow-hidden font-sans">
       {/* Top Announcement Ticker Strip */}
-      <div className="relative z-20 overflow-hidden border-y border-sky-200/90 bg-[#dbeafe] text-slate-800 py-2 sm:py-2.5 shadow-xs">
+      <div className="relative z-20 overflow-hidden border-y border-sky-200/70 bg-[#c4dcfb] text-slate-800 py-2 sm:py-2.5 shadow-xs">
         <style>{`
           @keyframes footer-ticker {
             0% { transform: translateX(0); }

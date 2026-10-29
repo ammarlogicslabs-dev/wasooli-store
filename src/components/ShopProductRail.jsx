@@ -175,7 +175,7 @@ export default function ShopProductRail({
                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                       />
                       {hasDiscount ? (
-                        <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-linear-to-r from-red-500 to-orange-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                        <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                           −{discountPct}%
                         </span>
                       ) : null}

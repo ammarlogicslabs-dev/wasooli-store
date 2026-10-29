@@ -37,6 +37,7 @@ import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getRecentlyViewedIds, pushRecentlyViewed } from "../utils/recentlyViewed";
+import { getProductReviews } from "../services/storage/reviewService";
 import {
   formatTierRange,
   getActiveTier,
@@ -190,6 +191,21 @@ export default function ProductDetail() {
       if (addedTimer.current) window.clearTimeout(addedTimer.current);
     };
   }, []);
+
+  const [productReviews, setProductReviews] = useState(() =>
+    getProductReviews(product?.id, product?.slug)
+  );
+
+  useEffect(() => {
+    if (product) {
+      setProductReviews(getProductReviews(product.id, product.slug));
+    }
+    const handleReviewAdded = () => {
+      if (product) setProductReviews(getProductReviews(product.id, product.slug));
+    };
+    window.addEventListener("wasooli-review-added", handleReviewAdded);
+    return () => window.removeEventListener("wasooli-review-added", handleReviewAdded);
+  }, [product?.id, product?.slug]);
 
   useEffect(() => {
     document.title = product
@@ -416,7 +432,7 @@ export default function ProductDetail() {
                   </span>
                 ) : null}
                 {hasDiscount ? (
-                  <span className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1 text-[10px] font-bold text-white">
+                  <span className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 text-[10px] font-bold text-white shadow-md">
                     −{discount}% OFF
                   </span>
                 ) : null}
@@ -550,7 +566,7 @@ export default function ProductDetail() {
                   <span className="pb-1 text-sm text-slate-400 line-through">
                     {formatPrice(anchorPrice)}
                   </span>
-                  <span className="mb-0.5 rounded-md bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">
+                  <span className="mb-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
                     −{discount}%
                   </span>
                 </>
@@ -585,7 +601,7 @@ export default function ProductDetail() {
                           <td className="px-3 py-2">
                             <span>{formatPrice(tier.price)}</span>
                             {anchorPrice > tier.price ? (
-                              <span className="ml-1.5 rounded bg-red-50 px-1 py-0.5 text-[10px] font-bold text-red-600">
+                              <span className="ml-1.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                                 −{Math.round(((anchorPrice - tier.price) / anchorPrice) * 100)}%
                               </span>
                             ) : null}
@@ -747,7 +763,7 @@ export default function ProductDetail() {
                 <span className="text-sm text-slate-400 line-through">
                   {formatPrice(anchorPrice)}
                 </span>
-                <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600">
+                <span className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-xs">
                   −{discount}%
                 </span>
               </div>
@@ -783,7 +799,7 @@ export default function ProductDetail() {
                           <td className="px-2.5 py-1.5">
                             <span>{formatPrice(tier.price)}</span>
                             {anchorPrice > tier.price ? (
-                              <span className="ml-1.5 rounded bg-red-50 px-1 py-0.5 text-[10px] font-bold text-red-600">
+                              <span className="ml-1.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                                 −{Math.round(((anchorPrice - tier.price) / anchorPrice) * 100)}%
                               </span>
                             ) : null}
@@ -1238,9 +1254,67 @@ export default function ProductDetail() {
                     })}
                   </div>
                 </div>
-                <p className="mt-5 rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-                  Written customer reviews are not available yet. Star rating above comes from the store catalog.
-                </p>
+                {productReviews.length > 0 ? (
+                  <div className="mt-6 space-y-3.5">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                      Customer Reviews ({productReviews.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {productReviews.map((rev) => (
+                        <div
+                          key={rev.id}
+                          className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs transition hover:border-slate-300"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <span className="grid size-8.5 place-items-center rounded-full bg-linear-to-br from-[#0070F3] to-blue-700 text-xs font-bold text-white shadow-xs">
+                                {(rev.userName || "U").charAt(0).toUpperCase()}
+                              </span>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm font-bold text-slate-900">
+                                    {rev.userName || "Verified Customer"}
+                                  </span>
+                                  {rev.verifiedPurchase && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                                      <CheckCircle2 size={11} className="text-emerald-600" />
+                                      Verified Purchase
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-400">
+                                  {new Intl.DateTimeFormat("en-PK", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  }).format(new Date(rev.createdAt || Date.now()))}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-200/60">
+                              <Stars rating={rev.rating} size={13} />
+                              <span>{rev.rating}.0</span>
+                            </div>
+                          </div>
+
+                          {rev.comment && (
+                            <p className="mt-3 text-sm leading-relaxed text-slate-700 bg-slate-50/70 rounded-xl p-3 border border-slate-100">
+                              {rev.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                    <p className="text-sm font-semibold text-slate-800">No written reviews yet</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Customers who have received their delivered orders can leave a verified review directly from their Order History.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

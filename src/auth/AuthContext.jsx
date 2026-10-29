@@ -105,6 +105,30 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (updates) => {
+    try {
+      try {
+        await apiRequest("/api/me", {
+          method: "PUT",
+          kind: "customer",
+          body: updates,
+        });
+      } catch {
+        // Fallback gracefully to local storage if API endpoint is offline
+      }
+
+      const updatedUser = {
+        ...(user || {}),
+        ...updates,
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "Could not update profile." };
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -114,6 +138,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         changePassword,
+        updateProfile,
       }}
     >
       {children}

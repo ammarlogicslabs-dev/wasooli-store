@@ -62,7 +62,7 @@ function normalizeImportRow(rawRow) {
   const rawStock = Number(getVal("stock", "quantity", "qty"));
   const stock = Number.isInteger(rawStock) && rawStock >= 0 ? rawStock : 10;
 
-  const brand = String(getVal("brand", "company", "manufacturer")).trim() || "Wasooli";
+  const brand = String(getVal("brand", "company", "manufacturer")).trim();
   const image = String(getVal("image", "imageurl", "photo", "img")).trim() || getCategoryFallbackImage(category);
   const shortDescription = String(getVal("shortdescription", "summary", "shortdesc")).trim();
   const description = String(getVal("description", "details", "desc")).trim() || shortDescription || title;

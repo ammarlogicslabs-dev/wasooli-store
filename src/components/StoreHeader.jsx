@@ -899,7 +899,7 @@ export default function StoreHeader() {
                 className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-semibold text-white shadow-md shadow-brand-500/20 transition hover:bg-brand-600"
               >
                 <LogIn size={18} />
-                <span>Sign In / Register</span>
+                <span>Login</span>
               </Link>
             )}
           </div>

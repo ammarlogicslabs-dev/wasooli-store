@@ -75,9 +75,9 @@ const STEPS = [
     icon: Truck,
     step: "03",
     tag: "Express Shipping",
-    title: "Dispatched in 1–2 days",
+    title: "Dispatched in 1-2 days",
     text: "Carefully boxed with tamper-proof seals and dispatched nationwide across Pakistan.",
-    features: ["1–2 Day Packing", "Courier Tracking", "Safe Transit"],
+    features: ["1-2 Day Packing", "Courier Tracking", "Safe Transit"],
   },
 ];
 
@@ -397,10 +397,10 @@ function ConnectionBanner() {
 
   return (
     <section className="relative z-10 bg-white py-4" aria-label="Networking Solutions banner">
-      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-384">
         <motion.div
           {...fadeUpInView(0, reduce)}
-          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#cfe2fa] bg-gradient-to-r from-[#eaf4fe] via-[#f3f9ff] to-[#e5f1fe] px-3 py-2 sm:px-6 sm:py-2.5 lg:px-7 shadow-[0_10px_35px_-15px_rgba(14,165,233,0.25)]"
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#cfe2fa] bg-linear-to-r from-[#eaf4fe] via-[#f3f9ff] to-[#e5f1fe] px-3 py-2 sm:px-6 sm:py-2.5 lg:px-7 shadow-[0_10px_35px_-15px_rgba(14,165,233,0.25)]"
         >
           {/* Aesthetic background color design with glowing gradients and light rays */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -410,8 +410,8 @@ function ConnectionBanner() {
             <div className="absolute right-[25%] top-1/2 h-28 w-44 -translate-y-1/2 rounded-full bg-cyan-300/30 blur-2xl" />
 
             {/* Glowing diagonal fiber-optic light streaks */}
-            <div className="absolute -bottom-10 left-[45%] h-36 w-[18%] skew-x-[-35deg] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-            <div className="absolute -top-10 left-[68%] h-36 w-[12%] skew-x-[-35deg] bg-gradient-to-r from-transparent via-sky-300/35 to-transparent" />
+            <div className="absolute -bottom-10 left-[45%] h-36 w-[18%] skew-x-[-35deg] bg-linear-to-r from-transparent via-white/60 to-transparent" />
+            <div className="absolute -top-10 left-[68%] h-36 w-[12%] skew-x-[-35deg] bg-linear-to-r from-transparent via-sky-300/35 to-transparent" />
 
             {/* Concentric rings behind the cable */}
             <div className="absolute right-[13%] top-1/2 size-60 -translate-y-1/2 rounded-full border-[1.5px] border-sky-300/40" />
@@ -422,8 +422,8 @@ function ConnectionBanner() {
             <div className="absolute inset-0 opacity-30 bg-[radial-gradient(rgba(0,112,243,0.22)_1px,transparent_1px)] bg-[size:14px_14px] mask-[linear-gradient(to_right,black_60%,transparent_95%)]" />
 
             {/* Glossy top sheen & bottom accent */}
-            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/45 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#38bdf8]/50 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/45 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-[#38bdf8]/50 to-transparent" />
           </div>
 
           <div className="relative flex flex-col items-center gap-3 md:flex-row md:justify-between md:gap-4 lg:gap-6">
@@ -442,7 +442,7 @@ function ConnectionBanner() {
 
               {/* Line 1: Footer style glowing cyan-gradient vertical divider */}
               <div
-                className="hidden md:block h-10 w-px shrink-0 bg-gradient-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+                className="hidden md:block h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
                 aria-hidden="true"
               />
 
@@ -453,7 +453,7 @@ function ConnectionBanner() {
 
               {/* Line 2: Footer style glowing cyan-gradient vertical divider */}
               <div
-                className="hidden lg:block h-10 w-px shrink-0 bg-gradient-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+                className="hidden lg:block h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
                 aria-hidden="true"
               />
             </div>
@@ -482,16 +482,25 @@ function ConnectionBanner() {
 
 /* ─── Section heading ───────────────────────────────────────────────────────── */
 
-function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
+function SectionHeading({
+  eyebrow,
+  title,
+  id,
+  linkLabel,
+  linkTo = "/shop",
+  hideLinkOnMobile = false,
+}) {
   const reduce = useReducedMotion();
   return (
-    <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:mb-8">
       <motion.div {...fadeUpInView(0, reduce)}>
         <p className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">
           <span className="size-1.5 rounded-full bg-brand-500" aria-hidden="true" />
           {eyebrow}
         </p>
-        <h2 id={id} className="mt-2.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">{title}</h2>
+        <h2 id={id} className="mt-2 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl lg:text-[28px] leading-tight sm:leading-snug">
+          {title}
+        </h2>
         <motion.span aria-hidden="true"
           initial={reduce ? false : { scaleX: 0 }}
           whileInView={{ scaleX: 1 }}
@@ -500,12 +509,16 @@ function SectionHeading({ eyebrow, title, id, linkLabel, linkTo = "/shop" }) {
           className="mt-2.5 block h-[3px] w-10 origin-left rounded-full bg-linear-to-r from-brand-500 to-brand-300"
         />
       </motion.div>
-      <Link to={linkTo}
-        className="group inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-xs transition-all duration-200 hover:border-brand-500 hover:bg-brand-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-      >
-        {linkLabel}
-        <ChevronRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1" />
-      </Link>
+      {linkLabel && (
+        <Link to={linkTo}
+          className={`${
+            hideLinkOnMobile ? "hidden sm:inline-flex" : "inline-flex self-start sm:self-auto"
+          } group shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-xs transition-all duration-200 hover:border-brand-500 hover:bg-brand-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300`}
+        >
+          {linkLabel}
+          <ChevronRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -531,7 +544,7 @@ function CategoryGrid({ items, loading }) {
       className="scroll-mt-[calc(var(--store-header-height,72px)+1rem)] bg-[#f8fafc] py-4 sm:py-6 lg:py-8"
       aria-labelledby="categories-heading"
     >
-      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-[1536px]">
+      <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-384">
         {/* Main Rounded White Container Card matching image */}
         {/* <div className="relative rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 lg:p-10 shadow-[0_12px_45px_-15px_rgba(0,112,243,0.08)]"> */}
           {/* Header Inside Card */}
@@ -565,9 +578,9 @@ function CategoryGrid({ items, loading }) {
 
           {loading ? (
             <div className="flex gap-4 overflow-hidden py-6">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={`cat-skel-${i}`} className="flex flex-col items-center shrink-0 w-32">
-                  <div className="size-28 sm:size-32 rounded-full animate-pulse bg-slate-100" />
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={`cat-skel-${i}`} className="flex flex-col items-center shrink-0 w-28 sm:w-32">
+                  <div className="size-24 sm:size-28 rounded-full animate-pulse bg-slate-100" />
                   <div className="mt-3 h-3.5 w-20 animate-pulse rounded bg-slate-200" />
                   <div className="mt-1.5 h-3 w-14 animate-pulse rounded bg-slate-100" />
                 </div>
@@ -580,7 +593,7 @@ function CategoryGrid({ items, loading }) {
                 type="button"
                 aria-label="Previous categories"
                 onClick={() => swiper?.slidePrev()}
-                className="absolute left-0 top-[68px] sm:top-[76px] md:top-[80px] lg:top-[83px] xl:top-[86px] z-30 flex size-9 sm:size-10 -translate-x-3 sm:-translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
+                className="absolute left-0 top-16 sm:top-18 md:top-19 lg:top-19.5 xl:top-20 z-30 flex size-9 sm:size-10 -translate-x-3 sm:-translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
               >
                 <ChevronLeft size={19} />
               </button>
@@ -590,37 +603,37 @@ function CategoryGrid({ items, loading }) {
                 type="button"
                 aria-label="Next categories"
                 onClick={() => swiper?.slideNext()}
-                className="absolute right-0 top-[68px] sm:top-[76px] md:top-[80px] lg:top-[83px] xl:top-[86px] z-30 flex size-9 sm:size-10 translate-x-3 sm:translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
+                className="absolute right-0 top-16 sm:top-18 md:top-19 lg:top-19.5 xl:top-20 z-30 flex size-9 sm:size-10 translate-x-3 sm:translate-x-5 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white text-[#0070f3] shadow-md transition-all duration-200 hover:border-[#0070f3] hover:bg-[#eaf3ff] hover:scale-105 active:scale-95 focus:outline-none"
               >
                 <ChevronRight size={19} />
               </button>
 
-              {/* Swiper with 7 items visible on PC desktop */}
+              {/* Swiper with 8 items visible on PC desktop */}
               <Swiper
                 modules={[Keyboard, A11y, Autoplay]}
                 onSwiper={setSwiper}
                 onSlideChange={(s) => setActiveIndex(s.realIndex ?? s.activeIndex)}
                 keyboard={{ enabled: true }}
-                loop={displayItems.length > 7}
+                loop={displayItems.length > 8}
                 speed={700}
                 autoplay={
                   reduce
-                    ? false
+                     ? false
                     : {
                         delay: 2800,
                         disableOnInteraction: false,
                         pauseOnMouseEnter: true,
                       }
                 }
-                spaceBetween={12}
+                spaceBetween={10}
                 slidesPerView={2.5}
                 breakpoints={{
-                  480: { slidesPerView: 3.2, spaceBetween: 14 },
-                  640: { slidesPerView: 4.2, spaceBetween: 16 },
-                  768: { slidesPerView: 5.2, spaceBetween: 16 },
-                  1024: { slidesPerView: 7, spaceBetween: 16 },
-                  1280: { slidesPerView: 7, spaceBetween: 18 },
-                  1536: { slidesPerView: 7, spaceBetween: 20 },
+                  480: { slidesPerView: 3.2, spaceBetween: 10 },
+                  640: { slidesPerView: 4.2, spaceBetween: 12 },
+                  768: { slidesPerView: 5.5, spaceBetween: 12 },
+                  1024: { slidesPerView: 8, spaceBetween: 10 },
+                  1280: { slidesPerView: 8, spaceBetween: 12 },
+                  1536: { slidesPerView: 8, spaceBetween: 14 },
                 }}
                 className="overflow-visible py-5 px-1"
               >
@@ -644,7 +657,7 @@ function CategoryGrid({ items, loading }) {
                           aria-label={`Browse ${cat.name}`}
                         >
                           {/* 3D Glass Bubble Orb with Concentric #0070F3 Water-Ripples */}
-                          <div className="relative flex aspect-square size-24 sm:size-28 md:size-[120px] lg:size-[126px] xl:size-[132px] items-center justify-center">
+                          <div className="relative flex aspect-square size-23 sm:size-26 md:size-29 lg:size-29.5 xl:size-31 2xl:size-33 items-center justify-center">
                             {/* 3D Translucent Glass Orb Sphere with #0070F3 Shade */}
                             <div
                               className="relative size-full rounded-full border-[1.5px] border-white/95 p-2.5 sm:p-3 md:p-3.5 backdrop-blur-xs flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1.5 shadow-[inset_0_0_24px_rgba(0,112,243,0.38),inset_0_10px_18px_rgba(255,255,255,0.98),inset_0_-16px_26px_rgba(0,85,210,0.55)] group-hover:shadow-[inset_0_0_26px_rgba(0,112,243,0.48),inset_0_10px_18px_rgba(255,255,255,1),inset_0_-16px_26px_rgba(0,85,210,0.7)]"
@@ -655,7 +668,7 @@ function CategoryGrid({ items, loading }) {
                             >
                               {/* Primary upper-left tilted curved specular gloss */}
                               <div
-                                className="pointer-events-none absolute left-[12%] top-[8%] h-[35%] w-[48%] -rotate-[28deg] rounded-full z-20"
+                                className="pointer-events-none absolute left-[12%] top-[8%] h-[35%] w-[48%] rotate-[-28deg] rounded-full z-20"
                                 style={{
                                   background:
                                     "radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0) 80%)",
@@ -677,7 +690,7 @@ function CategoryGrid({ items, loading }) {
 
                               {/* Bottom-right internal caustic light bounce */}
                               <div
-                                className="pointer-events-none absolute right-[12%] bottom-[10%] h-[30%] w-[46%] rotate-[25deg] rounded-full z-20"
+                                className="pointer-events-none absolute right-[12%] bottom-[10%] h-[30%] w-[46%] rotate-25 rounded-full z-20"
                                 style={{
                                   background:
                                     "radial-gradient(ellipse at 50% 70%, rgba(190, 230, 255, 0.8) 0%, rgba(0, 112, 243, 0.35) 55%, transparent 80%)",
@@ -761,7 +774,7 @@ function CategoryGrid({ items, loading }) {
 
               {/* Pagination Dots at Bottom */}
               <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
-                {displayItems.slice(0, 7).map((cat, idx) => {
+                {displayItems.slice(0, 8).map((cat, idx) => {
                   const isActive = (activeIndex % displayItems.length) === idx;
                   return (
                     <button
@@ -962,6 +975,7 @@ function HowItWorks() {
           title="From cart to your door in 3 simple steps"
           id="home-steps-heading"
           linkLabel="Start shopping"
+          hideLinkOnMobile
         />
 
         <div className="relative mt-8 sm:mt-12 grid gap-6 md:grid-cols-3">
@@ -978,61 +992,70 @@ function HowItWorks() {
           />
 
           {STEPS.map(({ icon: Icon, step, tag, title, text, features }, index) => (
-            <motion.article
-              key={title}
-              {...fadeUpInView(0.08 * index, reduce)}
-              whileHover={reduce ? undefined : { y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
-              className="group relative z-10 flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-brand-500/50 hover:shadow-[0_20px_45px_-12px_rgba(44,154,255,0.22)]"
-            >
-              <div>
-                {/* Large faint step number watermark */}
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -right-1 top-10 select-none text-[7.5rem] font-black leading-none text-slate-900/[0.035] transition-colors duration-300 group-hover:text-brand-500/8"
-                >
-                  {step}
-                </span>
-
-                {/* Step Header: Icon + Step Pill Badge */}
-                <div className="flex items-center justify-between">
-                  <span className="grid size-13 place-items-center rounded-2xl bg-linear-to-br from-[#2C9AFF] to-[#1268c4] text-white shadow-[0_8px_20px_rgba(44,154,255,0.32)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-2">
-                    <Icon size={24} aria-hidden="true" />
+            <div key={title} className="relative flex flex-col">
+              <motion.article
+                {...fadeUpInView(0.08 * index, reduce)}
+                whileHover={reduce ? undefined : { y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
+                className="group relative z-10 flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-brand-500/50 hover:shadow-[0_20px_45px_-12px_rgba(44,154,255,0.22)]"
+              >
+                <div>
+                  {/* Large faint step number watermark */}
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-1 top-10 select-none text-[7.5rem] font-black leading-none text-slate-900/[0.035] transition-colors duration-300 group-hover:text-brand-500/8"
+                  >
+                    {step}
                   </span>
-                  <span className="inline-flex items-center rounded-full border border-brand-500/20 bg-brand-500/8 px-3 py-1 font-mono text-xs font-black tracking-wider text-brand-500 transition-colors duration-300 group-hover:border-brand-500 group-hover:bg-brand-500 group-hover:text-white">
-                    STEP {step}
-                  </span>
-                </div>
 
-                {/* Subtag & Title */}
-                <div className="mt-6">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-brand-500">
-                    {tag}
-                  </span>
-                  <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-brand-500">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    {text}
-                  </p>
-                </div>
-
-                {/* Micro-Features / Trust Chips */}
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {features?.map((f) => (
-                    <span
-                      key={f}
-                      className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors duration-200 group-hover:bg-brand-500/10 group-hover:text-[#1875d1]"
-                    >
-                      <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
-                      {f}
+                  {/* Step Header: Icon + Step Pill Badge */}
+                  <div className="flex items-center justify-between">
+                    <span className="grid size-13 place-items-center rounded-2xl bg-linear-to-br from-[#2C9AFF] to-[#1268c4] text-white shadow-[0_8px_20px_rgba(44,154,255,0.32)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-2">
+                      <Icon size={24} aria-hidden="true" />
                     </span>
-                  ))}
-                </div>
-              </div>
+                    <span className="inline-flex items-center rounded-full border border-brand-500/20 bg-brand-500/8 px-3 py-1 font-mono text-xs font-black tracking-wider text-brand-500 transition-colors duration-300 group-hover:border-brand-500 group-hover:bg-brand-500 group-hover:text-white">
+                      STEP {step}
+                    </span>
+                  </div>
 
-              {/* Bottom active indicator */}
-              <div className="mt-6 h-1 w-10 rounded-full bg-slate-100 transition-all duration-300 group-hover:w-20 group-hover:bg-brand-500" />
-            </motion.article>
+                  {/* Subtag & Title */}
+                  <div className="mt-6">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-brand-500">
+                      {tag}
+                    </span>
+                    <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-brand-500">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      {text}
+                    </p>
+                  </div>
+
+                  {/* Micro-Features / Trust Chips */}
+                  <div className="mt-5 flex flex-wrap gap-1.5">
+                    {features?.map((f) => (
+                      <span
+                        key={f}
+                        className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors duration-200 group-hover:bg-brand-500/10 group-hover:text-[#1875d1]"
+                      >
+                        <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom active indicator */}
+                <div className="mt-6 h-1 w-10 rounded-full bg-slate-100 transition-all duration-300 group-hover:w-20 group-hover:bg-brand-500" />
+              </motion.article>
+
+              {/* Mobile Vertical Connecting Line between cards */}
+              {index < STEPS.length - 1 && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-full left-1/2 z-0 h-6 w-[2.5px] -translate-x-1/2 bg-[#0070f3] shadow-[0_0_8px_rgba(0,112,243,0.5)] md:hidden"
+                />
+              )}
+            </div>
           ))}
         </div>
       </div>
