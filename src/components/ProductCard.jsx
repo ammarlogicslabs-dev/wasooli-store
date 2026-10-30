@@ -5,6 +5,7 @@ import { Bot, Heart, ShoppingBag, Star } from "lucide-react";
 import { formatPrice, getProductCondition } from "../data/product";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import { getProductReviewSummary } from "../services/storage/reviewService";
 import ProductBotModal from "./ProductBotModal";
 
 export default function ProductCard({ product, index = 0, layout = "grid" }) {
@@ -24,6 +25,9 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
     : 0;
   const isList = layout === "list";
   const isUsed = getProductCondition(product) === "Used Product";
+  const reviewSummary = getProductReviewSummary(product?.id, product?.slug);
+  const displayRating = reviewSummary.count > 0 ? reviewSummary.rating : 0;
+  const displayReviews = reviewSummary.count;
 
   function handleAddToCart(event) {
     event.preventDefault();
@@ -158,17 +162,17 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
             <p className="mt-1 truncate text-xs text-slate-500">{product.brand}</p>
           ) : null}
 
-          {product.rating != null ? (
-            <div className="mt-2 flex h-4 items-center gap-1 text-[11px] leading-4">
-              <Star size={12} fill="currentColor" className="shrink-0 text-amber-400" />
-              <span className="font-semibold text-slate-700">{product.rating}</span>
-              {product.reviews != null ? (
-                <span className="text-slate-400">({product.reviews})</span>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-2 h-4" />
-          )}
+          <div className="mt-2 flex h-4 items-center gap-1 text-[11px] leading-4">
+            <Star
+              size={12}
+              fill="currentColor"
+              className={`shrink-0 ${displayReviews > 0 ? "text-amber-400" : "text-slate-300"}`}
+            />
+            <span className={`font-semibold ${displayReviews > 0 ? "text-slate-700" : "text-slate-400"}`}>
+              {displayRating}
+            </span>
+            <span className="text-slate-400">({displayReviews})</span>
+          </div>
 
           <div
             className={`flex items-end justify-between gap-2 ${isList ? "mt-3 pt-0" : "mt-auto pt-3"

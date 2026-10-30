@@ -355,17 +355,16 @@ export function validateProduct(input, products = listProducts()) {
   const title = String(input.title || "").trim();
   const sku = String(input.sku || "").trim();
   const category = String(input.category || "").trim();
-  const subcategory = String(input.subcategory || "").trim();
   const price = Number(input.price);
   const oldPrice = input.oldPrice === "" || input.oldPrice == null ? null : Number(input.oldPrice);
   const stock = Number(input.stock);
   const slug = slugify(input.slug || title);
+  const image = input.image || (Array.isArray(input.images) && input.images[0]);
 
   if (!title) errors.title = "Product name is required.";
   if (!sku) errors.sku = "SKU is required.";
   if (!category) errors.category = "Category is required.";
-  if (!subcategory) errors.subcategory = "Subcategory is required.";
-  if (!input.image) errors.image = "Select a product image.";
+  if (!image) errors.image = "Select a product image.";
   if (!Number.isFinite(price) || price < 0) errors.price = "Enter a valid price.";
   if (oldPrice != null && (!Number.isFinite(oldPrice) || oldPrice < price)) {
     errors.oldPrice = "Compare-at price must be higher than the selling price.";
@@ -376,9 +375,20 @@ export function validateProduct(input, products = listProducts()) {
   const tierError = validatePriceTiers(input.priceTiers);
   if (tierError) errors.priceTiers = tierError;
 
-  const skuTaken = products.some((product) => product.sku.toLowerCase() === sku.toLowerCase() && Number(product.id) !== Number(input.id));
+  const currentId = input.id != null ? String(input.id) : null;
+  const skuTaken = products.some(
+    (product) =>
+      product.sku &&
+      String(product.sku).toLowerCase() === sku.toLowerCase() &&
+      String(product.id) !== currentId
+  );
   if (sku && skuTaken) errors.sku = "This SKU is already used.";
-  const slugTaken = products.some((product) => product.slug === slug && Number(product.id) !== Number(input.id));
+  const slugTaken = products.some(
+    (product) =>
+      product.slug &&
+      product.slug === slug &&
+      String(product.id) !== currentId
+  );
   if (slugTaken) errors.slug = "This product link is already used.";
   return errors;
 }
@@ -442,7 +452,10 @@ function toProductPayload(input) {
 export async function saveProduct(input) {
   const products = listProducts();
   const errors = validateProduct(input, products);
-  if (Object.keys(errors).length) return { ok: false, errors };
+  if (Object.keys(errors).length) {
+    const firstError = Object.values(errors)[0];
+    return { ok: false, errors, message: firstError };
+  }
 
   const payload = toProductPayload(input);
   try {
@@ -587,10 +600,34 @@ export async function archiveProduct(id) {
   }
 }
 
-export async function activateProduct(id) {
-  const product = getProduct(id);
+export async function activateProduct(id, fallbackProduct = null) {
+  const product = fallbackProduct || getProduct(id);
   if (!product) return { ok: false, message: "Product not found." };
-  return saveProduct({ ...product, status: "active" });
+
+  const primaryImage = product.image || (Array.isArray(product.images) && product.images[0]) || "";
+  const images = Array.isArray(product.images) && product.images.length
+    ? product.images
+    : (primaryImage ? [primaryImage] : []);
+
+  const payload = toProductPayload({
+    ...product,
+    image: primaryImage,
+    images,
+    status: "active",
+  });
+
+  try {
+    await apiRequest(`/api/admin/products/${id}`, {
+      method: "PUT",
+      kind: "admin",
+      body: payload,
+    });
+    await refreshAdminData();
+    await refreshStorefrontProducts();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || "Could not update the product." };
+  }
 }
 
 export async function deleteProduct(id) {

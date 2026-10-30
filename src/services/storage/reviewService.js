@@ -2,54 +2,16 @@ import { STORAGE_KEYS } from "./adminDataService";
 
 export const REVIEWS_STORAGE_KEY = "wasooli_product_reviews";
 
-const SEED_REVIEWS = [
-  {
-    id: "rev_seed_1",
-    productId: "prod_switch_1",
-    productTitle: "24-Port Gigabit Managed Switch",
-    rating: 5,
-    comment: "Excellent build quality and silent operation. Configured VLANs effortlessly. Dispatched and arrived in Lahore within 2 days.",
-    userName: "Muhammad Bilal",
-    userEmail: "bilal.net@gmail.com",
-    verifiedPurchase: true,
-    createdAt: "2026-10-15T10:30:00.000Z",
-  },
-  {
-    id: "rev_seed_2",
-    productId: "prod_cable_1",
-    productTitle: "Cat6 Pure Copper UTP Cable 305m",
-    rating: 5,
-    comment: "Tested all 305 meters with Fluke tester — flawless 1Gbps bandwidth and zero packet loss. Original genuine copper drum.",
-    userName: "Hamza Tariq",
-    userEmail: "hamza.networks@gmail.com",
-    verifiedPurchase: true,
-    createdAt: "2026-10-18T14:15:00.000Z",
-  },
-  {
-    id: "rev_seed_3",
-    productId: "prod_router_1",
-    productTitle: "Wi-Fi 6 Dual-Band Gigabit Router",
-    rating: 5,
-    comment: "Coverage across double-story office is fantastic. Low latency and fast mesh pairing. 100% recommended seller.",
-    userName: "Zeeshan Ahmed",
-    userEmail: "zeeshan@outlook.com",
-    verifiedPurchase: true,
-    createdAt: "2026-10-22T09:00:00.000Z",
-  },
-];
-
 function readAllReviews() {
-  if (typeof window === "undefined") return SEED_REVIEWS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(REVIEWS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(SEED_REVIEWS));
-      return SEED_REVIEWS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : SEED_REVIEWS;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((r) => r && !String(r.id || "").startsWith("rev_seed_"));
   } catch {
-    return SEED_REVIEWS;
+    return [];
   }
 }
 
@@ -79,6 +41,55 @@ export function getProductReviews(productId, slug) {
       return (pid && (rid === pid || rslug === pid)) || (pslug && (rid === pslug || rslug === pslug));
     })
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
+
+export function getProductReviewStats(productId, slug) {
+  const reviews = getProductReviews(productId, slug);
+  const total = reviews.length;
+  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+  if (total === 0) {
+    return {
+      reviews: [],
+      total: 0,
+      rating: 0,
+      distribution,
+      percentages: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    };
+  }
+
+  let sum = 0;
+  reviews.forEach((r) => {
+    const star = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
+    distribution[star] = (distribution[star] || 0) + 1;
+    sum += Number(r.rating) || 5;
+  });
+
+  const rawAvg = sum / total;
+  const rating = Math.round(rawAvg * 10) / 10;
+  const percentages = {
+    5: Math.round((distribution[5] / total) * 100),
+    4: Math.round((distribution[4] / total) * 100),
+    3: Math.round((distribution[3] / total) * 100),
+    2: Math.round((distribution[2] / total) * 100),
+    1: Math.round((distribution[1] / total) * 100),
+  };
+
+  return {
+    reviews,
+    total,
+    rating,
+    distribution,
+    percentages,
+  };
+}
+
+export function getProductReviewSummary(productId, slug) {
+  const stats = getProductReviewStats(productId, slug);
+  return {
+    count: stats.total,
+    rating: stats.rating,
+  };
 }
 
 export function getUserReviewedOrderMap(userEmailOrId) {

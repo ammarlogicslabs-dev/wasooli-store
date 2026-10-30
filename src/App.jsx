@@ -18,6 +18,8 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const Login = lazy(() => import("./pages/Login"));
 const Account = lazy(() => import("./pages/account"));
 const Faqs = lazy(() => import("./pages/Faqs"));
+const ReturnsPolicy = lazy(() => import("./pages/ReturnsPolicy"));
+const Terms = lazy(() => import("./pages/Terms"));
 
 const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
 const ProductsPage = lazy(() => import("./admin/pages/ProductsPage"));
@@ -69,6 +71,12 @@ export default function App() {
             />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             <Route path="/faqs" element={<Faqs />} />
+            <Route path="/returns" element={<ReturnsPolicy />} />
+            <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
+            <Route path="/warranty" element={<Navigate to="/returns" replace />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/terms-and-conditions" element={<Navigate to="/terms" replace />} />
+            <Route path="/terms-conditions" element={<Navigate to="/terms" replace />} />
           </Route>
 
           <Route

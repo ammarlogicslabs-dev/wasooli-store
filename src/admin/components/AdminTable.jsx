@@ -3,7 +3,7 @@ export default function AdminTable({ columns, rows, rowKey, onRowClick, empty = 
   const safeRows = (rows || []).filter(Boolean);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto custom-scrollbar">
       <table className="min-w-full text-left text-sm">
         <thead>
           <tr className="text-[11px] uppercase tracking-wide text-slate-400">

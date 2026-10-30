@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronDown,
   Clock,
@@ -35,12 +34,15 @@ export default function Faqs() {
   const [faqs, setFaqs] = useState(() => listFaqs());
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
-  const [openIds, setOpenIds] = useState(() => {
-    // Open first 2 pinned FAQs by default
-    const initial = listFaqs({ status: "published" });
-    return new Set(initial.filter((f) => f.pinned).slice(0, 2).map((f) => f.id));
-  });
+  const [userOpenedId, setUserOpenedId] = useState(undefined);
+  const [prevFilterKey, setPrevFilterKey] = useState("");
   const [helpfulMap, setHelpfulMap] = useState({});
+
+  const filterKey = `${activeCategory}:${search}`;
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setUserOpenedId(undefined);
+  }
 
   useEffect(() => {
     document.title = "Frequently Asked Questions (FAQs) | Wasooli Store";
@@ -91,12 +93,18 @@ export default function Faqs() {
     });
   }, [publishedFaqs, activeCategory, search]);
 
+  const openId = useMemo(() => {
+    if (userOpenedId === null) return null;
+    if (userOpenedId && filteredFaqs.some((f) => f.id === userOpenedId)) {
+      return userOpenedId;
+    }
+    return filteredFaqs[0]?.id || null;
+  }, [userOpenedId, filteredFaqs]);
+
   const toggleAccordion = (id) => {
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+    setUserOpenedId((prev) => {
+      const current = prev !== undefined ? prev : filteredFaqs[0]?.id;
+      return current === id ? null : id;
     });
   };
 
@@ -126,7 +134,7 @@ export default function Faqs() {
             Frequently Asked Questions
           </h1>
           <p className="mx-auto mt-3.5 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Everything you need to know about purchasing genuine enterprise networking hardware, nationwide shipping, wholesale tier discounts, and warranty services in Pakistan.
+            Everything you need to know about purchasing enterprise networking hardware, nationwide shipping, wholesale tier discounts, and warranty services in Pakistan.
           </p>
 
           {/* Real-time Search Box */}
@@ -140,7 +148,7 @@ export default function Faqs() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search questions (e.g. warranty, bulk pricing, COD, delivery)..."
+                placeholder="Search questions (e.g. warranty, bulk pricing, COD, delivery)"
                 className="h-12 sm:h-13 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
               />
               {search && (
@@ -222,13 +230,13 @@ export default function Faqs() {
             </div>
           ) : (
             filteredFaqs.map((faq) => {
-              const isOpen = openIds.has(faq.id);
+              const isOpen = openId === faq.id;
               const isHelpful = helpfulMap[faq.id];
 
               return (
                 <div
                   key={faq.id}
-                  className={`group overflow-hidden rounded-2xl border transition-all duration-200 ${
+                  className={`group overflow-hidden rounded-2xl border transition-[border-color,box-shadow] duration-300 ease-in-out ${
                     isOpen
                       ? "border-sky-300/80 bg-white shadow-md shadow-blue-500/5 ring-1 ring-sky-200"
                       : "border-slate-200/90 bg-white hover:border-slate-300 shadow-2xs"
@@ -241,42 +249,24 @@ export default function Faqs() {
                     aria-expanded={isOpen}
                     className="flex w-full cursor-pointer items-start justify-between gap-4 p-5 text-left transition sm:p-5.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span
-                        className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg text-xs font-bold transition ${
-                          isOpen
-                            ? "bg-brand-500 text-white"
-                            : "bg-slate-100 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-600"
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 uppercase tracking-wide">
+                          {faq.category}
+                        </span>
+                      </div>
+
+                      <h3
+                        className={`text-sm sm:text-base font-bold transition-colors ${
+                          isOpen ? "text-[#0070f3]" : "text-slate-900 group-hover:text-[#0070f3]"
                         }`}
                       >
-                        Q
-                      </span>
-
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 uppercase tracking-wide">
-                            {faq.category}
-                          </span>
-                          {faq.pinned && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/60">
-                              <Sparkles size={10} className="text-amber-500" />
-                              Popular
-                            </span>
-                          )}
-                        </div>
-
-                        <h3
-                          className={`text-sm sm:text-base font-bold transition-colors ${
-                            isOpen ? "text-[#0070f3]" : "text-slate-900 group-hover:text-[#0070f3]"
-                          }`}
-                        >
-                          {faq.question}
-                        </h3>
-                      </div>
+                        {faq.question}
+                      </h3>
                     </div>
 
                     <div
-                      className={`grid size-8 shrink-0 place-items-center rounded-full transition-transform duration-200 ${
+                      className={`grid size-8 shrink-0 place-items-center rounded-full transition-transform duration-300 ease-in-out ${
                         isOpen ? "rotate-180 bg-brand-50 text-brand-600" : "text-slate-400 group-hover:text-slate-600"
                       }`}
                     >
@@ -285,48 +275,44 @@ export default function Faqs() {
                   </button>
 
                   {/* Accordion Answer Content */}
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: "easeInOut" }}
-                        className="overflow-hidden border-t border-slate-100"
-                      >
-                        <div className="p-5 sm:p-5.5 pt-4 bg-slate-50/50">
-                          <p className="text-xs sm:text-[13.5px] leading-relaxed text-slate-600 whitespace-pre-line">
-                            {faq.answer}
-                          </p>
+                  <div
+                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-slate-100 p-5 sm:p-5.5 pt-4 bg-slate-50/50">
+                        <p className="text-xs sm:text-[13.5px] leading-relaxed text-slate-600 whitespace-pre-line">
+                          {faq.answer}
+                        </p>
 
-                          {/* Was this helpful micro-action */}
-                          <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              Category: <span className="text-slate-600">{faq.category}</span>
-                            </span>
+                        {/* Was this helpful micro-action */}
+                        <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            Category: <span className="text-slate-600">{faq.category}</span>
+                          </span>
 
-                            <div className="flex items-center gap-2">
-                              {isHelpful ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                                  <ThumbsUp size={13} />
-                                  Thanks for your feedback!
-                                </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleHelpful(faq.id)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-2xs hover:border-brand-300 hover:text-brand-600 active:scale-95 cursor-pointer"
-                                >
-                                  <ThumbsUp size={12} />
-                                  <span>Helpful</span>
-                                </button>
-                              )}
-                            </div>
+                          <div className="flex items-center gap-2">
+                            {isHelpful ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                                <ThumbsUp size={13} />
+                                Thanks for your feedback!
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleHelpful(faq.id)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-2xs hover:border-brand-300 hover:text-brand-600 active:scale-95 cursor-pointer"
+                              >
+                                <ThumbsUp size={12} />
+                                <span>Helpful</span>
+                              </button>
+                            )}
                           </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })
@@ -339,7 +325,7 @@ export default function Faqs() {
           <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-2xl bg-sky-50 border border-sky-100/80 px-3.5 py-1.5 text-xs font-bold text-[#0070f3]">
             <Clock size={14} className="shrink-0 text-[#0070f3]" />
             <span>
-              MON – SAT: 10:00 AM – 8:00 PM <span className="font-semibold text-sky-600/80">(ONLINE 24/7)</span>
+              MON – SAT: 10:00 AM – 10:00 PM <span className="font-semibold text-sky-600/80">(ONLINE 24/7)</span>
             </span>
           </div>
 

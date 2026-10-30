@@ -4,9 +4,7 @@ import {
   Edit2,
   Loader2,
   Plus,
-  RotateCcw,
   Search,
-  Sparkles,
   Trash2,
   Eye,
   EyeOff,
@@ -21,9 +19,7 @@ import { useAdminData } from "../hooks/useAdminData";
 import {
   deleteFaq,
   FAQ_CATEGORIES,
-  resetDefaultFaqs,
   saveFaq,
-  toggleFaqPinned,
   toggleFaqStatus,
 } from "../../services/storage/faqService";
 
@@ -32,7 +28,6 @@ const EMPTY_FAQ = {
   answer: "",
   category: "General",
   status: "published",
-  pinned: false,
   order: 10,
 };
 
@@ -40,7 +35,6 @@ export default function FaqsPage() {
   const { faqs = [] } = useAdminData();
   const [form, setForm] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const [pendingReset, setPendingReset] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -108,19 +102,6 @@ export default function FaqsPage() {
     }
   }
 
-  async function handleTogglePinned(faq) {
-    const result = await toggleFaqPinned(faq.id);
-    if (result.ok) {
-      toast.success(result.pinned ? "Marked as Popular FAQ." : "Unpinned.");
-    }
-  }
-
-  function handleReset() {
-    resetDefaultFaqs();
-    toast.success("Default FAQs restored.");
-    setPendingReset(false);
-  }
-
   return (
     <div className="space-y-5">
       <PageHeader
@@ -128,30 +109,19 @@ export default function FaqsPage() {
         title="Manage FAQs"
         detail="Add, edit, and organize frequently asked questions shown on the customer care FAQs page."
         actions={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPendingReset(true)}
-              className={quietButtonClass}
-              title="Restore standard networking FAQs"
-            >
-              <RotateCcw size={15} />
-              <span>Reset Defaults</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setForm({ ...EMPTY_FAQ, order: faqs.length + 1 })}
-              className={buttonClass}
-            >
-              <Plus size={16} />
-              <span>Add FAQ</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setForm({ ...EMPTY_FAQ, order: faqs.length + 1 })}
+            className={buttonClass}
+          >
+            <Plus size={16} />
+            <span>Add FAQ</span>
+          </button>
         }
       />
 
       {/* Quick Summary Stat Badges */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <p className="text-xs font-semibold text-slate-500">Total Questions</p>
           <p className="mt-1 text-2xl font-black text-slate-900">{stats.total}</p>
@@ -163,10 +133,6 @@ export default function FaqsPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <p className="text-xs font-semibold text-slate-500">Drafts</p>
           <p className="mt-1 text-2xl font-black text-amber-600">{stats.drafts}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500">Popular / Pinned</p>
-          <p className="mt-1 text-2xl font-black text-[#0070f3]">{stats.pinned}</p>
         </div>
       </div>
 
@@ -220,15 +186,7 @@ export default function FaqsPage() {
               label: "Question & Answer Preview",
               render: (faq) => (
                 <div className="max-w-md py-1">
-                  <div className="flex items-center gap-1.5">
-                    {faq.pinned && (
-                      <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/60">
-                        <Sparkles size={10} className="text-amber-500" />
-                        Popular
-                      </span>
-                    )}
-                    <span className="font-bold text-slate-900 line-clamp-1">{faq.question}</span>
-                  </div>
+                  <span className="font-bold text-slate-900 line-clamp-1">{faq.question}</span>
                   <p className="mt-0.5 text-xs text-slate-500 line-clamp-2 leading-relaxed">
                     {faq.answer}
                   </p>
@@ -271,18 +229,6 @@ export default function FaqsPage() {
                     className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 text-slate-500 hover:border-brand-500 hover:text-brand-600"
                   >
                     {faq.status === "published" ? <Eye size={14} className="text-emerald-600" /> : <EyeOff size={14} className="text-amber-600" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePinned(faq)}
-                    title={faq.pinned ? "Unpin FAQ" : "Pin as Popular FAQ"}
-                    className={`grid size-8 cursor-pointer place-items-center rounded-lg border transition ${
-                      faq.pinned
-                        ? "border-amber-300 bg-amber-50 text-amber-600"
-                        : "border-slate-200 text-slate-400 hover:border-amber-400 hover:text-amber-500"
-                    }`}
-                  >
-                    <Sparkles size={14} />
                   </button>
                   <button
                     type="button"
@@ -390,19 +336,6 @@ export default function FaqsPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="pinned-checkbox"
-                checked={form.pinned}
-                onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
-                className="size-4 rounded text-brand-600 focus:ring-brand-500"
-              />
-              <label htmlFor="pinned-checkbox" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                Pin as Popular FAQ (highlighted at top of questions list)
-              </label>
-            </div>
-
             <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
               <button
                 type="button"
@@ -439,17 +372,6 @@ export default function FaqsPage() {
         tone="danger"
         onConfirm={handleDelete}
         onClose={() => setPendingDelete(null)}
-      />
-
-      {/* Reset Defaults Confirmation Dialog */}
-      <ConfirmDialog
-        open={pendingReset}
-        title="Reset Default FAQs"
-        message="This will restore the standard curated 15 networking FAQs. Any custom questions added will be reset to factory defaults."
-        confirmLabel="Reset Defaults"
-        tone="warning"
-        onConfirm={handleReset}
-        onClose={() => setPendingReset(false)}
       />
     </div>
   );

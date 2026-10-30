@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FileSpreadsheet, Plus } from "lucide-react";
 import { formatPrice } from "../../data/product";
-import { archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
+import { activateProduct, archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import AdminPagination from "../components/AdminPagination";
 import AdminTable from "../components/AdminTable";
@@ -48,11 +48,26 @@ export default function ProductsPage() {
 
   async function confirmAction() {
     if (!pending) return;
-    const result = pending.mode === "delete"
-      ? await deleteProduct(pending.product.id)
-      : await archiveProduct(pending.product.id);
-    if (!result.ok) toast.error(result.message || "Could not update the product.");
-    else toast.success(pending.mode === "delete" ? "Product deleted." : "Product archived.");
+    let result;
+    if (pending.mode === "delete") {
+      result = await deleteProduct(pending.product.id);
+    } else if (pending.mode === "activate") {
+      result = await activateProduct(pending.product.id, pending.product);
+    } else {
+      result = await archiveProduct(pending.product.id);
+    }
+
+    if (!result.ok) {
+      toast.error(result.message || "Could not update the product.");
+    } else {
+      const msg =
+        pending.mode === "delete"
+          ? "Product deleted."
+          : pending.mode === "activate"
+          ? "Product activated successfully."
+          : "Product archived.";
+      toast.success(msg);
+    }
     setPending(null);
   }
 
@@ -150,12 +165,46 @@ export default function ProductsPage() {
               {
                 key: "actions",
                 label: "",
-                render: (product) => (
-                  <span className="flex justify-end gap-2">
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setPending({ product, mode: "archive" }); }} className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600">Archive</button>
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setPending({ product, mode: "delete" }); }} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
-                  </span>
-                ),
+                render: (product) => {
+                  const isArchived = product.status === "archived";
+                  return (
+                    <span className="flex items-center justify-end gap-3">
+                      {isArchived ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setPending({ product, mode: "activate" });
+                          }}
+                          className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                        >
+                          Activate
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setPending({ product, mode: "archive" });
+                          }}
+                          className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600"
+                        >
+                          Archive
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPending({ product, mode: "delete" });
+                        }}
+                        className="cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </span>
+                  );
+                },
               },
             ]}
           />
@@ -164,11 +213,27 @@ export default function ProductsPage() {
       </section>
       <ConfirmDialog
         open={Boolean(pending)}
-        title={pending?.mode === "delete" ? "Delete product?" : "Archive product?"}
-        message={pending?.mode === "delete"
-          ? "The product will leave the storefront. Past orders keep their saved item names."
-          : "Archived products stay in admin but are hidden from the shop."}
-        confirmLabel={pending?.mode === "delete" ? "Delete" : "Archive"}
+        title={
+          pending?.mode === "delete"
+            ? "Delete product?"
+            : pending?.mode === "activate"
+            ? "Activate product?"
+            : "Archive product?"
+        }
+        message={
+          pending?.mode === "delete"
+            ? "The product will leave the storefront. Past orders keep their saved item names."
+            : pending?.mode === "activate"
+            ? "The product will be restored and will be publicly active on the storefront."
+            : "Archived products stay in admin but are hidden from the shop."
+        }
+        confirmLabel={
+          pending?.mode === "delete"
+            ? "Delete"
+            : pending?.mode === "activate"
+            ? "Activate"
+            : "Archive"
+        }
         onClose={() => setPending(null)}
         onConfirm={confirmAction}
       />

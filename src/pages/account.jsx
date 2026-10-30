@@ -24,6 +24,7 @@ import {
   Truck,
   User,
   X,
+  XCircle,
 } from "lucide-react";
 import QuantityStepper from "../components/QuantityStepper";
 import StoreHeader from "../components/StoreHeader";
@@ -974,150 +975,246 @@ export default function Account() {
                         
                         
 
-                        {isTrackingOpen && (
-                          <div className="mt-4 rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-5 overflow-hidden">
-                            {/* Top Daraz-style banner */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
-                              <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                                    Wasooli Express
-                                  </span>
-                                  {!isDelivered && !isCancelled && (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                      <Clock size={11} className="animate-spin" />
-                                      In progress
+                        {isTrackingOpen && (() => {
+                          const stepsToDisplay = isCancelled
+                            ? [
+                                ...TRACKING_STEPS.slice(0, Math.min(stageIndex + 1, TRACKING_STEPS.length - 1)).map((s) => ({
+                                  ...s,
+                                  statusType: "completed",
+                                })),
+                                {
+                                  key: "cancelled",
+                                  title: "Order Cancelled",
+                                  shortLabel: "Cancelled",
+                                  location: "Wasooli Store",
+                                  description:
+                                    order.cancelReason ||
+                                    "This order was cancelled. Package transit has been stopped and no COD amount will be collected.",
+                                  icon: XCircle,
+                                  statusType: "cancelled",
+                                },
+                              ]
+                            : TRACKING_STEPS.map((s, idx) => ({
+                                ...s,
+                                statusType: idx === stageIndex ? "current" : idx < stageIndex ? "completed" : "pending",
+                              }));
+
+                          const gridColsClass =
+                            stepsToDisplay.length === 2
+                              ? "grid-cols-2"
+                              : stepsToDisplay.length === 3
+                              ? "grid-cols-3"
+                              : stepsToDisplay.length === 4
+                              ? "grid-cols-4"
+                              : "grid-cols-5";
+
+                          return (
+                            <div className={`mt-4 rounded-xl sm:rounded-2xl border ${
+                              isCancelled ? "border-red-200 bg-red-50/20" : "border-slate-200 bg-slate-50/70"
+                            } p-3 sm:p-5 overflow-hidden`}>
+                              {/* Top Daraz-style banner */}
+                              <div className={`flex flex-wrap items-center justify-between gap-3 border-b pb-3.5 ${
+                                isCancelled ? "border-red-200/80" : "border-slate-200"
+                              }`}>
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                                      isCancelled ? "text-red-600" : "text-brand-600"
+                                    }`}>
+                                      Wasooli Express {isCancelled ? "· Order Cancelled" : ""}
                                     </span>
-                                  )}
-                                </div>
-                                <p className="mt-1 text-xs text-slate-500">
-                                  {order.delivery?.method?.title || "Standard delivery"} ·{" "}
-                                  {isCancelled
-                                    ? "Order cancelled"
-                                    : isDelivered
-                                    ? "Delivered to recipient"
-                                    : order.delivery?.method?.text || "Arrives in 3-5 working days"}
-                                </p>
-                                {order.trackingNumber ? (
-                                  <p className="mt-1 text-xs font-medium text-slate-600">
-                                    {order.courier || "Courier"} · {order.trackingNumber}
+                                    {isCancelled ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold text-red-700">
+                                        <XCircle size={11} />
+                                        Cancelled
+                                      </span>
+                                    ) : !isDelivered ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                        <Clock size={11} className="animate-spin" />
+                                        In progress
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {order.delivery?.method?.title || "Standard delivery"} ·{" "}
+                                    {isCancelled
+                                      ? "Shipment cancelled — package will not be delivered"
+                                      : isDelivered
+                                      ? "Delivered to recipient"
+                                      : order.delivery?.method?.text || "Arrives in 3-5 working days"}
                                   </p>
-                                ) : null}
+                                  {order.trackingNumber ? (
+                                    <p className={`mt-1 text-xs font-medium ${
+                                      isCancelled ? "text-slate-400 line-through" : "text-slate-600"
+                                    }`}>
+                                      {order.courier || "Courier"} · {order.trackingNumber}
+                                    </p>
+                                  ) : null}
+                                </div>
                               </div>
 
-                            </div>
-
-                            {/* Horizontal Daraz-style Stepper */}
-                            <div className="mt-4 grid grid-cols-5 gap-1 sm:gap-2">
-                              {TRACKING_STEPS.map((step, index) => {
-                                const StepIcon = step.icon;
-                                const reached = index <= stageIndex;
-                                const current = index === stageIndex;
-                                return (
-                                  <div key={step.key} className="flex flex-col items-center text-center min-w-0">
-                                    <div className="relative flex w-full items-center justify-center">
-                                      {index > 0 && (
-                                        <span
-                                          className={`absolute right-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 transition-colors duration-500 ${
-                                            reached ? "bg-brand-500" : "bg-slate-200"
-                                          }`}
-                                        />
-                                      )}
-                                      <span
-                                        className={`relative z-10 grid size-7 place-items-center rounded-full border-2 transition-all duration-300 sm:size-9 ${
-                                          current
-                                            ? "border-brand-500 bg-brand-500 text-white ring-2 sm:ring-4 ring-brand-100"
-                                            : reached
-                                            ? "border-brand-500 bg-brand-50 text-brand-600"
-                                            : "border-slate-200 bg-white text-slate-400"
-                                        }`}
-                                      >
-                                        <StepIcon size={13} />
-                                      </span>
-                                    </div>
-                                    <p
-                                      className={`mt-1.5 text-[9px] font-semibold leading-tight sm:text-[11px] truncate w-full ${
-                                        reached ? "text-slate-900" : "text-slate-400"
-                                      }`}
-                                    >
-                                      {step.shortLabel}
-                                    </p>
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {/* Vertical Daraz-style Detailed Timeline */}
-                            <div className="mt-5 border-t border-slate-200 pt-4">
-                              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                Tracking Timeline
-                              </p>
-                              <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-5">
-                                {TRACKING_STEPS.map((step, index) => {
-                                  const reached = index <= stageIndex;
-                                  const current = index === stageIndex;
-                                  const locationText =
-                                    step.key === "delivered" && order.delivery?.city
-                                      ? `${order.delivery.address || ""}${
-                                          order.delivery.city ? `, ${order.delivery.city}` : ""
-                                        }`
-                                      : step.location;
+                              {/* Horizontal Stepper */}
+                              <div className={`mt-4 grid gap-1 sm:gap-2 ${gridColsClass}`}>
+                                {stepsToDisplay.map((step, index) => {
+                                  const StepIcon = step.icon;
+                                  const isCancelStep = step.statusType === "cancelled";
+                                  const isCurrent = step.statusType === "current";
+                                  const isCompleted = step.statusType === "completed";
 
                                   return (
-                                    <li key={step.key} className="relative">
-                                      <span
-                                        className={`absolute -left-6 top-1 grid size-3.5 place-items-center rounded-full border-2 ${
-                                          current
-                                            ? "border-brand-500 bg-brand-500 ring-4 ring-brand-100"
-                                            : reached
-                                            ? "border-brand-500 bg-brand-500"
-                                            : "border-slate-300 bg-white"
-                                        }`}
-                                      />
-                                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                        <p
-                                          className={`text-xs font-bold sm:text-sm ${
-                                            current
-                                              ? "text-brand-600"
-                                              : reached
-                                              ? "text-slate-900"
-                                              : "text-slate-400"
-                                          }`}
-                                        >
-                                          {step.title}
-                                        </p>
+                                    <div key={step.key} className="flex flex-col items-center text-center min-w-0">
+                                      <div className="relative flex w-full items-center justify-center">
+                                        {index > 0 && (
+                                          <span
+                                            className={`absolute right-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 transition-colors duration-500 ${
+                                              isCancelStep
+                                                ? "bg-red-400"
+                                                : isCompleted || isCurrent
+                                                ? "bg-brand-500"
+                                                : "bg-slate-200"
+                                            }`}
+                                          />
+                                        )}
                                         <span
-                                          className={`text-[11px] ${
-                                            reached ? "font-medium text-slate-500" : "text-slate-400"
+                                          className={`relative z-10 grid size-7 place-items-center rounded-full border-2 transition-all duration-300 sm:size-9 ${
+                                            isCancelStep
+                                              ? "border-red-500 bg-red-500 text-white ring-2 sm:ring-4 ring-red-100"
+                                              : isCurrent
+                                              ? "border-brand-500 bg-brand-500 text-white ring-2 sm:ring-4 ring-brand-100"
+                                              : isCompleted
+                                              ? "border-brand-500 bg-brand-50 text-brand-600"
+                                              : "border-slate-200 bg-white text-slate-400"
                                           }`}
                                         >
-                                          
-{!reached ? "Pending" : formatStepTime(historyTimeForStage(order, index) || (index === stageIndex ? (order.statusHistory || []).slice().reverse().find((event) => event.type !== "note" && event.type !== "refund" && event.status === order.adminStatus)?.at : null) || (index === 0 ? order.createdAt : null))}
-
+                                          <StepIcon size={13} />
                                         </span>
                                       </div>
                                       <p
-                                        className={`mt-0.5 text-xs leading-relaxed ${
-                                          reached ? "text-slate-600" : "text-slate-400"
+                                        className={`mt-1.5 text-[9px] font-semibold leading-tight sm:text-[11px] truncate w-full ${
+                                          isCancelStep
+                                            ? "text-red-600 font-bold"
+                                            : isCurrent
+                                            ? "text-brand-600 font-bold"
+                                            : isCompleted
+                                            ? "text-slate-900"
+                                            : "text-slate-400"
                                         }`}
                                       >
-                                        {step.description}
+                                        {step.shortLabel}
                                       </p>
-                                      <p
-                                        className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${
-                                          reached ? "text-slate-500" : "text-slate-400"
-                                        }`}
-                                      >
-                                        <MapPin size={11} />
-                                        {locationText}
-                                      </p>
-                                    </li>
+                                    </div>
                                   );
                                 })}
-                              </ol>
-                            </div>
+                              </div>
 
-                            {/* Delivery & Receiver Summary */}
+                              {/* Vertical Detailed Timeline */}
+                              <div className="mt-5 border-t border-slate-200 pt-4">
+                                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                  Tracking Timeline
+                                </p>
+                                <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-5">
+                                  {stepsToDisplay.map((step, index) => {
+                                    const isCancelStep = step.statusType === "cancelled";
+                                    const isCurrent = step.statusType === "current";
+                                    const isCompleted = step.statusType === "completed";
+                                    const isPending = step.statusType === "pending";
+
+                                    const timeString = isCancelStep
+                                      ? formatStepTime(
+                                          order.adminStatusUpdatedAt ||
+                                          order.cancelledAt ||
+                                          (order.statusHistory || []).slice().reverse().find((e) => e.status === "cancelled")?.at ||
+                                          order.updatedAt
+                                        )
+                                      : isPending
+                                      ? "Pending"
+                                      : formatStepTime(
+                                          historyTimeForStage(order, index) ||
+                                          (index === stageIndex
+                                            ? (order.statusHistory || [])
+                                                .slice()
+                                                .reverse()
+                                                .find((e) => e.type !== "note" && e.type !== "refund" && e.status === order.adminStatus)?.at
+                                            : null) ||
+                                          (index === 0 ? order.createdAt : null)
+                                        );
+
+                                    const locationText =
+                                      step.key === "delivered" && order.delivery?.city
+                                        ? `${order.delivery.address || ""}${
+                                            order.delivery.city ? `, ${order.delivery.city}` : ""
+                                          }`
+                                        : step.location;
+
+                                    return (
+                                      <li key={step.key} className="relative">
+                                        <span
+                                          className={`absolute -left-6 top-1 grid size-3.5 place-items-center rounded-full border-2 ${
+                                            isCancelStep
+                                              ? "border-red-500 bg-red-500 ring-4 ring-red-100"
+                                              : isCurrent
+                                              ? "border-brand-500 bg-brand-500 ring-4 ring-brand-100"
+                                              : isCompleted
+                                              ? "border-brand-500 bg-brand-500"
+                                              : "border-slate-300 bg-white"
+                                          }`}
+                                        />
+                                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                          <p
+                                            className={`text-xs font-bold sm:text-sm ${
+                                              isCancelStep
+                                                ? "text-red-600 font-bold"
+                                                : isCurrent
+                                                ? "text-brand-600 font-bold"
+                                                : isCompleted
+                                                ? "text-slate-900"
+                                                : "text-slate-400"
+                                            }`}
+                                          >
+                                            {step.title}
+                                          </p>
+                                          <span
+                                            className={`text-[11px] ${
+                                              isCancelStep
+                                                ? "font-semibold text-red-500"
+                                                : isCompleted || isCurrent
+                                                ? "font-medium text-slate-500"
+                                                : "text-slate-400"
+                                            }`}
+                                          >
+                                            {timeString}
+                                          </span>
+                                        </div>
+                                        <p
+                                          className={`mt-0.5 text-xs leading-relaxed ${
+                                            isCancelStep
+                                              ? "text-red-700/90 font-medium"
+                                              : isCompleted || isCurrent
+                                              ? "text-slate-600"
+                                              : "text-slate-400"
+                                          }`}
+                                        >
+                                          {step.description}
+                                        </p>
+                                        <p
+                                          className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${
+                                            isCancelStep
+                                              ? "text-red-500 font-medium"
+                                              : isCompleted || isCurrent
+                                              ? "text-slate-500"
+                                              : "text-slate-400"
+                                          }`}
+                                        >
+                                          {isCancelStep ? <XCircle size={11} /> : <MapPin size={11} />}
+                                          {isCancelStep ? "Shipment stopped" : locationText}
+                                        </p>
+                                      </li>
+                                    );
+                                  })}
+                                </ol>
+                              </div>
+
+                              {/* Delivery & Receiver Summary */}
                             {order.delivery && (
                               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-600">
                                 <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
@@ -1134,7 +1231,8 @@ export default function Account() {
                               </div>
                             )}
                           </div>
-                        )}
+                        );
+                      })()}
                       </li>
                     );
                   })}

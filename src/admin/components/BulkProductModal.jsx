@@ -5,7 +5,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Download,
-  FileSpreadsheet,
   FileText,
   PackageCheck,
   Upload,
@@ -213,31 +212,6 @@ export default function BulkProductModal({ open, onClose }) {
       wide
     >
       <div className="space-y-5">
-        {/* Top Description & Sample Template Download */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-brand-200/80 bg-gradient-to-br from-brand-50/70 via-white to-brand-50/40 p-4 sm:flex-row sm:items-center sm:justify-between shadow-2xs">
-          <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-white shadow-xs">
-              <FileSpreadsheet size={20} />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Bulk Product Import
-              </p>
-              <p className="text-xs text-slate-600">
-                Upload your product catalog using Excel (.xlsx/.xls) or CSV format to import multiple products at once.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleDownloadTemplate}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-brand-300 bg-white px-3 py-2 text-xs font-semibold text-brand-700 shadow-2xs transition hover:bg-brand-50 hover:text-brand-800"
-          >
-            <Download size={14} />
-            <span>Download CSV Template</span>
-          </button>
-        </div>
-
         {/* Upload Dropzone */}
         <div
           onDragOver={(e) => {
@@ -365,10 +339,20 @@ export default function BulkProductModal({ open, onClose }) {
 
         {/* Column Guidelines Box */}
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-            <AlertCircle size={14} className="text-brand-600" />
-            <span>Supported Spreadsheet Headers</span>
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <AlertCircle size={14} className="text-brand-600" />
+              <span>Supported Spreadsheet Headers</span>
+            </p>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+            >
+              <Download size={13} />
+              <span>Download CSV Template</span>
+            </button>
+          </div>
           <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             <div className="rounded-lg bg-white border border-slate-200/80 p-2">
               <span className="font-semibold text-slate-900 block">Title <span className="text-red-500">*</span></span>

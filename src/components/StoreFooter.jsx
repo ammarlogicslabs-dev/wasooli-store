@@ -11,6 +11,7 @@ import {
   Router,
   ShieldCheck,
   Wifi,
+  Mail,
   // Wrench,
 } from "lucide-react";
 import {
@@ -35,7 +36,7 @@ function ColumnDivider() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute right-0 top-1 bottom-1 hidden w-px bg-gradient-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)] lg:block"
+      className="pointer-events-none absolute right-0 top-1 bottom-1 hidden w-px bg-linear-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)] lg:block"
     />
   );
 }
@@ -142,7 +143,7 @@ export default function StoreFooter() {
       />
 
       {/* Main Footer Content */}
-      <div className="relative z-10 mx-auto max-w-[1536px] px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 lg:px-8 xl:px-10">
+      <div className="relative z-10 mx-auto max-w-384 px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 lg:px-8 xl:px-10">
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-0 items-start lg:items-stretch">
           
           {/* Column 1: Brand, Description & Socials */}
@@ -198,7 +199,6 @@ export default function StoreFooter() {
                 // { label: "New Arrivals", to: "/shop?sort=newest", highlight: true },
                 { label: "Deals", to: "/shop?tag=deals" },
                 { label: "About Us", to: "/about" },
-                { label: "Contact", to: "/contact" },
               ].map(({ label, to, highlight }) => (
                 <li key={label}>
                   <Link
@@ -263,8 +263,9 @@ export default function StoreFooter() {
                 { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
                 // { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
                 { Icon: RotateCcw, label: "Return & Exchange", to: "/returns" },
-                { Icon: ShieldCheck, label: "Privacy Policy", to: "/privacy" },
+                // { Icon: ShieldCheck, label: "Privacy Policy", to: "/privacy" },
                 { Icon: FileText, label: "Terms & Conditions", to: "/terms" },
+                { Icon: Mail, label: "Contact", to: "/contact" },
               ].map(({ Icon, label, to }) => (
                 <li key={label}>
                   <Link

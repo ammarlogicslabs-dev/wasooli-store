@@ -171,7 +171,7 @@ export const DEFAULT_FAQS = [
     id: "faq-15",
     question: "How can I contact Wasooli Customer Care?",
     answer:
-      "You can contact us 6 days a week (Mon–Sat 10:00 AM – 8:00 PM) via Phone/WhatsApp at 0300 1234567 or email us at support@wasooli.store. Our online store and technical ticketing system are available 24/7.",
+      "You can contact us 6 days a week (Mon–Sat 10:00 AM – 10:00 PM) via Phone/WhatsApp at 0300 1234567 or email us at support@wasooli.store. Our online store and technical ticketing system are available 24/7.",
     category: "Technical Support",
     status: "published",
     pinned: true,

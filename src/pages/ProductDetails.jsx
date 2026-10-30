@@ -37,7 +37,7 @@ import { useEnsureLogin } from "../auth/useEnsureLogin";
 import { useCart } from "../cart/CartContext";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getRecentlyViewedIds, pushRecentlyViewed } from "../utils/recentlyViewed";
-import { getProductReviews } from "../services/storage/reviewService";
+import { getProductReviewStats } from "../services/storage/reviewService";
 import {
   formatTierRange,
   getActiveTier,
@@ -207,10 +207,22 @@ export default function ProductDetail() {
   const productId = product ? String(product.id) : "";
   const productSlug = product ? String(product.slug) : "";
 
-  const productReviews = useMemo(() => {
-    if (reviewVersion < 0) return [];
-    return getProductReviews(productId, productSlug);
+  const reviewStats = useMemo(() => {
+    if (reviewVersion < 0) {
+      return {
+        reviews: [],
+        total: 0,
+        rating: 0,
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        percentages: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      };
+    }
+    return getProductReviewStats(productId, productSlug);
   }, [productId, productSlug, reviewVersion]);
+
+  const productReviews = reviewStats.reviews;
+  const reviewCount = reviewStats.total;
+  const reviewRating = reviewStats.rating;
 
   useEffect(() => {
     const handleReviewAdded = () => {
@@ -291,7 +303,7 @@ export default function ProductDetail() {
     ...(hasSpecs ? [{ id: "specs", label: "Specifications" }] : []),
     // ...(instructions ? [{ id: "instructions", label: "Setup guide" }] : []),
     { id: "shipping", label: "Shipping & returns" },
-    { id: "reviews", label: `Reviews${product.reviews != null ? ` (${product.reviews})` : ""}` },
+    { id: "reviews", label: `Reviews (${reviewCount})` },
   ];
 
   const relatedProducts = products
@@ -537,26 +549,30 @@ export default function ProductDetail() {
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            {product.rating != null ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setTab("reviews");
-                  document.getElementById("pd-tabs")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="inline-flex items-center gap-2 rounded-lg transition hover:bg-slate-100"
+            <button
+              type="button"
+              onClick={() => {
+                setTab("reviews");
+                document.getElementById("pd-tabs")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="inline-flex items-center gap-2 rounded-lg transition hover:bg-slate-100"
+            >
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs font-bold text-white ${
+                  reviewCount > 0 ? "bg-emerald-600" : "bg-slate-400"
+                }`}
               >
-                <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-bold text-white">
-                  {product.rating}
-                </span>
-                <Stars rating={product.rating} size={14} />
-                {product.reviews != null ? (
-                  <span className="text-sm text-brand-600 underline-offset-2 hover:underline">
-                    {product.reviews} ratings
-                  </span>
-                ) : null}
-              </button>
-            ) : null}
+                {reviewCount > 0 ? reviewRating : "0"}
+              </span>
+              <Stars rating={reviewCount > 0 ? reviewRating : 0} size={14} />
+              <span
+                className={`text-sm underline-offset-2 hover:underline ${
+                  reviewCount > 0 ? "text-brand-600" : "text-slate-500"
+                }`}
+              >
+                {reviewCount} {reviewCount === 1 ? "rating" : "ratings"}
+              </span>
+            </button>
 
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${outOfStock ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
@@ -1239,29 +1255,36 @@ export default function ProductDetail() {
             {tab === "reviews" && (
               <div>
                 <div className="flex flex-wrap items-center gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-slate-900">{product.rating ?? "—"}</p>
-                    <Stars rating={product.rating} size={18} />
+                  <div className="text-center min-w-[90px]">
+                    <p className="text-4xl font-bold text-slate-900">
+                      {reviewCount > 0 ? reviewRating : "0"}
+                    </p>
+                    <Stars rating={reviewCount > 0 ? reviewRating : 0} size={18} />
                     <p className="mt-1 text-xs text-slate-500">
-                      {product.reviews != null ? `${product.reviews} ratings` : "No ratings yet"}
+                      {reviewCount} {reviewCount === 1 ? "rating" : "ratings"}
                     </p>
                   </div>
                   <div className="min-w-[180px] flex-1 space-y-1.5">
                     {[5, 4, 3, 2, 1].map((star) => {
-                      const pct =
-                        product.rating != null
-                          ? Math.max(6, 100 - Math.abs(star - Number(product.rating)) * 28)
-                          : 0;
+                      const count = reviewStats.distribution[star] || 0;
+                      const pct = reviewStats.percentages[star] || 0;
                       return (
                         <div key={star} className="flex items-center gap-2 text-xs text-slate-600">
-                          <span className="w-3">{star}</span>
-                          <Star size={11} className="text-amber-400" fill="currentColor" />
+                          <span className="w-3 font-medium">{star}</span>
+                          <Star
+                            size={11}
+                            className={count > 0 ? "text-amber-400" : "text-slate-300"}
+                            fill="currentColor"
+                          />
                           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
                             <div
-                              className="h-full rounded-full bg-amber-400"
+                              className="h-full rounded-full bg-amber-400 transition-all duration-500"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
+                          <span className="w-6 text-right text-[11px] font-medium text-slate-400">
+                            {count}
+                          </span>
                         </div>
                       );
                     })}
