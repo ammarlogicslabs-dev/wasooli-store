@@ -12,7 +12,6 @@ import {
   Heart,
   KeyRound,
   LogOut,
-  Mail,
   MapPin,
   Navigation,
   Package,
