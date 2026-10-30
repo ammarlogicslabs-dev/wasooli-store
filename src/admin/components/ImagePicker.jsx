@@ -13,6 +13,7 @@ export default function ImagePicker({
   emptyClassName = "aspect-square",
   rounded = "rounded-2xl",
   maxEdge,
+  disabled = false,
 }) {
   const inputRef = useRef(null);
   const [reading, setReading] = useState(false);
@@ -22,7 +23,7 @@ export default function ImagePicker({
   async function handleFile(event) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file) return;
+    if (!file || disabled) return;
     setReading(true);
     try {
       const result = await uploadImage(file, kind);
@@ -35,14 +36,27 @@ export default function ImagePicker({
     }
   }
 
+  const isDisabled = reading || disabled;
+
   return (
     <div>
-      <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={handleFile} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handleFile}
+        disabled={isDisabled}
+      />
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={reading}
-        className={`relative block w-full overflow-hidden border border-dashed border-slate-300 bg-slate-50 text-left disabled:opacity-60 ${rounded}`}
+        onClick={() => !isDisabled && inputRef.current?.click()}
+        disabled={isDisabled}
+        className={`relative block w-full overflow-hidden border border-dashed border-slate-300 bg-slate-50 text-left transition ${rounded} ${
+          isDisabled
+            ? "cursor-not-allowed opacity-60 pointer-events-none"
+            : "cursor-pointer hover:border-brand-400 hover:bg-brand-50/20"
+        }`}
       >
         {previewSrc ? (
           <img src={previewSrc} alt="" className={previewClassName} />
@@ -55,7 +69,7 @@ export default function ImagePicker({
           </span>
         )}
         {previewSrc ? (
-          <span className="absolute inset-x-0 bottom-0 bg-slate-900/60 py-2 text-center text-xs font-semibold text-white">
+          <span className={`absolute inset-x-0 bottom-0 bg-slate-900/60 py-2 text-center text-xs font-semibold text-white ${isDisabled ? "bg-slate-900/70" : ""}`}>
             {reading ? "Uploading image..." : changeLabel}
           </span>
         ) : null}

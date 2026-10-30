@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
@@ -46,6 +46,17 @@ import {
 } from "../utils/priceTiers";
 
 const STORE_NAME = "Wasooli Store";
+
+function formatReviewDate(dateStr) {
+  if (!dateStr) return "Recently";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "Recently";
+  return new Intl.DateTimeFormat("en-PK", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
 
 function Stars({ rating, size = 16 }) {
   const filled = Math.round(Number(rating) || 0);
@@ -192,20 +203,22 @@ export default function ProductDetail() {
     };
   }, []);
 
-  const [productReviews, setProductReviews] = useState(() =>
-    getProductReviews(product?.id, product?.slug)
-  );
+  const [reviewVersion, setReviewVersion] = useState(0);
+  const productId = product ? String(product.id) : "";
+  const productSlug = product ? String(product.slug) : "";
+
+  const productReviews = useMemo(() => {
+    if (reviewVersion < 0) return [];
+    return getProductReviews(productId, productSlug);
+  }, [productId, productSlug, reviewVersion]);
 
   useEffect(() => {
-    if (product) {
-      setProductReviews(getProductReviews(product.id, product.slug));
-    }
     const handleReviewAdded = () => {
-      if (product) setProductReviews(getProductReviews(product.id, product.slug));
+      setReviewVersion((v) => v + 1);
     };
     window.addEventListener("wasooli-review-added", handleReviewAdded);
     return () => window.removeEventListener("wasooli-review-added", handleReviewAdded);
-  }, [product?.id, product?.slug]);
+  }, []);
 
   useEffect(() => {
     document.title = product
@@ -1283,11 +1296,7 @@ export default function ProductDetail() {
                                   )}
                                 </div>
                                 <p className="text-[11px] text-slate-400">
-                                  {new Intl.DateTimeFormat("en-PK", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  }).format(new Date(rev.createdAt || Date.now()))}
+                                  {formatReviewDate(rev.createdAt)}
                                 </p>
                               </div>
                             </div>

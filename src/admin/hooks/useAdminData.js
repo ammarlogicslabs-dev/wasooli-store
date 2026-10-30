@@ -4,6 +4,7 @@ import {
   listCategories,
   listCoupons,
   listCustomers,
+  listFaqs,
   listInventoryHistory,
   listOrders,
   listProducts,
@@ -21,6 +22,7 @@ function readSnapshot(tick = 0) {
     coupons: listCoupons(),
     history: listInventoryHistory(),
     settings: getSettings(),
+    faqs: listFaqs(),
   };
 }
 

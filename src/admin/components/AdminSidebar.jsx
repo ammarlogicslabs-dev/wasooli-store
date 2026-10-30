@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -6,6 +6,7 @@ import {
   Boxes,
   ChevronDown,
   ChevronLeft,
+  HelpCircle,
   LayoutDashboard,
   LogOut,
   Package,
@@ -42,14 +43,16 @@ export default function AdminSidebar({
 
   const [hoveredItem, setHoveredItem] = useState(null);
 
-  // Sync open menu with current route: only active dropdown stays open
-  useEffect(() => {
+  // Sync open menu when route changes: adjusting state during render avoids effect cascades
+  const [prevPath, setPrevPath] = useState(location.pathname);
+  if (prevPath !== location.pathname) {
+    setPrevPath(location.pathname);
     if (location.pathname.startsWith("/admin/products")) {
       setOpenMenu("products");
     } else if (location.pathname.startsWith("/admin/orders")) {
       setOpenMenu("orders");
     }
-  }, [location.pathname]);
+  }
 
   function handleProductsClick() {
     if (collapsed && onToggleCollapse) {
@@ -670,6 +673,31 @@ export default function AdminSidebar({
             >
               <UserRound size={17} className="shrink-0" />
               {!collapsed && <span className="truncate text-xs">Admin</span>}
+            </NavLink>
+
+            {/* Manage FAQs */}
+            <NavLink
+              to="/admin/faqs"
+              end
+              viewTransition
+              onClick={onClose}
+              className={({ isActive }) =>
+                `group flex items-center rounded-xl text-xs transition-colors duration-150 ${
+                  collapsed
+                    ? "size-9 justify-center mx-auto"
+                    : "w-full gap-2.5 px-3 py-2.5"
+                } ${
+                  isActive
+                    ? "bg-brand-50 text-brand-700 font-semibold border border-brand-200/70"
+                    : "text-slate-600 hover:bg-slate-100/80 font-medium"
+                }`
+              }
+              title="Manage FAQs"
+            >
+              <HelpCircle size={17} className="shrink-0" />
+              {!collapsed && (
+                <span className="truncate text-xs">Manage FAQs</span>
+              )}
             </NavLink>
 
             {/* Store Settings */}

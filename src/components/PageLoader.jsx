@@ -1,15 +1,31 @@
 import { motion, useReducedMotion } from "framer-motion";
 
-export default function PageLoader({ overlay = false }) {
+export default function PageLoader({
+  overlay = false,
+  contained = false,
+  admin = false,
+  collapsed = false,
+  className = "",
+}) {
   const reduceMotion = useReducedMotion();
+
+  let containerClass = "flex h-dvh flex-col items-center justify-center gap-4 bg-white";
+  if (admin) {
+    containerClass = `fixed inset-x-0 bottom-0 top-16 z-30 flex flex-col items-center justify-center gap-4 bg-slate-50/85 backdrop-blur-xs transition-[left] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+      collapsed ? "lg:left-20" : "lg:left-72"
+    }`;
+  } else if (overlay) {
+    containerClass = "fixed inset-0 z-[90] flex flex-col items-center justify-center gap-4 bg-white/95 backdrop-blur-xs";
+  } else if (contained) {
+    containerClass = "flex min-h-[60vh] w-full flex-col items-center justify-center gap-4 py-16";
+  }
+  if (className) {
+    containerClass = className;
+  }
 
   return (
     <div
-      className={
-        overlay
-          ? "fixed inset-0 z-[90] flex flex-col items-center justify-center gap-4 bg-white/95 backdrop-blur-xs"
-          : "flex h-dvh flex-col items-center justify-center gap-4 bg-white"
-      }
+      className={containerClass}
       aria-live="polite"
       aria-busy="true"
     >

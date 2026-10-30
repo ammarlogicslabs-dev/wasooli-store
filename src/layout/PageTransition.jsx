@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet, useLocation, useNavigationType } from "react-router-dom";
+import { Outlet, useLocation, useNavigationType, useOutletContext } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import PageLoader from "../components/PageLoader";
 import StoreFooter from "../components/StoreFooter";
@@ -19,6 +19,8 @@ export default function PageTransition() {
   const prevKey = useRef(null);
 
   const isAdmin = location.pathname.startsWith("/admin");
+  const outletContext = useOutletContext();
+  const collapsed = outletContext?.collapsed ?? false;
 
   useEffect(() => {
     const next = locationKey(location);
@@ -33,14 +35,20 @@ export default function PageTransition() {
     setLoading(true);
     const done = window.setTimeout(
       () => setLoading(false),
-      reduceMotion ? 80 : navigationType === "POP" ? 180 : 280,
+      reduceMotion ? 80 : isAdmin ? 220 : navigationType === "POP" ? 180 : 280,
     );
     return () => window.clearTimeout(done);
-  }, [location, reduceMotion, navigationType]);
+  }, [location, reduceMotion, navigationType, isAdmin]);
 
   return (
-    <div className="relative flex min-h-screen flex-col justify-between">
-      {loading ? <PageLoader overlay /> : null}
+    <div className={`relative flex flex-col justify-between ${isAdmin ? "min-h-[calc(100vh-6rem)]" : "min-h-screen"}`}>
+      {loading ? (
+        isAdmin ? (
+          <PageLoader admin collapsed={collapsed} />
+        ) : (
+          <PageLoader overlay />
+        )
+      ) : null}
       <motion.div
         key={locationKey(location)}
         className="flex-1"
@@ -52,7 +60,7 @@ export default function PageTransition() {
             : { duration: 0.28, ease: EASE, delay: loading ? 0 : 0.02 }
         }
       >
-        <Outlet />
+        <Outlet context={outletContext} />
       </motion.div>
       {!isAdmin ? <StoreFooter /> : null}
     </div>

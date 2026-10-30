@@ -10,7 +10,6 @@ import {
   RotateCcw,
   Router,
   ShieldCheck,
-  Truck,
   Wifi,
   // Wrench,
 } from "lucide-react";
@@ -262,8 +261,8 @@ export default function StoreFooter() {
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
-                { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
-                { Icon: RotateCcw, label: "Return & Refunds", to: "/returns" },
+                // { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
+                { Icon: RotateCcw, label: "Return & Exchange", to: "/returns" },
                 { Icon: ShieldCheck, label: "Privacy Policy", to: "/privacy" },
                 { Icon: FileText, label: "Terms & Conditions", to: "/terms" },
               ].map(({ Icon, label, to }) => (

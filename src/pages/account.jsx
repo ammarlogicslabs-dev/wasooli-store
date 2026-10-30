@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -136,17 +136,17 @@ function PasswordField({ id, label, value, shown, onToggle, onChange, autoComple
 
 function Section({ icon: Icon, title, detail, children }) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+    <section className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-3.5 sm:p-6 shadow-sm overflow-hidden">
+      <div className="flex items-start gap-2.5 sm:gap-3">
+        <span className="grid size-9 sm:size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
           <Icon size={18} />
         </span>
-        <div>
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          {detail ? <p className="mt-0.5 text-sm text-slate-500">{detail}</p> : null}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold text-slate-900 truncate">{title}</h2>
+          {detail ? <p className="mt-0.5 text-xs sm:text-sm text-slate-500 truncate">{detail}</p> : null}
         </div>
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-4 sm:mt-5">{children}</div>
     </section>
   );
 }
@@ -194,9 +194,13 @@ export default function Account() {
     submitting: false,
   });
 
-  const [reviewedMap, setReviewedMap] = useState(() =>
-    getUserReviewedOrderMap(user?.email || user?.id)
-  );
+  const [reviewVersion, setReviewVersion] = useState(0);
+  const userIdentifier = user?.email || user?.id || "";
+
+  const reviewedMap = useMemo(() => {
+    if (reviewVersion < 0) return {};
+    return getUserReviewedOrderMap(userIdentifier);
+  }, [userIdentifier, reviewVersion]);
 
   const [passwordForm, setPasswordForm] = useState({
     current: "",
@@ -212,13 +216,12 @@ export default function Account() {
     setVisiblePassword((current) => ({ ...current, [field]: !current[field] }));
 
   useEffect(() => {
-    setReviewedMap(getUserReviewedOrderMap(user?.email || user?.id));
     const handleReviewAdded = () => {
-      setReviewedMap(getUserReviewedOrderMap(user?.email || user?.id));
+      setReviewVersion((v) => v + 1);
     };
     window.addEventListener("wasooli-review-added", handleReviewAdded);
     return () => window.removeEventListener("wasooli-review-added", handleReviewAdded);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,7 +480,7 @@ export default function Account() {
         />
       )}
 
-      <div className="page-offset mx-auto max-w-8xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-10">
+      <div className="page-offset mx-auto max-w-8xl px-3.5 sm:px-6 lg:px-8 pb-6 lg:pb-10 overflow-x-hidden">
         <nav aria-label="Breadcrumb" className="page-crumb">
           <Link to="/">Home</Link>
           <span aria-hidden="true">/</span>
@@ -497,7 +500,7 @@ export default function Account() {
         </h1>
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[calc(var(--store-header-height,0px)+1rem)]">
+          <aside className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm lg:sticky lg:top-[calc(var(--store-header-height,0px)+1rem)]">
             <div className="flex items-center gap-3">
               <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-500 text-lg font-semibold text-white">
                 {(user?.name || "W").charAt(0).toUpperCase()}
@@ -555,7 +558,7 @@ export default function Account() {
             </button>
           </aside>
 
-          <div>
+          <div className="min-w-0 w-full">
             {section === "profile" ? (
               <Section
                 icon={User}
@@ -852,17 +855,17 @@ export default function Account() {
                     return (
                       <li
                         key={order.id}
-                        className={`rounded-2xl border transition ${
+                        className={`rounded-xl sm:rounded-2xl border transition ${
                           isTrackingOpen
                             ? "border-brand-300 bg-white shadow-md"
                             : "border-slate-200 bg-white"
-                        } p-4 sm:p-5`}
+                        } p-3 sm:p-5 overflow-hidden`}
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-start justify-between gap-2.5">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <span
-                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold max-w-full truncate ${
                                   isCancelled
                                     ? "bg-red-50 text-red-600"
                                     : isDelivered
@@ -871,7 +874,7 @@ export default function Account() {
                                 }`}
                               >
                                 <span
-                                  className={`size-1.5 rounded-full ${
+                                  className={`size-1.5 rounded-full shrink-0 ${
                                     isCancelled
                                       ? "bg-red-500"
                                       : isDelivered
@@ -879,23 +882,22 @@ export default function Account() {
                                       : "animate-pulse bg-brand-500"
                                   }`}
                                 />
-                                {isCancelled ? "Cancelled" : currentStep.title}
+                                <span className="truncate">{isCancelled ? "Cancelled" : currentStep.title}</span>
                               </span>
                             </div>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-500 truncate">
                               Placed on {formatDate(order.createdAt)}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2.5">
-                            <p className="text-sm font-bold text-slate-900">
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
                               {formatPrice(order.total)}
                             </p>
-                            
                           </div>
                         </div>
 
-                        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/50 p-2 sm:p-2.5 space-y-1.5">
+                        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/50 p-2 sm:p-2.5 space-y-1.5 overflow-hidden">
                           {(order.items || []).map((item) => {
                             const revKey1 = `${order.id}_${item.id}`;
                             const revKey2 = `${order.id}_${item.slug}`;
@@ -905,17 +907,17 @@ export default function Account() {
                             return (
                               <li
                                 key={`${order.id}-${item.id || item.title}`}
-                                className="flex flex-wrap items-center justify-between gap-2.5 pt-1.5 first:pt-0"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 first:pt-0"
                               >
-                                <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                   {item.image && (
                                     <img
                                       src={resolveMediaUrl(item.image)}
                                       alt=""
-                                      className="size-9 rounded-lg border border-slate-200 object-cover bg-white shrink-0"
+                                      className="size-9 sm:size-10 rounded-lg border border-slate-200 object-cover bg-white shrink-0"
                                     />
                                   )}
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-semibold text-slate-900">{item.title}</p>
                                     <p className="text-[11px] text-slate-500">
                                       Qty: {item.quantity} · {formatPrice(item.price)}
@@ -924,9 +926,9 @@ export default function Account() {
                                 </div>
 
                                 {isDelivered && (
-                                  <div className="shrink-0">
+                                  <div className="shrink-0 self-start sm:self-auto pl-11.5 sm:pl-0">
                                     {userReview ? (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700 border border-emerald-200">
                                         <CheckCircle2 size={12} className="text-emerald-600" />
                                         Reviewed ({userReview.rating}★)
                                       </span>
@@ -946,33 +948,34 @@ export default function Account() {
                             );
                           })}
                         </ul>
-                          <div className="flex items-center justify-between gap-2">
-                          <p className="mt-2.5 text-xs text-slate-500">
-                          {order.payment?.label || "Payment"}
-                          {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
-                        </p>
+
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                          <p className="text-xs text-slate-500 min-w-0 flex-1 truncate">
+                            {order.payment?.label || "Payment"}
+                            {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
+                          </p>
                           <button
-                              type="button"
-                              onClick={() =>
-                                isTrackingOpen
-                                  ? setTrackingOrderId(null)
-                                  : openOrderTracking(order.id)
-                              }
-                              className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
-                                isTrackingOpen
-                                  ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                  : "bg-brand-500 text-white hover:bg-brand-600"
-                              }`}
-                            >
-                              <Truck size={13} />
-                              {isTrackingOpen ? "Hide tracking" : "Track order"}
-                            </button>
-                          </div>
+                            type="button"
+                            onClick={() =>
+                              isTrackingOpen
+                                ? setTrackingOrderId(null)
+                                : openOrderTracking(order.id)
+                            }
+                            className={`shrink-0 inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
+                              isTrackingOpen
+                                ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                : "bg-brand-500 text-white hover:bg-brand-600"
+                            }`}
+                          >
+                            <Truck size={13} />
+                            {isTrackingOpen ? "Hide tracking" : "Track order"}
+                          </button>
+                        </div>
                         
                         
 
                         {isTrackingOpen && (
-                          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                          <div className="mt-4 rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-5 overflow-hidden">
                             {/* Top Daraz-style banner */}
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
                               <div>
@@ -1005,13 +1008,13 @@ export default function Account() {
                             </div>
 
                             {/* Horizontal Daraz-style Stepper */}
-                            <div className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2">
+                            <div className="mt-4 grid grid-cols-5 gap-1 sm:gap-2">
                               {TRACKING_STEPS.map((step, index) => {
                                 const StepIcon = step.icon;
                                 const reached = index <= stageIndex;
                                 const current = index === stageIndex;
                                 return (
-                                  <div key={step.key} className="flex flex-col items-center text-center">
+                                  <div key={step.key} className="flex flex-col items-center text-center min-w-0">
                                     <div className="relative flex w-full items-center justify-center">
                                       {index > 0 && (
                                         <span
@@ -1021,19 +1024,19 @@ export default function Account() {
                                         />
                                       )}
                                       <span
-                                        className={`relative z-10 grid size-8 place-items-center rounded-full border-2 transition-all duration-300 sm:size-9 ${
+                                        className={`relative z-10 grid size-7 place-items-center rounded-full border-2 transition-all duration-300 sm:size-9 ${
                                           current
-                                            ? "border-brand-500 bg-brand-500 text-white ring-4 ring-brand-100"
+                                            ? "border-brand-500 bg-brand-500 text-white ring-2 sm:ring-4 ring-brand-100"
                                             : reached
                                             ? "border-brand-500 bg-brand-50 text-brand-600"
                                             : "border-slate-200 bg-white text-slate-400"
                                         }`}
                                       >
-                                        <StepIcon size={15} />
+                                        <StepIcon size={13} />
                                       </span>
                                     </div>
                                     <p
-                                      className={`mt-1.5 text-[10px] font-semibold leading-tight sm:text-[11px] ${
+                                      className={`mt-1.5 text-[9px] font-semibold leading-tight sm:text-[11px] truncate w-full ${
                                         reached ? "text-slate-900" : "text-slate-400"
                                       }`}
                                     >

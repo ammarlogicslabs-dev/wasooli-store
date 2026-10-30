@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../auth/AdminAuthContext";
 import AdminHeader from "../components/AdminHeader";
 import AdminSidebar from "../components/AdminSidebar";
 import { useAdminData } from "../hooks/useAdminData";
+import PageLoader from "../../components/PageLoader";
 
 export default function AdminLayout() {
   const { logout } = useAdminAuth();
@@ -36,8 +37,10 @@ export default function AdminLayout() {
           onToggleCollapse={() => setCollapsed((value) => !value)}
           onOpenMobile={() => setMobileOpen(true)}
         />
-        <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
-          <Outlet />
+        <main className="relative flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <Suspense fallback={<PageLoader admin collapsed={collapsed} />}>
+            <Outlet context={{ collapsed }} />
+          </Suspense>
         </main>
       </div>
     </div>

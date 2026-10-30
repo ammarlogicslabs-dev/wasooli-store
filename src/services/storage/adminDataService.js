@@ -23,6 +23,18 @@ export const STORAGE_KEYS = {
 
 export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
+export {
+  FAQ_CATEGORIES,
+  DEFAULT_FAQS,
+  listFaqs,
+  getFaq,
+  saveFaq,
+  deleteFaq,
+  toggleFaqStatus,
+  toggleFaqPinned,
+  resetDefaultFaqs,
+} from "./faqService";
+
 export const DEFAULT_NAVBAR_ANNOUNCEMENTS = [
   "Nationwide delivery on networking cables",
   "Orders packed in 1-2 working days",

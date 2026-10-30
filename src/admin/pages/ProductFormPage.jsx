@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FileSpreadsheet, X } from "lucide-react";
+import { FileSpreadsheet, Loader2, X } from "lucide-react";
 import BulkProductModal from "../components/BulkProductModal";
 import {
   buildDefaultInstructions,
@@ -14,7 +14,8 @@ import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
 import PageHeader from "../components/PageHeader";
 import PriceTiersEditor from "../components/PriceTiersEditor";
-import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
+import { inputClass, quietButtonClass } from "../components/formStyles";
+import PageLoader from "../../components/PageLoader";
 import { useAdminData } from "../hooks/useAdminData";
 import { normalizePriceTiers } from "../../utils/priceTiers";
 import {
@@ -115,9 +116,10 @@ export default function ProductFormPage() {
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
   const [reading, setReading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const extraInputRef = useRef(null);
-  const skipSync = Boolean(id && loading);
+  const skipSync = Boolean(id && !existing && loading);
   const syncKey = skipSync ? null : `${id ?? "new"}:${existing?.id ?? "none"}`;
   const [syncedKey, setSyncedKey] = useState(syncKey);
 
@@ -127,12 +129,11 @@ export default function ProductFormPage() {
     setErrors({});
   }
 
-  if (id && loading) {
-    return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
-        <p className="font-semibold text-slate-900">Loading product...</p>
-      </div>
-    );
+  const outletContext = useOutletContext();
+  const collapsed = outletContext?.collapsed ?? false;
+
+  if (id && !existing && loading) {
+    return <PageLoader admin collapsed={collapsed} />;
   }
 
   if (id && !existing) {
@@ -222,20 +223,28 @@ export default function ProductFormPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const extras = (form.extraImages || []).filter(Boolean);
-    const result = await saveProduct({
-      ...form,
-      id: existing?.id,
-      images: form.image ? [form.image, ...extras] : extras,
-      botInstructions: form.botInstructions,
-    });
-    if (!result.ok) {
-      setErrors(result.errors || {});
-      toast.error(result.message || "Check the highlighted fields.");
-      return;
+    if (saving) return;
+    setSaving(true);
+    try {
+      const extras = (form.extraImages || []).filter(Boolean);
+      const result = await saveProduct({
+        ...form,
+        id: existing?.id,
+        images: form.image ? [form.image, ...extras] : extras,
+        botInstructions: form.botInstructions,
+      });
+      if (!result.ok) {
+        setErrors(result.errors || {});
+        toast.error(result.message || "Check the highlighted fields.");
+        setSaving(false);
+        return;
+      }
+      toast.success(existing ? "Product updated." : "Product added.");
+      navigate("/admin/products");
+    } catch (error) {
+      toast.error(error?.message || "Could not save product.");
+      setSaving(false);
     }
-    toast.success(existing ? "Product updated." : "Product added.");
-    navigate("/admin/products");
   }
 
   const field = (name, label, props = {}) => (
@@ -260,7 +269,14 @@ export default function ProductFormPage() {
 
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="relative space-y-5">
+      {saving && (
+        <div
+          className="fixed inset-0 z-40 cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+
       <PageHeader
         crumbs={[{ label: "Products", to: "/admin/products" }, { label: existing ? "Edit" : "Add" }]}
         title={existing ? "Edit product" : "Add product"}
@@ -270,7 +286,8 @@ export default function ProductFormPage() {
             <button
               type="button"
               onClick={() => setBulkOpen(true)}
-              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:text-brand-700 sm:text-sm"
+              disabled={saving}
+              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-brand-300 hover:bg-brand-50/70 hover:text-brand-700 sm:text-sm disabled:cursor-not-allowed"
             >
               <FileSpreadsheet size={16} className="text-emerald-600" />
               <span>Bulk Import (CSV/Excel)</span>
@@ -495,11 +512,20 @@ export default function ProductFormPage() {
         </section>
         <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-4 lg:self-start">
           <p className="text-sm font-semibold text-slate-900">Images</p>
-          <input ref={extraInputRef} type="file" accept="image/*" multiple className="sr-only" onChange={handleExtraFiles} />
+          <input
+            ref={extraInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={handleExtraFiles}
+            disabled={saving || reading}
+          />
           <ImagePicker
             value={form.image}
             onChange={(image) => update("image", image)}
             label="Select product image"
+            disabled={saving || reading}
           />
           {errors.image ? <p className="text-xs font-medium text-red-600">{errors.image}</p> : null}
 
@@ -512,7 +538,12 @@ export default function ProductFormPage() {
                     type="button"
                     aria-label="Remove extra image"
                     onClick={() => removeExtra(index)}
-                    className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-slate-900 text-white"
+                    disabled={saving || reading}
+                    className={`absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-slate-900 text-white transition ${
+                      saving || reading
+                        ? "cursor-not-allowed opacity-50 pointer-events-none"
+                        : "cursor-pointer hover:bg-red-600"
+                    }`}
                   >
                     <X size={10} />
                   </button>
@@ -524,14 +555,38 @@ export default function ProductFormPage() {
           <button
             type="button"
             onClick={() => extraInputRef.current?.click()}
-            disabled={reading || form.extraImages.length >= MAX_EXTRA}
+            disabled={saving || reading || form.extraImages.length >= MAX_EXTRA}
             className={quietButtonClass}
           >
             Add extra images
           </button>
-          <div className="flex flex-col gap-2">
-            <button type="submit" className={buttonClass} disabled={reading}>Save product</button>
-            <Link to="/admin/products" className={quietButtonClass}>Cancel</Link>
+          <div className={`flex flex-col gap-2 ${saving ? "relative z-50" : ""}`}>
+            <button
+              type="submit"
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white transition ${
+                saving
+                  ? "cursor-wait opacity-95"
+                  : "hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              }`}
+              disabled={saving || reading}
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin shrink-0" />
+                  <span>Saving product...</span>
+                </>
+              ) : (
+                <span>Save product</span>
+              )}
+            </button>
+            <Link
+              to="/admin/products"
+              className={`${quietButtonClass} ${saving ? "pointer-events-none" : ""}`}
+              tabIndex={saving ? -1 : undefined}
+              aria-disabled={saving}
+            >
+              Cancel
+            </Link>
           </div>
         </aside>
       </div>

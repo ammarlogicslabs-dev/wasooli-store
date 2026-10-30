@@ -17,6 +17,7 @@ const ProductDetail = lazy(() => import("./pages/ProductDetails"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Login = lazy(() => import("./pages/Login"));
 const Account = lazy(() => import("./pages/account"));
+const Faqs = lazy(() => import("./pages/Faqs"));
 
 const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
 const ProductsPage = lazy(() => import("./admin/pages/ProductsPage"));
@@ -31,6 +32,7 @@ const ReportsPage = lazy(() => import("./admin/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./admin/pages/SettingsPage"));
 const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
+const FaqsPage = lazy(() => import("./admin/pages/FaqsPage"));
 
 
 function RequireAdmin({ children }) {
@@ -66,6 +68,7 @@ export default function App() {
               }
             />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/faqs" element={<Faqs />} />
           </Route>
 
           <Route
@@ -90,6 +93,7 @@ export default function App() {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="coupons" element={<CouponsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="faqs" element={<FaqsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>
