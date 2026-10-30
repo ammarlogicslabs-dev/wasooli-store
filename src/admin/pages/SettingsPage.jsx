@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { Megaphone, Plus, Trash2, RotateCcw } from "lucide-react";
+import { Megaphone, Plus, Trash2 } from "lucide-react";
 import {
   saveSettings,
   DEFAULT_NAVBAR_ANNOUNCEMENTS,
@@ -56,13 +56,13 @@ export default function SettingsPage() {
     }));
   }
 
-  function handleResetNavbarItems() {
-    setForm((prev) => ({
-      ...prev,
-      navbarAnnouncements: [...DEFAULT_NAVBAR_ANNOUNCEMENTS],
-    }));
-    toast.info("Navbar announcements reset to defaults.");
-  }
+  // function handleResetNavbarItems() {
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     navbarAnnouncements: [...DEFAULT_NAVBAR_ANNOUNCEMENTS],
+  //   }));
+  //   toast.info("Navbar announcements reset to defaults.");
+  // }
 
   // --- Footer Announcements handlers ---
   function handleAddFooterItem(e) {
@@ -91,13 +91,13 @@ export default function SettingsPage() {
     }));
   }
 
-  function handleResetFooterItems() {
-    setForm((prev) => ({
-      ...prev,
-      footerAnnouncements: [...DEFAULT_FOOTER_ANNOUNCEMENTS],
-    }));
-    toast.info("Footer announcements reset to defaults.");
-  }
+  // function handleResetFooterItems() {
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     footerAnnouncements: [...DEFAULT_FOOTER_ANNOUNCEMENTS],
+  //   }));
+  //   toast.info("Footer announcements reset to defaults.");
+  // }
 
   // --- Persistence ---
   async function persistSettings(payload, successMsg) {

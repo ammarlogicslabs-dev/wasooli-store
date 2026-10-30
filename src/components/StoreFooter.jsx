@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Truck,
   Wifi,
-  Wrench,
+  // Wrench,
 } from "lucide-react";
 import {
   FaFacebookF,

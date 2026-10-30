@@ -14,7 +14,7 @@ import {
   Lock,
   RotateCcw,
   ShieldCheck,
-  Store,
+  // Store,
   Truck,
   User,
 } from "lucide-react";
