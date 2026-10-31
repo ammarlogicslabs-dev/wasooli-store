@@ -25,6 +25,7 @@ export default function ProductsPage() {
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
   const [pending, setPending] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const filtered = useMemo(() => {
@@ -47,28 +48,33 @@ export default function ProductsPage() {
   const view = paginate(filtered, page, PAGE_SIZE);
 
   async function confirmAction() {
-    if (!pending) return;
-    let result;
-    if (pending.mode === "delete") {
-      result = await deleteProduct(pending.product.id);
-    } else if (pending.mode === "activate") {
-      result = await activateProduct(pending.product.id, pending.product);
-    } else {
-      result = await archiveProduct(pending.product.id);
-    }
+    if (!pending || actionLoading) return;
+    setActionLoading(true);
+    try {
+      let result;
+      if (pending.mode === "delete") {
+        result = await deleteProduct(pending.product.id);
+      } else if (pending.mode === "activate") {
+        result = await activateProduct(pending.product.id, pending.product);
+      } else {
+        result = await archiveProduct(pending.product.id);
+      }
 
-    if (!result.ok) {
-      toast.error(result.message || "Could not update the product.");
-    } else {
-      const msg =
-        pending.mode === "delete"
-          ? "Product deleted."
-          : pending.mode === "activate"
-          ? "Product activated successfully."
-          : "Product archived.";
-      toast.success(msg);
+      if (!result.ok) {
+        toast.error(result.message || "Could not update the product.");
+      } else {
+        const msg =
+          pending.mode === "delete"
+            ? "Product deleted."
+            : pending.mode === "activate"
+            ? "Product activated successfully."
+            : "Product archived.";
+        toast.success(msg);
+      }
+    } finally {
+      setActionLoading(false);
+      setPending(null);
     }
-    setPending(null);
   }
 
   return (
@@ -114,11 +120,11 @@ export default function ProductsPage() {
             <option value="stock">Stock</option>
           </select>
         </div>
-        <div className="mt-4">
+        <div className={`mt-4 ${actionLoading ? "pointer-events-none select-none opacity-60" : ""}`}>
           <AdminTable
             rows={view.items}
             rowKey={(product) => product.id}
-            onRowClick={(product) => navigate(`/admin/products/${product.id}/edit`)}
+            onRowClick={(product) => !actionLoading && navigate(`/admin/products/${product.id}/edit`)}
             empty="No products match these filters."
             columns={[
               {
@@ -172,33 +178,39 @@ export default function ProductsPage() {
                       {isArchived ? (
                         <button
                           type="button"
+                          disabled={actionLoading}
                           onClick={(event) => {
                             event.stopPropagation();
+                            if (actionLoading) return;
                             setPending({ product, mode: "activate" });
                           }}
-                          className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                          className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           Activate
                         </button>
                       ) : (
                         <button
                           type="button"
+                          disabled={actionLoading}
                           onClick={(event) => {
                             event.stopPropagation();
+                            if (actionLoading) return;
                             setPending({ product, mode: "archive" });
                           }}
-                          className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600"
+                          className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           Archive
                         </button>
                       )}
                       <button
                         type="button"
+                        disabled={actionLoading}
                         onClick={(event) => {
                           event.stopPropagation();
+                          if (actionLoading) return;
                           setPending({ product, mode: "delete" });
                         }}
-                        className="cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700 hover:underline"
+                        className="cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Delete
                       </button>
@@ -213,6 +225,7 @@ export default function ProductsPage() {
       </section>
       <ConfirmDialog
         open={Boolean(pending)}
+        loading={actionLoading}
         title={
           pending?.mode === "delete"
             ? "Delete product?"
@@ -234,7 +247,10 @@ export default function ProductsPage() {
             ? "Activate"
             : "Archive"
         }
-        onClose={() => setPending(null)}
+        tone={pending?.mode === "activate" ? "primary" : "danger"}
+        onClose={() => {
+          if (!actionLoading) setPending(null);
+        }}
         onConfirm={confirmAction}
       />
       <BulkProductModal

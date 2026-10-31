@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function ConfirmDialog({
   open,
@@ -6,6 +7,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   tone = "danger",
+  loading = false,
   onConfirm,
   onClose,
 }) {
@@ -25,7 +27,7 @@ export default function ConfirmDialog({
     }
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !loading) {
         onClose?.();
       }
     };
@@ -41,14 +43,16 @@ export default function ConfirmDialog({
       }
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, loading]);
 
   if (!open) return null;
 
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-[70] grid place-items-center bg-slate-900/45 p-4 backdrop-blur-xs transition-opacity"
+      onClick={loading ? undefined : onClose}
+      className={`fixed inset-0 z-[70] grid place-items-center bg-slate-900/45 p-4 backdrop-blur-xs transition-opacity ${
+        loading ? "cursor-wait" : ""
+      }`}
       role="dialog"
       aria-modal="true"
     >
@@ -62,20 +66,29 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            disabled={loading}
+            className="inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`inline-flex h-10 cursor-pointer items-center rounded-xl px-4 text-sm font-semibold text-white ${
+            disabled={loading}
+            className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition ${
+              loading
+                ? "cursor-wait opacity-85"
+                : "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            } ${
               tone === "danger"
                 ? "bg-red-600 hover:bg-red-700"
+                : tone === "success"
+                ? "bg-emerald-600 hover:bg-emerald-700"
                 : "bg-brand-500 hover:bg-brand-600"
             }`}
           >
-            {confirmLabel}
+            {loading && <Loader2 size={16} className="animate-spin shrink-0" />}
+            <span>{loading ? `${confirmLabel}...` : confirmLabel}</span>
           </button>
         </div>
       </div>

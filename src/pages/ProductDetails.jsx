@@ -388,7 +388,7 @@ export default function ProductDetail() {
   })();
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24 lg:pb-0">
+    <main className="min-h-screen bg-slate-50">
       <StoreHeader />
 
       <div className="border-b border-slate-200/80 bg-white">
@@ -857,7 +857,7 @@ export default function ProductDetail() {
               <span className="font-semibold text-slate-800">{deliveryWindow}</span>
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2">
               <span className="shrink-0 text-xs font-semibold text-slate-700">Qty</span>
               <QuantityStepper
                 size="lg"
@@ -1386,38 +1386,7 @@ export default function ProductDetail() {
         </section>
       ) : null}
 
-      {/* Mobile sticky buy bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-2.5 shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.25)] backdrop-blur-md xl:hidden">
-        <div className="mx-auto flex max-w-8xl items-center gap-2 sm:gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-slate-900">{formatPrice(unitPrice)}</p>
-            <p className="truncate text-[11px] text-slate-500">
-              {quantity} item{quantity === 1 ? "" : "s"} · {formatPrice(lineTotal(product, quantity))}
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={handleAddToCart}
-            className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white sm:px-4 sm:text-sm ${added ? "bg-emerald-500" : "bg-brand-500"
-              } disabled:bg-slate-300`}
-          >
-            <ShoppingBag size={15} />
-            {outOfStock ? "Sold out" : added ? "Added" : "Add"}
-          </button>
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={handleBuyNow}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white sm:px-4 sm:text-sm disabled:border-slate-300 disabled:bg-slate-300"
-          >
-            <Zap size={15} />
-            Buy
-          </button>
-        </div>
-      </div>
-
-      <div className="fixed bottom-[4.75rem] right-5 z-40 xl:bottom-6 xl:right-6">
+      <div className="fixed bottom-5 right-5 z-40 sm:bottom-6 sm:right-6">
         <button
           type="button"
           onClick={() => setFloatingBotOpen(true)}

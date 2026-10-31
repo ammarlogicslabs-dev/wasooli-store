@@ -91,7 +91,7 @@ export default function Terms() {
           </div>
 
           {/* Sticky/Interactive Navigation Pills */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5">
             {SECTIONS.map((sec) => {
               const Icon = sec.icon;
               const isActive = activeTab === sec.id;
@@ -100,14 +100,14 @@ export default function Terms() {
                   key={sec.id}
                   type="button"
                   onClick={() => handleTabChange(sec.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25 scale-[1.02]"
+                      ? "bg-brand-500 text-white shadow-xs sm:shadow-md shadow-brand-500/25 scale-[1.02]"
                       : "bg-white text-slate-700 border border-slate-200/90 hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-600 shadow-2xs"
                   }`}
                 >
-                  <Icon size={14} className={isActive ? "text-white" : "text-brand-500"} />
-                  <span>{sec.label}</span>
+                  <Icon className={`size-3 sm:size-3.5 shrink-0 ${isActive ? "text-white" : "text-brand-500"}`} />
+                  <span className="leading-tight">{sec.label}</span>
                 </button>
               );
             })}

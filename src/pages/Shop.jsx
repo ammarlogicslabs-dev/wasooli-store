@@ -239,14 +239,11 @@ function CategoryFilterGroup({
     return value && value !== "All" ? value : null;
   });
 
-  const lastSyncedValueRef = useRef(value);
-
-  useEffect(() => {
-    if (value && value !== "All" && value !== lastSyncedValueRef.current) {
-      setExpandedCategory(value);
-    }
-    lastSyncedValueRef.current = value;
-  }, [value]);
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setExpandedCategory(value && value !== "All" ? value : null);
+  }
 
   function handleCategoryClick(item, hasSubcategories) {
     if (hasSubcategories) {

@@ -1070,8 +1070,9 @@ export default function Account() {
                         {isTrackingOpen && (() => {
                           const stepsToDisplay = isCancelled
                             ? [
-                                ...TRACKING_STEPS.slice(0, Math.min(stageIndex + 1, TRACKING_STEPS.length - 1)).map((s) => ({
+                                ...TRACKING_STEPS.slice(0, Math.min(stageIndex + 1, TRACKING_STEPS.length - 1)).map((s, idx) => ({
                                   ...s,
+                                  originalIndex: idx,
                                   statusType: "completed",
                                 })),
                                 {
@@ -1084,10 +1085,12 @@ export default function Account() {
                                     "This order was cancelled. Package transit has been stopped and no COD amount will be collected.",
                                   icon: XCircle,
                                   statusType: "cancelled",
+                                  originalIndex: stageIndex + 1,
                                 },
                               ]
                             : TRACKING_STEPS.map((s, idx) => ({
                                 ...s,
+                                originalIndex: idx,
                                 statusType: idx === stageIndex ? "current" : idx < stageIndex ? "completed" : "pending",
                               }));
 
@@ -1205,31 +1208,31 @@ export default function Account() {
                                   Tracking Timeline
                                 </p>
                                 <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-4">
-                                  {stepsToDisplay.map((step, index) => {
-                                    const isCancelStep = step.statusType === "cancelled";
-                                    const isCurrent = step.statusType === "current";
-                                    const isCompleted = step.statusType === "completed";
-                                    const isPending = step.statusType === "pending";
+                                  {stepsToDisplay
+                                    .filter((step) => step.statusType !== "pending")
+                                    .map((step, index) => {
+                                      const isCancelStep = step.statusType === "cancelled";
+                                      const isCurrent = step.statusType === "current";
+                                      const isCompleted = step.statusType === "completed";
+                                      const stageIdx = step.originalIndex ?? index;
 
-                                    const timeString = isCancelStep
-                                      ? formatStepTime(
-                                          order.adminStatusUpdatedAt ||
-                                          order.cancelledAt ||
-                                          (order.statusHistory || []).slice().reverse().find((e) => e.status === "cancelled")?.at ||
-                                          order.updatedAt
-                                        )
-                                      : isPending
-                                      ? "Pending"
-                                      : formatStepTime(
-                                          historyTimeForStage(order, index) ||
-                                          (index === stageIndex
-                                            ? (order.statusHistory || [])
-                                                .slice()
-                                                .reverse()
-                                                .find((e) => e.type !== "note" && e.type !== "refund" && e.status === order.adminStatus)?.at
-                                            : null) ||
-                                          (index === 0 ? order.createdAt : null)
-                                        );
+                                      const timeString = isCancelStep
+                                        ? formatStepTime(
+                                            order.adminStatusUpdatedAt ||
+                                            order.cancelledAt ||
+                                            (order.statusHistory || []).slice().reverse().find((e) => e.status === "cancelled")?.at ||
+                                            order.updatedAt
+                                          )
+                                        : formatStepTime(
+                                            historyTimeForStage(order, stageIdx) ||
+                                            (stageIdx === stageIndex
+                                              ? (order.statusHistory || [])
+                                                  .slice()
+                                                  .reverse()
+                                                  .find((e) => e.type !== "note" && e.type !== "refund" && e.status === order.adminStatus)?.at
+                                              : null) ||
+                                            (stageIdx === 0 ? order.createdAt : null)
+                                          );
 
                                     const locationText =
                                       step.key === "delivered" && order.delivery?.city
@@ -1767,12 +1770,12 @@ export default function Account() {
                 </label>
                 <textarea
                   id="review-comment"
-                  rows={4}
+                  rows={3}
                   required
                   value={reviewModal.comment}
                   onChange={(e) => setReviewModal((prev) => ({ ...prev, comment: e.target.value }))}
                   placeholder="Share details about product performance, speed, build quality, and delivery experience..."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-xs placeholder:leading-relaxed placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-900 outline-none transition placeholder:text-[11px] placeholder:leading-relaxed placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                 />
               </div>
 

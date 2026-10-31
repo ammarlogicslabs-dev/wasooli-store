@@ -175,7 +175,7 @@ export default function Faqs() {
       {/* Main Content Area */}
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12">
         {/* Category Filter Pills Strip */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pb-2">
           {FAQ_CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat] || HelpCircle;
             const active = activeCategory === cat;
