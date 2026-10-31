@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  MessageSquare,
   Send,
   CheckCircle2,
   ChevronRight,
@@ -12,7 +11,6 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  Clock,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import StoreHeader from "../components/StoreHeader";
