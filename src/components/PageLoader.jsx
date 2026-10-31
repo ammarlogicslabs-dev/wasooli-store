@@ -5,7 +5,6 @@ export default function PageLoader({
   overlay = false,
   contained = false,
   admin = false,
-  collapsed = false,
   className = "",
   message = "Loading…",
 }) {
@@ -21,16 +20,53 @@ export default function PageLoader({
 
   // Fullscreen / overlay container with guaranteed viewport centering
   const baseClasses = `wasooli-page-loader-overlay ${
-    admin ? "wasooli-page-loader-admin bg-slate-50/90" : overlay ? "bg-white/95" : "bg-white"
-  } ${admin ? (collapsed ? "sidebar-collapsed" : "sidebar-expanded") : ""} backdrop-blur-sm ${className}`;
+    admin ? "bg-slate-50/95" : overlay ? "bg-white/95" : "bg-white"
+  } backdrop-blur-sm ${className}`;
 
   const content = (
     <div
       className={baseClasses}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        maxWidth: "100%",
+        height: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 999999,
+        margin: 0,
+        padding: 0,
+        boxSizing: "border-box",
+        overflow: "hidden",
+      }}
       aria-live="polite"
       aria-busy="true"
     >
-      <LoaderContent reduceMotion={reduceMotion} message={message} />
+      {/* Absolute 50/50 transform centering for 100% precision on mobile devices */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "max-content",
+          maxWidth: "92vw",
+          margin: 0,
+          padding: 0,
+          textAlign: "center",
+        }}
+      >
+        <LoaderContent reduceMotion={reduceMotion} message={message} />
+      </div>
     </div>
   );
 
@@ -44,7 +80,8 @@ export default function PageLoader({
 function LoaderContent({ reduceMotion, message }) {
   return (
     <motion.div
-      className="m-auto flex flex-col items-center justify-center gap-4 px-4 text-center"
+      className="flex flex-col items-center justify-center gap-4 px-4 text-center"
+      style={{ margin: "0 auto", textAlign: "center" }}
       initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25, ease: "easeOut" }}

@@ -145,6 +145,11 @@ export default function ShopProductRail({
               const discountPct = hasDiscount
                 ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
                 : 0;
+              const primary = resolveMediaUrl(product.image);
+              const secondaryRaw = (product.images || []).find(
+                (src) => src && src !== product.image
+              );
+              const secondary = secondaryRaw ? resolveMediaUrl(secondaryRaw) : null;
 
               return (
                 <SwiperSlide key={`${product.id}-${idx}`}>
@@ -165,15 +170,26 @@ export default function ShopProductRail({
                       }`}
                     >
                       <img
-                        src={resolveMediaUrl(product.image)}
+                        src={primary}
                         alt={product.title}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = "/products/gigabit-switch.jpg";
                         }}
-                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                        className={`h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110 ${
+                          secondary ? "opacity-100 group-hover:opacity-0" : ""
+                        }`}
                       />
+                      {secondary ? (
+                        <img
+                          src={secondary}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          className="absolute inset-0 aspect-square h-full w-full object-cover opacity-0 transition duration-700 ease-out group-hover:scale-110 group-hover:opacity-100"
+                        />
+                      ) : null}
                       {hasDiscount ? (
                         <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                           −{discountPct}%
