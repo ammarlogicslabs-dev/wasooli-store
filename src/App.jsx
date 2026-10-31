@@ -20,6 +20,7 @@ const Account = lazy(() => import("./pages/account"));
 const Faqs = lazy(() => import("./pages/Faqs"));
 const ReturnsPolicy = lazy(() => import("./pages/ReturnsPolicy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const Contact = lazy(() => import("./pages/Contact"));
 
 const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
 const ProductsPage = lazy(() => import("./admin/pages/ProductsPage"));
@@ -77,6 +78,8 @@ export default function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/terms-and-conditions" element={<Navigate to="/terms" replace />} />
             <Route path="/terms-conditions" element={<Navigate to="/terms" replace />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
           </Route>
 
           <Route

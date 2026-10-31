@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatPrice } from "../../data/product";
 import { getOrder, updateOrder } from "../../services/storage/adminDataService";
@@ -23,9 +23,13 @@ function orderFormKey(order) {
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { orders } = useAdminData();
-  const decodedId = decodeURIComponent(id);
-  const order = orders.find((item) => String(item.id) === String(decodedId)) || getOrder(decodedId);
+  const decodedId = decodeURIComponent(id || "");
+  const order =
+    id && id !== "details" && id !== "latest"
+      ? orders.find((item) => String(item.id) === String(decodedId)) || getOrder(decodedId)
+      : orders?.[0] || null;
   const [note, setNote] = useState("");
   const [status, setStatus] = useState(order?.adminStatus || "pending");
   const [courier, setCourier] = useState(order?.courier || "Wasooli Express");
@@ -44,9 +48,10 @@ export default function OrderDetailsPage() {
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
-        <p className="font-semibold text-slate-900">Order not found.</p>
-        <Link to="/admin/orders" className="mt-3 inline-flex text-sm font-semibold text-brand-600">Back to orders</Link>
+      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+        <p className="font-semibold text-slate-900">No orders found.</p>
+        <p className="mt-1 text-sm text-slate-500">There are no orders placed in the store yet.</p>
+        <Link to="/admin/orders" className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-600">Back to all orders</Link>
       </div>
     );
   }
@@ -102,10 +107,30 @@ export default function OrderDetailsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        crumbs={[{ label: "Orders", to: "/admin/orders" }, { label: "Details" }]}
+        crumbs={[{ label: "Orders", to: "/admin/orders" }, { label: `#${order.id || "Details"}` }]}
         title={order.delivery?.fullName || "Order"}
-        detail={`Placed ${new Date(order.createdAt).toLocaleString("en-PK")}`}
-        actions={<StatusBadge status={order.adminStatus || "pending"}>{statusLabel(order.adminStatus || "pending")}</StatusBadge>}
+        detail={`Placed ${new Date(order.createdAt).toLocaleString("en-PK")} · Order #${order.id}`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {orders.length > 1 && (
+              <select
+                value={order.id}
+                onChange={(e) => navigate(`/admin/orders/${encodeURIComponent(e.target.value)}`)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs focus:border-brand-500 focus:outline-none"
+                title="Switch Order"
+              >
+                {orders.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    #{o.id} - {o.delivery?.fullName || "Customer"}
+                  </option>
+                ))}
+              </select>
+            )}
+            <StatusBadge status={order.adminStatus || "pending"}>
+              {statusLabel(order.adminStatus || "pending")}
+            </StatusBadge>
+          </div>
+        }
       />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
@@ -170,16 +195,22 @@ export default function OrderDetailsPage() {
             <label className="block text-sm font-semibold text-slate-900">Internal note
               <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add an internal note or update about this order..." rows={3} className={`${inputClass} mt-1.5`} />
             </label>
-            <button
-              type="button"
-              className={buttonClass}
-              onClick={() => apply({ adminStatus: status, note, courier, trackingNumber }, "Order updated. The customer tracking page will follow this status.")}
-            >
-              Save status
-            </button>
-            <button type="button" className={quietButtonClass} onClick={() => { apply({ note, courier, trackingNumber }, "Note saved."); setNote(""); }}>
-              Add note only
-            </button>
+           <div className="flex flex-wrap items-center gap-3">
+  <button
+    type="button"
+    className={buttonClass}
+    onClick={() => apply({ adminStatus: status, note, courier, trackingNumber }, "Order updated. The customer tracking page will follow this status.")}
+  >
+    Save status
+  </button>
+  <button
+    type="button"
+    className={quietButtonClass}
+    onClick={() => { apply({ note, courier, trackingNumber }, "Note saved."); setNote(""); }}
+  >
+    Add note only
+  </button>
+</div>
           </section>
           <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Payment</h2>

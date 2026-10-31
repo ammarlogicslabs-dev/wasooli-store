@@ -1204,7 +1204,7 @@ export default function Account() {
                                 <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
                                   Tracking Timeline
                                 </p>
-                                <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-5">
+                                <ol className="relative ml-3 space-y-4 border-l-2 border-slate-200 pl-4">
                                   {stepsToDisplay.map((step, index) => {
                                     const isCancelStep = step.statusType === "cancelled";
                                     const isCurrent = step.statusType === "current";

@@ -471,16 +471,26 @@ export default function AdminSidebar({
               {/* Submenu Tree with Dynamic Line Fill (matching /shop) */}
               <AnimatePresence initial={false}>
                 {!collapsed && openMenu === "orders" && (() => {
+                  const isOrderDetailsPage =
+                    location.pathname.startsWith("/admin/orders/") ||
+                    location.pathname === "/admin/orders/details";
                   const orderSubIndex =
-                    location.pathname.startsWith("/admin/orders")
+                    location.pathname === "/admin/orders"
                       ? 0
-                      : location.pathname.startsWith("/admin/reports")
+                      : isOrderDetailsPage
                       ? 1
                       : -1;
                   const hasActiveOrderSub = orderSubIndex !== -1;
                   const orderFillPercent = hasActiveOrderSub
                     ? orderSubIndex * 100
                     : 0;
+
+                  const latestOrderId = orders?.[0]?.id;
+                  const orderDetailsTarget = isOrderDetailsPage
+                    ? location.pathname
+                    : latestOrderId
+                    ? `/admin/orders/${encodeURIComponent(latestOrderId)}`
+                    : "/admin/orders/details";
 
                   return (
                     <motion.div
@@ -541,21 +551,20 @@ export default function AdminSidebar({
                           All Orders
                         </NavLink>
 
-                        {/* Sub-item: Reports */}
+                        {/* Sub-item: Order Details */}
                         <NavLink
-                          to="/admin/reports"
-                          end
+                          to={orderDetailsTarget}
                           viewTransition
                           onClick={onClose}
-                          className={({ isActive }) =>
+                          className={() =>
                             `block rounded-lg px-2.5 py-1 text-xs transition-colors ${
-                              isActive
+                              isOrderDetailsPage
                                 ? "text-brand-600 font-semibold"
                                 : "text-slate-500 hover:text-slate-900 font-medium"
                             }`
                           }
                         >
-                          Order Reports
+                          Order Details
                         </NavLink>
                       </div>
                     </motion.div>

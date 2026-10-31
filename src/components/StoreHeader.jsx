@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   Menu,
+  MessageSquare,
   ChevronRight,
   Phone,
   ShoppingBag,
@@ -877,6 +878,17 @@ export default function StoreHeader() {
                   <MapPin size={14} className="text-brand-500" />
                   Karachi, Pakistan
                 </span>
+                <Link
+                  to="/contact"
+                  onClick={closeMobileMenu}
+                  className="mt-1.5 inline-flex items-center justify-between rounded-xl bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare size={13} className="text-brand-500" />
+                    Contact Us
+                  </span>
+                  <ChevronRight size={13} className="text-brand-400" />
+                </Link>
               </div>
             </div>
           </div>

@@ -671,9 +671,6 @@ export default function InventoryPage() {
                     required
                   />
                 </label>
-                <p className="text-[11px] text-slate-500">
-                  Directly sets the on-hand stock to your manual inventory audit count.
-                </p>
               </div>
             )}
 
