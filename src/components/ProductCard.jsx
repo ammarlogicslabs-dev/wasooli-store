@@ -72,7 +72,7 @@ export default function ProductCard({ product, index = 0, layout = "grid", showB
         <Link
           to={`/products/${product.slug}`}
           viewTransition
-          className={`relative block shrink-0 cursor-pointer overflow-hidden bg-gradient-to-b from-slate-100 to-slate-50 ${isList ? "w-[118px] sm:w-[148px] md:w-[168px]" : ""
+          className={`relative block shrink-0 cursor-pointer overflow-hidden bg-linear-to-b from-slate-100 to-slate-50 ${isList ? "w-29.5 sm:w-37 md:w-42" : ""
             }`}
         >
           {product.badge ? (
@@ -85,7 +85,7 @@ export default function ProductCard({ product, index = 0, layout = "grid", showB
             </span>
           ) : null}
           {hasDiscount ? (
-            <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+            <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-linear-to-r from-green-500 to-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
               −{discountPct}%
             </span>
           ) : null}
@@ -135,7 +135,7 @@ export default function ProductCard({ product, index = 0, layout = "grid", showB
               className="absolute inset-0 aspect-square h-full w-full object-cover opacity-0 transition duration-700 ease-out group-hover:scale-110 group-hover:opacity-100"
             />
           ) : null}
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-slate-950/25 to-transparent opacity-0 transition group-hover:opacity-100" />
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-slate-950/25 to-transparent opacity-0 transition group-hover:opacity-100" />
         </Link>
 
         <div

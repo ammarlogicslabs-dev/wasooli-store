@@ -1034,7 +1034,7 @@ export default function Account() {
                                     <button
                                       type="button"
                                       onClick={() => openReviewModal(order, unreviewedItems[0])}
-                                      className="inline-flex h-8.5 flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 text-xs font-semibold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 shrink-0"
+                                      className="inline-flex h-8.5 flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 px-3.5 text-xs font-semibold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 shrink-0"
                                     >
                                       <Star size={13} fill="currentColor" />
                                       Write Review

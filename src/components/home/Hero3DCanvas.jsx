@@ -486,7 +486,7 @@ export default function Hero3DCanvas({ className = "" }) {
       {/* Outer Holographic Circuit Ring / Radar Sweep */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute size-72 sm:size-84 md:size-96 rounded-full border border-sky-400/20 [animation:spin_40s_linear_infinite]"
+        className="pointer-events-none absolute size-72 sm:size-84 md:size-96 rounded-full border border-sky-400/20 animate-[spin_40s_linear_infinite]"
       >
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 size-2.5 rounded-full bg-brand-400 shadow-[0_0_12px_#38bdf8]" />
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 size-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" />
@@ -495,7 +495,7 @@ export default function Hero3DCanvas({ className = "" }) {
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute size-60 sm:size-72 rounded-full border border-dashed border-brand-500/20 [animation:spin_28s_linear_infinite_reverse]"
+        className="pointer-events-none absolute size-60 sm:size-72 rounded-full border border-dashed border-brand-500/20 animate-[spin_28s_linear_infinite_reverse]"
       />
 
     </div>

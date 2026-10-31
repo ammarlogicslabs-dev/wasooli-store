@@ -144,7 +144,7 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
       role="dialog"
       aria-modal="true"
       data-lenis-prevent
-      className="fixed inset-0 z-[70] flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-70 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
     >
       {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
@@ -152,7 +152,7 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
       {/* Modal Container with consistent height on both tabs */}
       <div
         data-lenis-prevent
-        className="relative z-10 flex flex-col w-full max-w-3xl h-[86dvh] sm:h-[650px] max-h-[92dvh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="relative z-10 flex flex-col w-full max-w-3xl h-[86dvh] sm:h-162.5 max-h-[92dvh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
       >
 
         {/* Header */}

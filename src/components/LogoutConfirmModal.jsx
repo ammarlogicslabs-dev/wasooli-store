@@ -60,7 +60,7 @@ export default function LogoutConfirmModal({
     <AnimatePresence>
       {open ? (
         <div
-          className="fixed inset-0 z-[99999] grid place-items-center p-4"
+          className="fixed inset-0 z-99999 grid place-items-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="logout-dialog-title"

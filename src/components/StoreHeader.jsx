@@ -455,7 +455,7 @@ export default function StoreHeader() {
           aria-hidden={headlineHidden}
         >
           <div ref={headlineRef} className="bg-brand-500 text-white">
-            <div className="mx-auto flex max-w-8xl 2xl:max-w-[1536px] flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
+            <div className="mx-auto flex max-w-8xl 2xl:max-w-384 flex-col gap-2 px-4 py-1.5 sm:flex-row sm:items-center sm:gap-12 sm:px-6 lg:px-8">
               <div
                 className="store-headline min-w-0 flex-1 overflow-hidden"
                 aria-label={headlineText}
@@ -491,7 +491,7 @@ export default function StoreHeader() {
           </div>
         </motion.div>
 
-        <div ref={navRef} className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-3 py-1 sm:px-6 sm:py-1.5 lg:px-8">
+        <div ref={navRef} className="mx-auto max-w-8xl 2xl:max-w-384 px-3 py-1 sm:px-6 sm:py-1.5 lg:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             {/* Left: Burger Button (Mobile/Tablet) + Logo */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
