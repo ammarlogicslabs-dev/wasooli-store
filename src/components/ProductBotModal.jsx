@@ -59,12 +59,38 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
 
   useEffect(() => {
     if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    // Freeze background completely across Desktop, iOS Safari, Android, and Lenis
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = originalOverflow;
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
+
+    if (typeof window !== "undefined" && window.__lenis) {
+      window.__lenis.stop();
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
     };
-  }, [isOpen]);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+
+      if (typeof window !== "undefined" && window.__lenis) {
+        window.__lenis.start();
+      }
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !product || !instructions) return null;
 
@@ -117,13 +143,17 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+      data-lenis-prevent
+      className="fixed inset-0 z-[70] flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
     >
       {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Container with consistent height on both tabs */}
-      <div className="relative z-10 flex flex-col w-full max-w-3xl h-[86dvh] sm:h-[650px] max-h-[92dvh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div
+        data-lenis-prevent
+        className="relative z-10 flex flex-col w-full max-w-3xl h-[86dvh] sm:h-[650px] max-h-[92dvh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-3.5 py-3 sm:px-5 sm:py-4 bg-brand-600 text-white shrink-0">
@@ -192,7 +222,14 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar min-h-0">
+        <div
+          data-lenis-prevent
+          className={`flex-1 min-h-0 overscroll-contain custom-scrollbar ${
+            activeTab === "instructions"
+              ? "overflow-y-auto p-3.5 sm:p-6"
+              : "flex flex-col p-3.5 sm:p-4 overflow-hidden"
+          }`}
+        >
           {activeTab === "instructions" ? (
             /* TAB 1: STRUCTURED INSTRUCTIONS */
             <div className="space-y-6">
@@ -358,7 +395,10 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
 
 
               {/* Chat Message Stream */}
-              <div className="flex-1 overflow-y-auto space-y-3 py-2 pr-1 custom-scrollbar">
+              <div
+                data-lenis-prevent
+                className="flex-1 overflow-y-auto space-y-3 py-2 pr-1 custom-scrollbar overscroll-contain"
+              >
                 {messages.map((msg) => (
                   <div
                     key={msg.id}

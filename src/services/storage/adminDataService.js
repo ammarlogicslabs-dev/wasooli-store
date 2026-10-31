@@ -6,7 +6,7 @@ import {
   PRICE_TIERS_BOT_KEY,
   validatePriceTiers,
 } from "../../utils/priceTiers";
-import { apiRequest } from "../api/client";
+import { apiRequest, getToken } from "../api/client";
 import { ORDER_FLOW, paymentBucket } from "./orderStatus";
 
 export const STORAGE_KEYS = {
@@ -72,6 +72,25 @@ function writeLocalSettings(data) {
   }
 }
 
+function readLocalCoupons() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.coupons);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalCoupons(data) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.coupons, JSON.stringify(data));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
 
 const cache = {
   products: [],
@@ -101,7 +120,7 @@ const cache = {
     ...readLocalSettings(),
   },
   storefront: [],
-  coupons: [],
+  coupons: readLocalCoupons(),
   loaded: false,
 };
 
@@ -134,6 +153,7 @@ export async function refreshAdminData() {
   cache.customers = Array.isArray(customers) ? customers : [];
   cache.history = Array.isArray(history) ? history : [];
   cache.coupons = Array.isArray(coupons) ? coupons : [];
+  writeLocalCoupons(cache.coupons);
   cache.settings = { ...cache.settings, ...(settings || {}) };
   cache.loaded = true;
   emit(STORAGE_KEYS.products);
@@ -673,7 +693,33 @@ export async function deleteCategory(id) {
 }
 
 export function listCoupons() {
-  return Array.isArray(cache.coupons) ? cache.coupons.slice() : [];
+  if (Array.isArray(cache.coupons) && cache.coupons.length > 0) {
+    return cache.coupons.slice();
+  }
+  const local = readLocalCoupons();
+  if (Array.isArray(local) && local.length > 0) {
+    cache.coupons = local;
+    return local.slice();
+  }
+  return [];
+}
+
+export async function fetchPublicCoupons() {
+  try {
+    const adminToken = getToken("admin");
+    if (adminToken) {
+      const data = await apiRequest("/api/admin/coupons", { kind: "admin" });
+      if (Array.isArray(data)) {
+        cache.coupons = data;
+        writeLocalCoupons(data);
+        emit(STORAGE_KEYS.coupons);
+        return data.slice();
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return listCoupons();
 }
 
 export async function saveCoupon(input) {

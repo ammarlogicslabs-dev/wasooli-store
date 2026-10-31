@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCoupon, saveCoupon } from "../../services/storage/adminDataService";
 import AdminModal from "../components/AdminModal";
@@ -65,7 +66,19 @@ export default function CouponsPage() {
         crumbs={[{ label: "Coupons & Discounts" }]}
         title="Coupons & Discounts"
         detail="Manage coupons stored in the API. Customers can redeem active codes at checkout."
-        actions={<button type="button" onClick={() => { setError(""); setForm(EMPTY); }} className={buttonClass}>Add coupon</button>}
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setForm(EMPTY);
+            }}
+            className={buttonClass}
+          >
+            <Plus size={16} />
+            <span>Add coupon</span>
+          </button>
+        }
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <AdminTable

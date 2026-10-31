@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Bell,
   Box,
+  Check,
   CheckCircle2,
   Clock,
+  Copy,
   Eye,
   EyeOff,
   Heart,
@@ -19,7 +21,9 @@ import {
   Phone,
   Save,
   ShoppingBag,
+  Sparkles,
   Star,
+  Ticket,
   Trash2,
   Truck,
   User,
@@ -31,7 +35,13 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
-import { fetchMyOrders, fetchSavedAddress, saveSavedAddress } from "../services/storage/adminDataService";
+import {
+  fetchMyOrders,
+  fetchPublicCoupons,
+  fetchSavedAddress,
+  listCoupons,
+  saveSavedAddress,
+} from "../services/storage/adminDataService";
 import { getUserReviewedOrderMap, submitReview } from "../services/storage/reviewService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
 import { resolveMediaUrl } from "../utils/mediaUrl";
@@ -211,7 +221,79 @@ export default function Account() {
   const [passwordError, setPasswordError] = useState("");
   // Each password field has its own show/hide state, so they work independently.
   const [visiblePassword, setVisiblePassword] = useState(HIDDEN_PASSWORDS);
-  const [section, setSection] = useState("profile");
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [localSection, setLocalSection] = useState(() => {
+    if (typeof window !== "undefined") {
+      const s = new URLSearchParams(window.location.search).get("section");
+      if (s && ["profile", "orders", "coupons", "notifications", "password", "wishlist", "cart"].includes(s)) {
+        return s;
+      }
+    }
+    return "profile";
+  });
+
+  const rawSection = searchParams.get("section");
+  const section =
+    rawSection && ["profile", "orders", "coupons", "notifications", "password", "wishlist", "cart"].includes(rawSection)
+      ? rawSection
+      : localSection;
+
+  function handleSelectSection(nextSection) {
+    setLocalSection(nextSection);
+    setSearchParams({ section: nextSection }, { replace: true });
+    if (nextSection === "notifications") {
+      markNotificationsRead?.();
+    }
+  }
+
+  const [couponsList, setCouponsList] = useState(() => listCoupons());
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicCoupons().then((list) => {
+      if (!cancelled && Array.isArray(list)) {
+        setCouponsList(list);
+      }
+    });
+
+    const handleCouponsUpdate = () => {
+      setCouponsList(listCoupons());
+    };
+    window.addEventListener("wasooli-data", handleCouponsUpdate);
+    window.addEventListener("storage", handleCouponsUpdate);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("wasooli-data", handleCouponsUpdate);
+      window.removeEventListener("storage", handleCouponsUpdate);
+    };
+  }, []);
+
+  const activeCoupons = useMemo(() => {
+    const now = new Date().toISOString().slice(0, 10);
+    return couponsList.filter((c) => {
+      if (!c) return false;
+      if (c.active === false) return false;
+      if (c.expiryDate && c.expiryDate < now) return false;
+      if (c.usageLimit && Number(c.used || 0) >= Number(c.usageLimit)) return false;
+      return true;
+    });
+  }, [couponsList]);
+
+  function handleCopyCoupon(code) {
+    if (!code) return;
+    try {
+      navigator.clipboard.writeText(code);
+    } catch {
+      // fallback
+    }
+    setCopiedCode(code);
+    toast.success(`Coupon code "${code}" copied to clipboard!`);
+    setTimeout(() => {
+      setCopiedCode((curr) => (curr === code ? null : curr));
+    }, 2500);
+  }
 
   const toggleVisible = (field) =>
     setVisiblePassword((current) => ({ ...current, [field]: !current[field] }));
@@ -451,6 +533,12 @@ export default function Account() {
       detail: orders.length === 0 ? "No orders yet" : `${orders.length} orders`,
     },
     {
+      id: "coupons",
+      label: "Coupons & Discounts",
+      detail: activeCoupons.length === 0 ? "None active" : `${activeCoupons.length} available`,
+      badge: activeCoupons.length,
+    },
+    {
       id: "notifications",
       label: "Notifications",
       detail: null,
@@ -522,12 +610,7 @@ export default function Account() {
                     key={link.id}
                     type="button"
                     aria-current={active ? "page" : undefined}
-                    onClick={() => {
-                      setSection(link.id);
-                      if (link.id === "notifications") {
-                        markNotificationsRead?.();
-                      }
-                    }}
+                    onClick={() => handleSelectSection(link.id)}
                     className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
                       active
                         ? "bg-brand-50 text-brand-600"
@@ -926,7 +1009,7 @@ export default function Account() {
                                   </div>
                                 </div>
 
-                                {isDelivered && (
+                                {isDelivered && (order.items || []).length > 1 && (
                                   <div className="shrink-0 self-start sm:self-auto pl-11.5 sm:pl-0">
                                     {userReview ? (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700 border border-emerald-200">
@@ -937,10 +1020,10 @@ export default function Account() {
                                       <button
                                         type="button"
                                         onClick={() => openReviewModal(order, item)}
-                                        className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-amber-500 to-amber-600 px-3 py-1 text-xs font-bold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-amber-500 to-amber-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 cursor-pointer"
                                       >
                                         <Star size={12} fill="currentColor" />
-                                        Write Review
+                                        Review
                                       </button>
                                     )}
                                   </div>
@@ -950,28 +1033,64 @@ export default function Account() {
                           })}
                         </ul>
 
-                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-                          <p className="text-xs text-slate-500 min-w-0 flex-1 truncate">
-                            {order.payment?.label || "Payment"}
-                            {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              isTrackingOpen
-                                ? setTrackingOrderId(null)
-                                : openOrderTracking(order.id)
-                            }
-                            className={`shrink-0 inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
-                              isTrackingOpen
-                                ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                : "bg-brand-500 text-white hover:bg-brand-600"
-                            }`}
-                          >
-                            <Truck size={13} />
-                            {isTrackingOpen ? "Hide tracking" : "Track order"}
-                          </button>
-                        </div>
+                        {(() => {
+                          const orderItems = order.items || [];
+                          const unreviewedItems = orderItems.filter((item) => {
+                            const revKey1 = `${order.id}_${item.id}`;
+                            const revKey2 = `${order.id}_${item.slug}`;
+                            const revKey3 = `${order.id}_${item.productId}`;
+                            return !reviewedMap[revKey1] && !reviewedMap[revKey2] && !reviewedMap[revKey3];
+                          });
+                          const allReviewed = orderItems.length > 0 && unreviewedItems.length === 0;
+
+                          return (
+                            <div className="mt-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-2.5">
+                              <p className="text-xs text-slate-500 min-w-0 truncate">
+                                {order.payment?.label || "Payment"}
+                                {order.delivery?.city ? ` · ${order.delivery.city}` : ""}
+                              </p>
+
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                {isDelivered && (
+                                  allReviewed ? (
+                                    <span className="inline-flex h-8.5 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                      <CheckCircle2 size={13} className="text-emerald-600" />
+                                      Reviewed
+                                    </span>
+                                  ) : unreviewedItems.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openReviewModal(order, unreviewedItems[0])}
+                                      className="inline-flex h-8.5 flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 text-xs font-semibold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 shrink-0"
+                                    >
+                                      <Star size={13} fill="currentColor" />
+                                      Write Review
+                                    </button>
+                                  ) : null
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    isTrackingOpen
+                                      ? setTrackingOrderId(null)
+                                      : openOrderTracking(order.id)
+                                  }
+                                  className={`inline-flex h-8.5 ${
+                                    isDelivered ? "flex-1 sm:flex-initial" : "w-full sm:w-auto"
+                                  } shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold transition ${
+                                    isTrackingOpen
+                                      ? "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                      : "bg-brand-500 text-white hover:bg-brand-600"
+                                  }`}
+                                >
+                                  <Truck size={13} />
+                                  {isTrackingOpen ? "Hide tracking" : "Track order"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         
                         
 
@@ -1241,6 +1360,214 @@ export default function Account() {
             </Section>
             ) : null}
 
+            {section === "coupons" ? (
+            <Section
+              icon={Ticket}
+              title="Coupons & Discounts"
+              detail={
+                activeCoupons.length === 0
+                  ? "Active store promotions and vouchers."
+                  : `${activeCoupons.length} active ${activeCoupons.length === 1 ? "coupon" : "coupons"} available to redeem.`
+              }
+            >
+              {couponsList.length === 0 ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-8 text-center">
+                  <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 mb-3">
+                    <Ticket size={24} />
+                  </div>
+                  <p className="text-sm font-bold text-slate-900">No coupons available right now</p>
+                  <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+                    We regularly offer promotional codes and seasonal vouchers. Check back soon or browse our store!
+                  </p>
+                  <Link
+                    to="/shop"
+                    className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-brand-500 px-5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                  >
+                    Browse products
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-500">
+                    Use these coupon codes during checkout to get instant discounts on your orders. Click copy and paste at checkout!
+                  </p>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {couponsList.map((coupon) => {
+                      const isPercent = coupon.type === "percent";
+                      const discountLabel = isPercent
+                        ? `${coupon.value}% OFF`
+                        : `Rs ${Number(coupon.value || 0).toLocaleString()} OFF`;
+                      const now = new Date().toISOString().slice(0, 10);
+                      const isExpired = coupon.expiryDate && coupon.expiryDate < now;
+                      const usageLimit = Number(coupon.usageLimit) || 0;
+                      const usedCount = Number(coupon.used) || 0;
+                      const isLimitReached = usageLimit > 0 && usedCount >= usageLimit;
+                      const isInactive = coupon.active === false || isExpired || isLimitReached;
+                      const remainingCount = usageLimit > 0 ? Math.max(0, usageLimit - usedCount) : null;
+                      const isCopied = copiedCode === coupon.code;
+
+                      return (
+                        <div
+                          key={coupon.id || coupon.code}
+                          className={`relative flex flex-col justify-between rounded-2xl border transition overflow-hidden ${
+                            isInactive
+                              ? "border-slate-200 bg-slate-50/60 opacity-80"
+                              : "border-brand-200 bg-linear-to-br from-white via-white to-brand-50/40 shadow-xs hover:shadow-md hover:border-brand-300"
+                          } p-4 sm:p-5`}
+                        >
+                          <div>
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-2.5">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-wider ${
+                                  isInactive
+                                    ? "bg-slate-200 text-slate-600"
+                                    : "bg-brand-50 text-brand-600 border border-brand-200"
+                                }`}
+                              >
+                                <Sparkles size={12} className="text-brand-500" />
+                                {discountLabel}
+                              </span>
+
+                              <span
+                                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  isExpired
+                                    ? "bg-red-50 text-red-600 border border-red-200"
+                                    : isLimitReached
+                                    ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                    : coupon.active === false
+                                    ? "bg-slate-100 text-slate-600 border border-slate-200"
+                                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                }`}
+                              >
+                                {isExpired
+                                  ? "Expired"
+                                  : isLimitReached
+                                  ? "Redeemed Out"
+                                  : coupon.active === false
+                                  ? "Inactive"
+                                  : "Active"}
+                              </span>
+                            </div>
+
+                            {/* Details */}
+                            <div className="mt-3">
+                              <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                                {coupon.description ||
+                                  (isPercent
+                                    ? `Get ${coupon.value}% instant discount`
+                                    : `Save Rs ${Number(coupon.value || 0).toLocaleString()} on your cart`)}
+                              </h3>
+
+                              {Number(coupon.minOrder) > 0 ? (
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Min order:{" "}
+                                  <strong className="text-slate-700 font-semibold">
+                                    Rs {Number(coupon.minOrder).toLocaleString()}
+                                  </strong>
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-xs text-slate-500">No minimum order required</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Dashed Separator */}
+                          <div className="my-3.5 border-t border-dashed border-slate-200" />
+
+                          {/* Availability & Code Container */}
+                          <div className="space-y-2.5">
+                            {/* Availability counter */}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-500 font-medium">Available Coupons:</span>
+                              {remainingCount !== null ? (
+                                <span className="font-semibold text-slate-800">
+                                  {remainingCount > 0 ? (
+                                    <strong className="text-brand-600 font-bold">{remainingCount} left</strong>
+                                  ) : (
+                                    <strong className="text-rose-600 font-bold">0 left</strong>
+                                  )}{" "}
+                                  <span className="text-slate-400 font-normal">of {usageLimit} total</span>
+                                </span>
+                              ) : (
+                                <span className="font-semibold text-emerald-600">Unlimited uses</span>
+                              )}
+                            </div>
+
+                            {/* Usage Progress Bar */}
+                            {usageLimit > 0 && (
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    isLimitReached ? "bg-rose-500" : "bg-brand-500"
+                                  }`}
+                                  style={{
+                                    width: `${Math.min(100, Math.round((usedCount / usageLimit) * 100))}%`,
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {/* Coupon Code Box */}
+                            <div className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-brand-300 bg-brand-50/50 p-2 sm:p-2.5">
+                              <div className="min-w-0 flex-1 pl-1">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block leading-tight">
+                                  Coupon Code
+                                </span>
+                                <span className="font-mono text-sm sm:text-base font-black tracking-wider text-brand-700 select-all truncate block">
+                                  {coupon.code}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopyCoupon(coupon.code)}
+                                disabled={isInactive}
+                                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+                                  isCopied
+                                    ? "bg-emerald-600 text-white"
+                                    : isInactive
+                                    ? "bg-slate-200 text-slate-500 cursor-not-allowed shadow-none"
+                                    : "bg-brand-500 text-white hover:bg-brand-600 active:scale-95"
+                                }`}
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check size={13} className="text-white" />
+                                    <span>Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={13} />
+                                    <span>Copy code</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Expiry Footer */}
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                              <span>
+                                {coupon.expiryDate ? `Expires: ${formatDate(coupon.expiryDate)}` : "Ongoing promotion"}
+                              </span>
+                              <Link
+                                to="/shop"
+                                className="font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                              >
+                                Shop now →
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </Section>
+            ) : null}
+
             {section === "wishlist" ? (
             <Section
               icon={Heart}
@@ -1404,8 +1731,14 @@ export default function Account() {
       </div>
       {/* Review Modal Dialog */}
       {reviewModal.open && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div
+          onClick={() => setReviewModal({ ...reviewModal, open: false })}
+          className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          >
             <button
               type="button"
               onClick={() => setReviewModal({ ...reviewModal, open: false })}
@@ -1450,20 +1783,14 @@ export default function Account() {
                       </button>
                     );
                   })}
-                  <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
-                    {reviewModal.rating === 5 && "5 Stars — Excellent"}
-                    {reviewModal.rating === 4 && "4 Stars — Good"}
-                    {reviewModal.rating === 3 && "3 Stars — Average"}
-                    {reviewModal.rating === 2 && "2 Stars — Poor"}
-                    {reviewModal.rating === 1 && "1 Star — Terrible"}
-                  </span>
+                 
                 </div>
               </div>
 
               {/* Review Comment */}
               <div>
                 <label htmlFor="review-comment" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Your Feedback / Comment
+                  Your Feedback
                 </label>
                 <textarea
                   id="review-comment"
@@ -1472,7 +1799,7 @@ export default function Account() {
                   value={reviewModal.comment}
                   onChange={(e) => setReviewModal((prev) => ({ ...prev, comment: e.target.value }))}
                   placeholder="Share details about product performance, speed, build quality, and delivery experience..."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-xs placeholder:leading-relaxed placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                 />
               </div>
 
@@ -1490,7 +1817,7 @@ export default function Account() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:from-amber-600 hover:to-amber-700 transition disabled:opacity-60 cursor-pointer"
                 >
                   <Star size={13} fill="currentColor" />
-                  {reviewModal.submitting ? "Submitting..." : "Submit Verified Review"}
+                  {reviewModal.submitting ? "Submitting..." : "Submit Review"}
                 </button>
               </div>
             </form>

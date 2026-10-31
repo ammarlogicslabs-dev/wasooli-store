@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCategory, saveCategory } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -54,7 +55,12 @@ export default function CategoriesPage() {
         crumbs={[{ label: "Categories" }]}
         title="Categories"
         detail="Linked products are kept when a category is archived."
-        actions={<button type="button" onClick={openCreate} className={buttonClass}>Add category</button>}
+        actions={
+          <button type="button" onClick={openCreate} className={buttonClass}>
+            <Plus size={16} />
+            <span>Add category</span>
+          </button>
+        }
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <AdminTable

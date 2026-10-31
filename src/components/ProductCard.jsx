@@ -103,7 +103,7 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
                 : `Save ${product.title} to wishlist`
             }
             aria-pressed={Boolean(wished)}
-            className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${isList ? "right-2 top-2 size-8" : "right-2.5 bottom-2.5 size-9"
+            className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${isList ? "right-2 bottom-2 size-7.5 sm:size-8" : "right-2.5 bottom-2.5 size-9"
               } ${wished
                 ? "border-red-200 bg-white text-red-500"
                 : "border-white/80 bg-white/90 text-slate-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500"

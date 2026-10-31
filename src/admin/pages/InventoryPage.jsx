@@ -308,11 +308,11 @@ export default function InventoryPage() {
           >
             <History size={16} className="text-brand-600" />
             <span>Stock History</span>
-            {log.length > 0 && (
+            {/* {log.length > 0 && (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
                 {log.length}
               </span>
-            )}
+            )} */}
           </button>
         }
       />
@@ -524,12 +524,7 @@ export default function InventoryPage() {
                   </label>
                 </div>
 
-                {restockQty && (!costPerPiece || Number(costPerPiece) <= 0) && (
-                  <p className="text-xs font-medium text-amber-700 flex items-center gap-1.5 bg-amber-50/80 border border-amber-200 rounded-lg p-2">
-                    <AlertTriangle size={14} className="shrink-0 text-amber-600" />
-                    <span>Purchase price likhna compulsory hai. Please enter buy price per piece.</span>
-                  </p>
-                )}
+               
 
                 {/* Total Purchase Amount Live Calculation */}
                 {Number(restockQty) > 0 && Number(costPerPiece) > 0 && (

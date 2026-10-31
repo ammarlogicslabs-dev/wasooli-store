@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Wifi,
   Mail,
+  Ticket,
   // Wrench,
 } from "lucide-react";
 import {
@@ -196,7 +197,7 @@ export default function StoreFooter() {
               {[
                 { label: "Home", to: "/" },
                 { label: "Shop", to: "/shop" },
-                // { label: "New Arrivals", to: "/shop?sort=newest", highlight: true },
+                { label: "Coupons & Discounts", to: "/account?section=coupons", highlight: true },
                 { label: "Deals", to: "/shop?tag=deals" },
                 { label: "About Us", to: "/about" },
               ].map(({ label, to, highlight }) => (
@@ -261,9 +262,8 @@ export default function StoreFooter() {
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
               {[
                 { Icon: PhoneCall, label: "FAQs", to: "/faqs" },
-                // { Icon: Truck, label: "Shipping & Delivery", to: "/shipping" },
+                { Icon: Ticket, label: "Coupons & Discounts", to: "/account?section=coupons" },
                 { Icon: RotateCcw, label: "Return & Exchange", to: "/returns" },
-                // { Icon: ShieldCheck, label: "Privacy Policy", to: "/privacy" },
                 { Icon: FileText, label: "Terms & Conditions", to: "/terms" },
                 { Icon: Mail, label: "Contact", to: "/contact" },
               ].map(({ Icon, label, to }) => (

@@ -957,7 +957,7 @@ function PromoBanner() {
 function HowItWorks() {
   const reduce = useReducedMotion();
   return (
-    <section className="relative overflow-hidden border-b border-slate-200/80 bg-linear-to-b from-slate-50 via-slate-100/60 to-slate-50 py-14 sm:py-20" aria-labelledby="home-steps-heading">
+    <section className="relative overflow-hidden border-b border-slate-200/80 bg-linear-to-b from-slate-50 via-slate-100/60 to-slate-50 py-10 sm:py-16" aria-labelledby="home-steps-heading">
       {/* Background ambient light */}
       <div
         aria-hidden="true"
