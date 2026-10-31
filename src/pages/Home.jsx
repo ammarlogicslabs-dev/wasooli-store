@@ -851,7 +851,7 @@ function FeaturedGrid({ products, loading }) {
             {displayProducts.map((product, index) => (
               <ScrollProduct key={product.id} index={index} columns={5}>
                 <TiltCard max={4} glare={false} className="h-full rounded-[1.2rem]">
-                  <ProductCard product={product} index={index} layout="grid" />
+                  <ProductCard product={product} index={index} layout="grid" showBot={false} />
                 </TiltCard>
               </ScrollProduct>
             ))}

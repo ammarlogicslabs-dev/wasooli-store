@@ -197,8 +197,9 @@ export default function StoreFooter() {
               {[
                 { label: "Home", to: "/" },
                 { label: "Shop", to: "/shop" },
-                { label: "Coupons & Discounts", to: "/account?section=coupons", highlight: true },
-                { label: "Deals", to: "/shop?tag=deals" },
+                { label: "Coupons & Discounts", to: "/account?section=coupons" },
+                // { label: "Deals", to: "/shop?tag=deals" },
+                { label: "Your Orders", to: "/account?section=orders" },
                 { label: "About Us", to: "/about" },
               ].map(({ label, to, highlight }) => (
                 <li key={label}>

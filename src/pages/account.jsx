@@ -180,7 +180,6 @@ export default function Account() {
     refreshNotifications,
   } = useCart();
   const navigate = useNavigate();
-  const logoutToastId = useRef(null);
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
@@ -450,52 +449,27 @@ export default function Account() {
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
   function dismissLogoutPrompt() {
-    if (logoutToastId.current == null) return;
-    toast.dismiss(logoutToastId.current);
+    setLogoutPromptOpen(false);
   }
 
   function handleLogout() {
-    if (logoutToastId.current != null) return;
-
     setLogoutPromptOpen(true);
-    logoutToastId.current = toast(
-      ({ closeToast }) => (
-        <div className="p-4">
-          <h3 className="mb-2 text-lg font-semibold text-gray-800">Are you sure?</h3>
-          <p className="mb-4 text-gray-600">You will be logged out of your account.</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                closeToast();
-                logout();
-                navigate("/");
-              }}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-            >
-              Yes, Logout!
-            </button>
-            <button
-              onClick={closeToast}
-              className="rounded-lg bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        position: "top-center",
-        autoClose: false,
-        hideProgressBar: true,
-        closeOnClick: false,
-        draggable: false,
-        onClose: () => {
-          logoutToastId.current = null;
-          setLogoutPromptOpen(false);
-        },
-      }
-    );
   }
+
+  function confirmLogout() {
+    setLogoutPromptOpen(false);
+    logout();
+    navigate("/");
+  }
+
+  useEffect(() => {
+    if (!logoutPromptOpen) return undefined;
+    function handleKeyDown(e) {
+      if (e.key === "Escape") setLogoutPromptOpen(false);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [logoutPromptOpen]);
 
   async function handlePasswordSubmit(event) {
     event.preventDefault();
@@ -560,13 +534,53 @@ export default function Account() {
   return (
     <main className="min-h-screen bg-slate-50">
       <StoreHeader />
+      {/* Logout Confirmation Modal - Dead Centered */}
       {logoutPromptOpen && (
-        <button
-          type="button"
-          aria-label="Close logout confirmation"
+        <div
           onClick={dismissLogoutPrompt}
-          className="fixed inset-0 z-9998 cursor-default bg-slate-900/50"
-        />
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-dialog-title"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+          >
+            <button
+              type="button"
+              onClick={dismissLogoutPrompt}
+              aria-label="Close dialog"
+              className="absolute right-4 top-4 grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <h3 id="logout-dialog-title" className="text-lg font-bold text-slate-900">
+              Are you sure?
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              You will be logged out of your account.
+            </p>
+
+            <div className="mt-5 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Yes, Logout!
+              </button>
+              <button
+                type="button"
+                onClick={dismissLogoutPrompt}
+                className="cursor-pointer rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="page-offset mx-auto max-w-8xl px-3.5 sm:px-6 lg:px-8 pb-6 lg:pb-10 overflow-x-hidden">

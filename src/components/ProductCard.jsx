@@ -8,7 +8,7 @@ import { resolveMediaUrl } from "../utils/mediaUrl";
 import { getProductReviewSummary } from "../services/storage/reviewService";
 import ProductBotModal from "./ProductBotModal";
 
-export default function ProductCard({ product, index = 0, layout = "grid" }) {
+export default function ProductCard({ product, index = 0, layout = "grid", showBot = true }) {
   const { addItem, openCart, isWished, toggleWishlist } = useCart();
   const reduceMotion = useReducedMotion();
   const [botOpen, setBotOpen] = useState(false);
@@ -94,23 +94,25 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
             </span>
           ) : null}
 
-          <button
-            type="button"
-            onClick={handleWishlist}
-            aria-label={
-              wished
-                ? `Remove ${product.title} from wishlist`
-                : `Save ${product.title} to wishlist`
-            }
-            aria-pressed={Boolean(wished)}
-            className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${isList ? "right-2 bottom-2 size-7.5 sm:size-8" : "right-2.5 bottom-2.5 size-9"
-              } ${wished
-                ? "border-red-200 bg-white text-red-500"
-                : "border-white/80 bg-white/90 text-slate-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500"
-              }`}
-          >
-            <Heart size={isList ? 13 : 15} fill={wished ? "currentColor" : "none"} />
-          </button>
+          {showBot && (
+            <button
+              type="button"
+              onClick={handleWishlist}
+              aria-label={
+                wished
+                  ? `Remove ${product.title} from wishlist`
+                  : `Save ${product.title} to wishlist`
+              }
+              aria-pressed={Boolean(wished)}
+              className={`absolute z-10 grid place-items-center rounded-full border shadow-md backdrop-blur-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${isList ? "right-2 bottom-2 size-7.5 sm:size-8" : "right-2.5 bottom-2.5 size-9"
+                } ${wished
+                  ? "border-red-200 bg-white text-red-500"
+                  : "border-white/80 bg-white/90 text-slate-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500"
+                }`}
+            >
+              <Heart size={isList ? 13 : 15} fill={wished ? "currentColor" : "none"} />
+            </button>
+          )}
 
           <img
             src={primary}
@@ -188,15 +190,32 @@ export default function ProductCard({ product, index = 0, layout = "grid" }) {
             </div>
 
             <div className="mb-0.5 flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleBot}
-                title={`Ask Bot for ${product.title} Instructions`}
-                aria-label={`Ask bot about ${product.title}`}
-                className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-brand-300 hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
-              >
-                <Bot size={15} />
-              </button>
+              {showBot ? (
+                <button
+                  type="button"
+                  onClick={handleBot}
+                  title={`Ask Bot for ${product.title} Instructions`}
+                  aria-label={`Ask bot about ${product.title}`}
+                  className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-brand-300 hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+                >
+                  <Bot size={15} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleWishlist}
+                  title={wished ? `Remove ${product.title} from wishlist` : `Save ${product.title} to wishlist`}
+                  aria-label={wished ? `Remove ${product.title} from wishlist` : `Save ${product.title} to wishlist`}
+                  aria-pressed={Boolean(wished)}
+                  className={`grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 ${
+                    wished
+                      ? "border-red-200 bg-red-50 text-red-500 shadow-xs"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-red-200 hover:bg-red-50/70 hover:text-red-500"
+                  }`}
+                >
+                  <Heart size={16} fill={wished ? "currentColor" : "none"} />
+                </button>
+              )}
 
               <button
                 type="button"
