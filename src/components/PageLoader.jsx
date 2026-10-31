@@ -19,20 +19,14 @@ export default function PageLoader({
     );
   }
 
-  // Fullscreen / overlay container
-  // Mobile (< lg): Always full screen (fixed inset-0) and centered
-  // Desktop (>= lg) for admin: bounded below header (top-16) and offset by sidebar
-  const containerClass = admin
-    ? `fixed inset-0 lg:top-16 z-[99999] flex flex-col items-center justify-center gap-4 bg-slate-50/90 backdrop-blur-sm transition-[left] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
-        collapsed ? "lg:left-20" : "lg:left-72"
-      } ${className}`
-    : `fixed inset-0 z-[999999] flex flex-col items-center justify-center gap-4 ${
-        overlay ? "bg-white/95 backdrop-blur-sm" : "bg-white"
-      } ${className}`;
+  // Fullscreen / overlay container with guaranteed viewport centering
+  const baseClasses = `wasooli-page-loader-overlay ${
+    admin ? "wasooli-page-loader-admin bg-slate-50/90" : overlay ? "bg-white/95" : "bg-white"
+  } ${admin ? (collapsed ? "sidebar-collapsed" : "sidebar-expanded") : ""} backdrop-blur-sm ${className}`;
 
   const content = (
     <div
-      className={containerClass}
+      className={baseClasses}
       aria-live="polite"
       aria-busy="true"
     >
@@ -50,7 +44,7 @@ export default function PageLoader({
 function LoaderContent({ reduceMotion, message }) {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center gap-4 px-4 text-center"
+      className="m-auto flex flex-col items-center justify-center gap-4 px-4 text-center"
       initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25, ease: "easeOut" }}

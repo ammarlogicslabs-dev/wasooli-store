@@ -33,8 +33,9 @@ export default function ProductCard({ product, index = 0, layout = "grid", showB
     event.preventDefault();
     event.stopPropagation();
     if (outOfStock) return;
-    addItem(product, 1);
-    openCart();
+    if (addItem(product, 1)) {
+      openCart();
+    }
   }
 
   function handleWishlist(event) {

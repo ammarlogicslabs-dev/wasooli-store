@@ -318,7 +318,7 @@ export default function ProductDetail() {
 
   function handleAddToCart() {
     if (outOfStock) return;
-    addItem(product, quantity);
+    if (!addItem(product, quantity)) return;
     setAdded(true);
     openCart?.();
     if (addedTimer.current) window.clearTimeout(addedTimer.current);

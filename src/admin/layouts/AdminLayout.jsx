@@ -5,6 +5,7 @@ import AdminHeader from "../components/AdminHeader";
 import AdminSidebar from "../components/AdminSidebar";
 import { useAdminData } from "../hooks/useAdminData";
 import PageLoader from "../../components/PageLoader";
+import LogoutConfirmModal from "../../components/LogoutConfirmModal";
 
 export default function AdminLayout() {
   const { logout } = useAdminAuth();
@@ -12,8 +13,14 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  function handleLogout() {
+  function handleLogoutClick() {
+    setLogoutModalOpen(true);
+  }
+
+  function handleLogoutConfirm() {
+    setLogoutModalOpen(false);
     logout();
     navigate("/login", {
       replace: true,
@@ -28,7 +35,7 @@ export default function AdminLayout() {
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        onLogout={handleLogout}
+        onLogout={handleLogoutClick}
         onToggleCollapse={() => setCollapsed((value) => !value)}
       />
       <div className={`flex min-h-screen min-w-0 flex-col ${collapsed ? "lg:pl-20" : "lg:pl-72"}`}>
@@ -43,6 +50,13 @@ export default function AdminLayout() {
           </Suspense>
         </main>
       </div>
+      <LogoutConfirmModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Log out of admin panel?"
+        message="You will be logged out of the Wasooli admin dashboard."
+      />
     </div>
   );
 }

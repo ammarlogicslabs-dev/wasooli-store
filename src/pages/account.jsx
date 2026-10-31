@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import LogoutConfirmModal from "../components/LogoutConfirmModal";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
@@ -534,54 +535,12 @@ export default function Account() {
   return (
     <main className="min-h-screen bg-slate-50">
       <StoreHeader />
-      {/* Logout Confirmation Modal - Dead Centered */}
-      {logoutPromptOpen && (
-        <div
-          onClick={dismissLogoutPrompt}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="logout-dialog-title"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150"
-          >
-            <button
-              type="button"
-              onClick={dismissLogoutPrompt}
-              aria-label="Close dialog"
-              className="absolute right-4 top-4 grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer transition-colors"
-            >
-              <X size={18} />
-            </button>
-
-            <h3 id="logout-dialog-title" className="text-lg font-bold text-slate-900">
-              Are you sure?
-            </h3>
-            <p className="mt-1 text-sm text-slate-600">
-              You will be logged out of your account.
-            </p>
-
-            <div className="mt-5 flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={confirmLogout}
-                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                Yes, Logout!
-              </button>
-              <button
-                type="button"
-                onClick={dismissLogoutPrompt}
-                className="cursor-pointer rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        open={logoutPromptOpen}
+        onClose={dismissLogoutPrompt}
+        onConfirm={confirmLogout}
+      />
 
       <div className="page-offset mx-auto max-w-8xl px-3.5 sm:px-6 lg:px-8 pb-6 lg:pb-10 overflow-x-hidden">
         <nav aria-label="Breadcrumb" className="page-crumb">

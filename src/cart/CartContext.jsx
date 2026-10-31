@@ -17,6 +17,7 @@ import { DATA_EVENT } from "../services/storage/storageService";
 import { getToken } from "../services/api/client";
 import { getUnitPrice, hydrateProductList, normalizePriceTiers } from "../utils/priceTiers";
 
+const CART_LOGIN_MESSAGE = "Please log in first to add items to your cart.";
 const WISHLIST_LOGIN_MESSAGE = "Please log in first to save items to your wishlist.";
 
 const CartContext = createContext(null);
@@ -146,6 +147,8 @@ export function CartProvider({ children }) {
 
   const addItem = useCallback(
     (product, quantity = 1) => {
+      if (!requestLogin(undefined, CART_LOGIN_MESSAGE)) return false;
+
       const requested = Math.max(1, Number(quantity) || 1);
       const stock = Number.isFinite(product.stock) ? product.stock : null;
       const tiers = normalizePriceTiers(product.priceTiers);
@@ -193,8 +196,9 @@ export function CartProvider({ children }) {
         void persistCart(next);
         return next;
       });
+      return true;
     },
-    [persistCart]
+    [persistCart, requestLogin]
   );
 
   const updateQuantity = useCallback(

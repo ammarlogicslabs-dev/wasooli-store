@@ -261,9 +261,10 @@ export default function ProductBotModal({ product, isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => {
-                      addItem(product, 1);
-                      openCart();
-                      onClose();
+                      if (addItem(product, 1)) {
+                        openCart();
+                        onClose();
+                      }
                     }}
                     className="inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-3xl bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-brand-700 cursor-pointer"
                   >
