@@ -231,6 +231,32 @@ export default function ProductFormPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (saving) return;
+
+    // Check duplicate name and brand
+    const trimmedTitle = String(form.title || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const trimmedBrand = String(form.brand || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const currentId = existing?.id != null ? String(existing.id) : null;
+
+    if (trimmedTitle && trimmedBrand) {
+      const isDuplicate = (products || []).some(
+        (p) =>
+          String(p.id) !== currentId &&
+          String(p.title || "").trim().toLowerCase().replace(/\s+/g, " ") === trimmedTitle &&
+          String(p.brand || "").trim().toLowerCase().replace(/\s+/g, " ") === trimmedBrand
+      );
+
+      if (isDuplicate) {
+        const errorMsg = "A product with this name and brand already exists.";
+        setErrors((current) => ({
+          ...current,
+          title: errorMsg,
+          brand: errorMsg,
+        }));
+        toast.error(errorMsg);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const extras = (form.extraImages || []).filter(Boolean);

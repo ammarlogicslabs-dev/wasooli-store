@@ -1758,13 +1758,14 @@ export default function Shop() {
               className="absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-xs"
             />
             <motion.aside
+              data-lenis-prevent="true"
               initial={reduceMotion ? false : { x: "-100%" }}
               animate={{ x: 0 }}
               exit={reduceMotion ? undefined : { x: "-100%" }}
               transition={{ duration: reduceMotion ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-y-0 left-0 flex w-[85vw] max-w-xs flex-col bg-white shadow-2xl sm:max-w-sm"
+              className="absolute inset-y-0 left-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-xs flex-col overflow-hidden bg-white shadow-2xl overscroll-contain sm:max-w-sm"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
                 <p className="text-sm font-semibold text-slate-900">Filters</p>
                 <button
                   type="button"
@@ -1775,7 +1776,11 @@ export default function Shop() {
                   <X size={18} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto px-5 py-5">
+              <div
+                data-lenis-prevent="true"
+                style={{ WebkitOverflowScrolling: "touch" }}
+                className="min-h-0 flex-1 overflow-y-auto touch-pan-y overscroll-contain px-5 py-5 custom-scrollbar"
+              >
                 <FilterPanel
                   {...filterProps}
                   onCategorySelect={() => setFiltersOpen(false)}

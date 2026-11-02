@@ -30,6 +30,7 @@ import {
   User,
   X,
   XCircle,
+  ArrowRight
 } from "lucide-react";
 import QuantityStepper from "../components/QuantityStepper";
 import StoreHeader from "../components/StoreHeader";
@@ -1541,9 +1542,9 @@ export default function Account() {
                               </span>
                               <Link
                                 to="/shop"
-                                className="font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                                className="flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-700 hover:underline"
                               >
-                                Shop now →
+                                Shop now <ArrowRight size={14} />
                               </Link>
                             </div>
                           </div>

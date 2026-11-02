@@ -402,10 +402,9 @@ export default function StoreHeader() {
     const previousTouchAction = document.body.style.touchAction;
     const previousOverscroll = document.body.style.overscrollBehavior;
 
-    // Lock scrolling completely across Desktop, iOS Safari & Android
+    // Lock scrolling cleanly across Desktop, iOS Safari & Android
     document.body.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
-    document.documentElement.style.overflow = "hidden";
 
     // Pause Lenis smooth scrolling so background is frozen
     if (typeof window !== "undefined" && window.__lenis) {
@@ -764,7 +763,7 @@ export default function StoreHeader() {
         {/* Backdrop */}
         <div
           onClick={closeMobileMenu}
-          onTouchMove={(e) => e.preventDefault()}
+          onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
           className={`absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 ${
             mobileMenuOpen ? "opacity-100" : "opacity-0"
           }`}
@@ -772,12 +771,13 @@ export default function StoreHeader() {
 
         {/* Slide-in panel from left */}
         <aside
-          className={`absolute inset-y-0 left-0 flex w-full sm:w-[88vw] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${
+          data-lenis-prevent="true"
+          className={`absolute inset-y-0 left-0 flex h-full h-dvh max-h-dvh w-full sm:w-[88vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${
             mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           {/* Drawer Top Header */}
-          <div className="flex items-center justify-between border-b border-slate-200/90 px-4 py-3.5 sm:px-5">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200/90 px-4 py-3.5 sm:px-5">
             <Link to="/" onClick={closeMobileMenu} className="flex items-center">
               <img
                 src="/wasooli.png"
@@ -796,7 +796,11 @@ export default function StoreHeader() {
           </div>
 
           {/* Drawer Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
+          <div
+            data-lenis-prevent="true"
+            style={{ WebkitOverflowScrolling: "touch" }}
+            className="min-h-0 flex-1 overflow-y-auto touch-pan-y overscroll-contain px-4 py-4 space-y-4 custom-scrollbar"
+          >
             {/* Categories List with exact desktop 3D icon pod design */}
             <div>
               <p className="px-1 pb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -894,7 +898,7 @@ export default function StoreHeader() {
           </div>
 
           {/* Drawer Footer Account CTA */}
-          <div className="border-t border-slate-200/90 p-4 bg-white">
+          <div className="shrink-0 border-t border-slate-200/90 p-4 bg-white">
             {isAuthenticated ? (
               <Link
                 to="/account"
@@ -929,16 +933,17 @@ export default function StoreHeader() {
       >
         <div
           onClick={closeCart}
-          onTouchMove={(e) => e.preventDefault()}
+          onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
           className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${cartOpen ? "opacity-100" : "opacity-0"
             }`}
         />
 
         <aside
-          className={`absolute inset-y-0 right-0 flex w-[85vw] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${cartOpen ? "translate-x-0" : "translate-x-full"
+          data-lenis-prevent="true"
+          className={`absolute inset-y-0 right-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${cartOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
             <h2 className="text-base font-semibold text-slate-900">
               Your cart
               {cartCount > 0 && (
@@ -957,7 +962,11 @@ export default function StoreHeader() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4">
+          <div
+            data-lenis-prevent="true"
+            style={{ WebkitOverflowScrolling: "touch" }}
+            className="min-h-0 flex-1 overflow-y-auto touch-pan-y overscroll-contain custom-scrollbar px-5 py-4"
+          >
             {items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <span className="grid size-14 place-items-center rounded-full bg-brand-50 text-brand-600">
@@ -994,7 +1003,7 @@ export default function StoreHeader() {
           </div>
 
           {items.length > 0 && (
-            <div className="border-t border-slate-200 px-5 py-4">
+            <div className="shrink-0 border-t border-slate-200 px-5 py-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-500">Subtotal</span>
                 <span className="text-base font-bold text-slate-900">
@@ -1040,16 +1049,17 @@ export default function StoreHeader() {
       >
         <div
           onClick={closeWishlist}
-          onTouchMove={(e) => e.preventDefault()}
+          onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
           className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${wishlistOpen ? "opacity-100" : "opacity-0"
             }`}
         />
 
         <aside
-          className={`absolute inset-y-0 right-0 flex w-[85vw] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${wishlistOpen ? "translate-x-0" : "translate-x-full"
+          data-lenis-prevent="true"
+          className={`absolute inset-y-0 right-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${wishlistOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
             <h2 className="text-base font-semibold text-slate-900">
               Wishlist
               {wishlistItems.length > 0 && (

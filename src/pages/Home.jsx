@@ -400,7 +400,7 @@ function ConnectionBanner() {
       <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 2xl:max-w-384">
         <motion.div
           {...fadeUpInView(0, reduce)}
-          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#cfe2fa] bg-linear-to-r from-[#eaf4fe] via-[#f3f9ff] to-[#e5f1fe] px-3 py-2 sm:px-6 sm:py-2.5 lg:px-7 shadow-[0_10px_35px_-15px_rgba(14,165,233,0.25)]"
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#cfe2fa] bg-linear-to-r from-[#eaf4fe] via-[#f3f9ff] to-[#e5f1fe] px-3 py-2 sm:px-6 sm:py-2.5 md:px-3 md:py-2 lg:px-5 lg:py-2.5 xl:px-7 shadow-[0_10px_35px_-15px_rgba(14,165,233,0.25)]"
         >
           {/* Aesthetic background color design with glowing gradients and light rays */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -426,51 +426,51 @@ function ConnectionBanner() {
             <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-[#38bdf8]/50 to-transparent" />
           </div>
 
-          <div className="relative flex flex-col items-center gap-3 md:flex-row md:justify-between md:gap-4 lg:gap-6">
+          <div className="relative flex flex-col items-center gap-3 md:flex-row md:justify-between md:gap-2 lg:gap-3 xl:gap-6">
             {/* Left & Middle: Eyebrow, Title, Divider 1, Single-Line Subtitle, Divider 2 */}
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-2 md:flex-row md:items-center md:gap-4 lg:gap-5 text-center md:text-left">
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-2 md:flex-row md:items-center md:gap-2 lg:gap-3 xl:gap-5 text-center md:text-left">
               {/* Eyebrow & Headline block */}
               <div className="shrink-0">
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0070f3]">
-                  <span className="size-1.5 rounded-full bg-[#0070f3]" aria-hidden="true" />
+                <div className="inline-flex items-center gap-1.5 md:gap-1 lg:gap-1.5 text-[11px] md:text-[8.5px] lg:text-[10px] xl:text-[11px] font-bold text-[#0070f3]">
+                  <span className="size-1.5 md:size-1 lg:size-1.5 rounded-full bg-[#0070f3]" aria-hidden="true" />
                   <span>Networking Solutions</span>
                 </div>
-                <h2 className="mt-0.5 text-lg font-black tracking-tight text-[#0a1e3f] sm:text-xl lg:text-[22px] whitespace-nowrap">
+                <h2 className="mt-0.5 text-lg font-black tracking-tight text-[#0a1e3f] sm:text-xl md:text-[12px] lg:text-[16px] xl:text-[22px] whitespace-nowrap">
                   Build a <span className="text-[#0070f3]">stronger</span> connection
                 </h2>
               </div>
 
               {/* Line 1: Footer style glowing cyan-gradient vertical divider */}
               <div
-                className="hidden md:block h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+                className="hidden md:block h-6 lg:h-7 xl:h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
                 aria-hidden="true"
               />
 
               {/* Single-line Subtitle */}
-              <p className="min-w-0 text-xs sm:text-[11px] font-medium text-slate-600 whitespace-nowrap">
+              <p className="min-w-0 text-xs sm:text-[11px] md:text-[8.5px] lg:text-[10.5px] xl:text-xs font-medium text-slate-600 md:truncate lg:whitespace-nowrap">
                 From home networks to business setups — we have the right equipment for you.
               </p>
 
-              {/* Line 2: Footer style glowing cyan-gradient vertical divider */}
+              {/* Line 2: Footer style glowing cyan-gradient vertical divider (desktop only) */}
               <div
-                className="hidden lg:block h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+                className="hidden xl:block h-10 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/70 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.45)]"
                 aria-hidden="true"
               />
             </div>
 
-            {/* Right: Bigger Cable Image + Solid Blue Button */}
-            <div className="flex shrink-0 items-center ">
+            {/* Right: Cable Image + Solid Blue Button */}
+            <div className="flex shrink-0 items-center md:gap-1.5 lg:gap-2.5 xl:gap-3">
               <img
                 src="/image-2.png"
                 alt="Fiber optic patch cord"
-                className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto object-contain drop-shadow-[0_8px_20px_rgba(0,112,243,0.22)] transition-transform duration-300 "
+                className="h-14 sm:h-16 md:h-8 lg:h-11 xl:h-18 2xl:h-20 w-auto object-contain drop-shadow-[0_8px_20px_rgba(0,112,243,0.22)] transition-transform duration-300"
               />
               <Link
                 to="/shop"
-                className="group inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full bg-[#0070f3] px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-blue-500/25 transition-all duration-200 hover:bg-[#0060df] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                className="group inline-flex h-9 sm:h-10 md:h-7 lg:h-8.5 xl:h-10 items-center gap-1.5 md:gap-1 lg:gap-1.5 xl:gap-2 whitespace-nowrap rounded-full bg-[#0070f3] px-3.5 sm:px-4 md:px-2 lg:px-3 xl:px-4 text-xs sm:text-sm md:text-[9.5px] lg:text-xs xl:text-sm font-bold text-white shadow-md shadow-blue-500/25 transition-all duration-200 hover:bg-[#0060df] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
               >
                 <span>Explore All Products</span>
-                <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
+                <ArrowRight className="size-3.5 md:size-2.5 lg:size-3 xl:size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
           </div>

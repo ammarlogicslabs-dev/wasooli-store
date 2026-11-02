@@ -7,16 +7,18 @@ import {
   Calendar,
   Check,
   ChevronDown,
-  DollarSign,
   Inbox,
   LayoutGrid,
   Package,
   Plus,
+  ShoppingBag,
   ShoppingCart,
   Truck,
   User,
+  Users,
 } from "lucide-react";
 import { fetchDashboard, getDashboard } from "../../services/storage/adminDataService";
+import { ORDER_STATUSES, statusLabel } from "../../services/storage/orderStatus";
 import { useAdminData } from "../hooks/useAdminData";
 
 const RANGES = [7, 30, 90];
@@ -42,16 +44,31 @@ function formatOrderDate(dateString) {
   };
 }
 
-// Generates smooth SVG curve paths for the sparkline area charts
-function generateSparklinePaths(points, width = 280, height = 36, padding = 3) {
-  if (!points || points.length < 2) return { linePath: "", areaPath: "" };
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || 1;
+// Generates smooth SVG curve paths for the stat card wave sparklines
+function generateSparklinePaths(points, width = 130, height = 36, padding = 2) {
+  let pts = points;
+  if (!pts || pts.length < 2) {
+    pts = [12, 16, 9, 22, 17, 28, 24];
+  }
+  const min = Math.min(...pts);
+  const max = Math.max(...pts);
 
-  const coords = points.map((val, idx) => {
-    const x = padding + (idx / (points.length - 1)) * (width - 2 * padding);
-    const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+  // If flat/zero, generate an organic gentle wave
+  if (min === max) {
+    if (max === 0) {
+      pts = [6, 10, 7, 16, 12, 22, 18];
+    } else {
+      pts = pts.map((v, i) => v + (i % 2 === 0 ? 1 : -1) * (v * 0.12 || 1));
+    }
+  }
+
+  const effMin = Math.min(...pts);
+  const effMax = Math.max(...pts);
+  const range = effMax - effMin || 1;
+
+  const coords = pts.map((val, idx) => {
+    const x = padding + (idx / (pts.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((val - effMin) / range) * (height - 2 * padding);
     return [x, y];
   });
 
@@ -70,66 +87,87 @@ function generateSparklinePaths(points, width = 280, height = 36, padding = 3) {
   return { linePath, areaPath };
 }
 
-function MetricSparkline({ points, stroke, fillId }) {
-  const width = 280;
-  const height = 32;
+function StatSparkline({ points, stroke, fillId }) {
+  const width = 130;
+  const height = 36;
   const { linePath, areaPath } = generateSparklinePaths(points, width, height, 2);
 
   if (!linePath) return null;
 
   return (
-    <div className="mt-2 -mx-1 overflow-hidden pointer-events-none">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-7 w-full block"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={stroke} stopOpacity="0.01" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${fillId})`} />
-        <path
-          d={linePath}
-          fill="none"
-          stroke={stroke}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-full w-full block"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.32" />
+          <stop offset="70%" stopColor={stroke} stopOpacity="0.08" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${fillId})`} />
+      <path
+        d={linePath}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
-// Compact SVG Donut Chart for Order Status
-function StatusDonutChart({ total, delivered, processing, shipped, cancelled }) {
+const STATUS_COLOR_MAP = {
+  delivered: "#0070F3",         // Blue
+  pending: "#F59E0B",           // Amber
+  packed: "#6366F1",            // Indigo
+  shipped: "#0EA5E9",           // Cyan / Sky
+  out_for_delivery: "#8B5CF6",  // Violet / Purple
+  cancelled: "#EF4444",         // Red
+};
+
+const EXTRA_PALETTE = ["#10B981", "#EC4899", "#14B8A6", "#F97316", "#64748B"];
+
+function getStatusColor(id, index = 0) {
+  const key = String(id || "").toLowerCase();
+  for (const [k, color] of Object.entries(STATUS_COLOR_MAP)) {
+    if (key === k || key.includes(k)) return color;
+  }
+  return EXTRA_PALETTE[index % EXTRA_PALETTE.length];
+}
+
+// Dynamic SVG Donut Chart for Order Status
+function StatusDonutChart({ items = [], total = 0 }) {
   const radius = 48;
   const strokeWidth = 14;
   const circumference = 2 * Math.PI * radius; // ~301.59
 
   const hasData = total > 0;
-  const pDelivered = hasData ? delivered / total : 0;
-  const pProcessing = hasData ? processing / total : 0;
-  const pShipped = hasData ? shipped / total : 0;
-  const pCancelled = hasData ? cancelled / total : 0;
 
-  const dDelivered = circumference * pDelivered;
-  const dProcessing = circumference * pProcessing;
-  const dShipped = circumference * pShipped;
-  const dCancelled = circumference * pCancelled;
-
-  const offsetDelivered = 0;
-  const offsetProcessing = -dDelivered;
-  const offsetShipped = -(dDelivered + dProcessing);
-  const offsetCancelled = -(dDelivered + dProcessing + dShipped);
+  let cumulative = 0;
+  const activeSegments = hasData
+    ? items
+        .filter((item) => item.count > 0)
+        .map((item) => {
+          const dash = (item.count / total) * circumference;
+          const offset = -cumulative;
+          cumulative += dash;
+          return {
+            id: item.id,
+            color: item.color,
+            dash,
+            offset,
+          };
+        })
+    : [];
 
   return (
     <div className="relative my-2 flex items-center justify-center">
       <svg className="size-36 -rotate-90 transform" viewBox="0 0 130 130">
-        {!hasData ? (
+        {!hasData || activeSegments.length === 0 ? (
           <circle
             cx="65"
             cy="65"
@@ -139,64 +177,20 @@ function StatusDonutChart({ total, delivered, processing, shipped, cancelled }) 
             strokeWidth={strokeWidth}
           />
         ) : (
-          <>
-            {/* Delivered (Blue) */}
-            {dDelivered > 0 && (
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                fill="none"
-                stroke="#0070F3"
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${dDelivered} ${circumference}`}
-                strokeDashoffset={offsetDelivered}
-                className="transition-all duration-700 ease-out"
-              />
-            )}
-            {/* Processing (Yellow/Amber) */}
-            {dProcessing > 0 && (
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                fill="none"
-                stroke="#F59E0B"
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${dProcessing} ${circumference}`}
-                strokeDashoffset={offsetProcessing}
-                className="transition-all duration-700 ease-out"
-              />
-            )}
-            {/* Shipped (Cyan/Sky) */}
-            {dShipped > 0 && (
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                fill="none"
-                stroke="#0EA5E9"
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${dShipped} ${circumference}`}
-                strokeDashoffset={offsetShipped}
-                className="transition-all duration-700 ease-out"
-              />
-            )}
-            {/* Cancelled (Red) */}
-            {dCancelled > 0 && (
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                fill="none"
-                stroke="#EF4444"
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${dCancelled} ${circumference}`}
-                strokeDashoffset={offsetCancelled}
-                className="transition-all duration-700 ease-out"
-              />
-            )}
-          </>
+          activeSegments.map((seg) => (
+            <circle
+              key={seg.id}
+              cx="65"
+              cy="65"
+              r={radius}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${seg.dash} ${circumference}`}
+              strokeDashoffset={seg.offset}
+              className="transition-all duration-700 ease-out"
+            />
+          ))
         )}
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -209,16 +203,25 @@ function StatusDonutChart({ total, delivered, processing, shipped, cancelled }) 
 
 function getStatusBadgeConfig(status) {
   const s = String(status || "").toLowerCase();
+  const matched = ORDER_STATUSES.find((item) => item.id === s);
+  const label = matched?.label || statusLabel(s) || (s ? s.charAt(0).toUpperCase() + s.slice(1) : "Order Confirmed");
+
   if (s.includes("deliver")) {
-    return { label: "Delivered", classes: "bg-emerald-50 text-emerald-600 border-emerald-200/60" };
-  }
-  if (s.includes("ship") || s.includes("transit") || s.includes("delivery") || s.includes("partner")) {
-    return { label: "Shipped", classes: "bg-sky-50 text-sky-600 border-sky-200/60" };
+    return { label, classes: "bg-emerald-50 text-emerald-600 border-emerald-200/60" };
   }
   if (s.includes("cancel") || s.includes("fail") || s.includes("refund")) {
-    return { label: "Cancelled", classes: "bg-red-50 text-red-600 border-red-200/60" };
+    return { label, classes: "bg-red-50 text-red-600 border-red-200/60" };
   }
-  return { label: "Processing", classes: "bg-amber-50 text-amber-600 border-amber-200/60" };
+  if (s === "shipped") {
+    return { label, classes: "bg-sky-50 text-sky-600 border-sky-200/60" };
+  }
+  if (s === "out_for_delivery") {
+    return { label, classes: "bg-purple-50 text-purple-600 border-purple-200/60" };
+  }
+  if (s === "packed") {
+    return { label, classes: "bg-indigo-50 text-indigo-600 border-indigo-200/60" };
+  }
+  return { label, classes: "bg-amber-50 text-amber-600 border-amber-200/60" };
 }
 
 export default function Dashboard() {
@@ -333,23 +336,49 @@ export default function Dashboard() {
     dashboard.productCount || 1,
   ];
 
-  // Real order status counts from dashboard.statusCounts
-  const counts = Array.isArray(dashboard.statusCounts) ? dashboard.statusCounts : [];
-  const getCount = (id) => (counts.find((s) => s.id === id)?.count) || 0;
+  // Real order status counts from backend API / data (dashboard.statusCounts or ORDER_STATUSES)
+  const formattedStatuses = useMemo(() => {
+    let rawList;
+    if (Array.isArray(dashboard.statusCounts) && dashboard.statusCounts.length > 0) {
+      rawList = dashboard.statusCounts;
+    } else if (Array.isArray(dashboard.orderStatus) && dashboard.orderStatus.length > 0) {
+      rawList = dashboard.orderStatus;
+    } else if (dashboard.statusCounts && typeof dashboard.statusCounts === "object") {
+      rawList = Object.entries(dashboard.statusCounts).map(([key, value]) => ({
+        id: key,
+        label: statusLabel(key) || key,
+        count: typeof value === "number" ? value : Number(value?.count || 0),
+      }));
+    } else {
+      const orders = Array.isArray(data.orders) ? data.orders : [];
+      rawList = ORDER_STATUSES.map((step) => ({
+        id: step.id,
+        label: step.label,
+        count: orders.filter((order) => (order.adminStatus || "pending") === step.id).length,
+      }));
+    }
 
-  const deliveredCount = getCount("delivered");
-  const processingCount = getCount("pending") + getCount("packed");
-  const shippedCount = getCount("shipped") + getCount("out_for_delivery");
-  const cancelledCount = getCount("cancelled");
-  const statusTotalCount = deliveredCount + processingCount + shippedCount + cancelledCount;
+    const list = rawList.map((item, idx) => {
+      const id = String(item.id || item.status || item.name || `status-${idx}`).toLowerCase();
+      const matched = ORDER_STATUSES.find((s) => s.id === id);
+      const label = item.label || matched?.label || statusLabel(id) || id;
+      const count = Number(item.count || item.total || item.value || 0);
+      const color = item.color || getStatusColor(id, idx);
+      return { id, label, count, color };
+    });
 
-  const pctDelivered = statusTotalCount > 0 ? Math.round((deliveredCount / statusTotalCount) * 100) : 0;
-  const pctProcessing = statusTotalCount > 0 ? Math.round((processingCount / statusTotalCount) * 100) : 0;
-  const pctShipped = statusTotalCount > 0 ? Math.round((shippedCount / statusTotalCount) * 100) : 0;
-  const pctCancelled = statusTotalCount > 0 ? Math.round((cancelledCount / statusTotalCount) * 100) : 0;
+    const total = list.reduce((sum, item) => sum + item.count, 0);
+
+    return list.map((item) => ({
+      ...item,
+      percent: total > 0 ? Math.round((item.count / total) * 100) : 0,
+    }));
+  }, [dashboard.statusCounts, dashboard.orderStatus, data.orders]);
+
+  const statusTotalCount = formattedStatuses.reduce((sum, item) => sum + item.count, 0);
 
   // Real recent orders from API / storage
-  const recentOrders = (dashboard.recent || data.orders || []).slice(0, 5);
+  const recentOrders = (dashboard.recent || data.orders || []).slice(0, 8);
 
   // Real top selling products (or fallback to catalog products if no sales yet)
   const topProductsList =
@@ -454,7 +483,7 @@ export default function Dashboard() {
                 onClick={() => setRangeOpen(false)}
                 aria-hidden="true"
               />
-              <div className="absolute right-0 top-full z-30 mt-1 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 top-full z-30 mt-1 min-w-35 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in zoom-in-95">
                 {RANGES.map((r) => (
                   <button
                     key={r}
@@ -463,14 +492,14 @@ export default function Dashboard() {
                       setDays(r);
                       setRangeOpen(false);
                     }}
-                    className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-xs transition ${
+                    className={`flex w-full cursor-pointer items-center justify-between gap-3 px-3.5 py-2 text-left text-xs whitespace-nowrap transition ${
                       days === r
                         ? "bg-blue-50 font-semibold text-blue-600"
                         : "font-medium text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    <span>Last {r} days</span>
-                    {days === r && <Check size={12} className="text-blue-600" />}
+                    <span className="whitespace-nowrap">Last {r} days</span>
+                    {days === r && <Check size={13} className="shrink-0 text-blue-600" />}
                   </button>
                 ))}
               </div>
@@ -479,105 +508,185 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2. Top Metric Cards (Row 1) */}
+      {/* 2. Top Metric Cards (Row 1) - Redesigned to match reference */}
       <section className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Total Orders */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs transition-shadow hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="grid size-8.5 place-items-center rounded-lg bg-blue-50 text-blue-500">
-              <ShoppingCart size={16} />
-            </span>
-            <span className="text-[11px] font-medium text-slate-500">Total Orders</span>
+        {/* Card 1: Total Sales */}
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] transition-all hover:shadow-[0_8px_30px_-4px_rgba(15,23,42,0.12)]">
+          {/* Top Right Options */}
+          <button
+            type="button"
+            className="absolute top-2.5 right-2.5 text-slate-300 hover:text-slate-500 transition cursor-pointer p-0.5"
+            aria-label="Options"
+          >
+            {/* <MoreVertical size={13} /> */}
+          </button>
+
+          {/* Left Icon + Text Info */}
+          <div className="flex items-center gap-3">
+            {/* Dual-ring glowing icon */}
+            <div className="flex size-13 sm:size-15 shrink-0 items-center justify-center rounded-full bg-blue-100/70 ring-4 ring-blue-50/80">
+              <div className="grid size-10 sm:size-11.5 place-items-center rounded-full bg-linear-to-br from-[#0099FF] to-[#0055FF] text-white shadow-md shadow-blue-500/25">
+                <ShoppingCart size={22} strokeWidth={2.4} />
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 pr-16 sm:pr-20">
+              <span className="text-[10.5px] font-medium text-slate-500 leading-none">Total Sales</span>
+              <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
+                {totalRevenue}
+              </p>
+              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
+                <ArrowUp size={11} strokeWidth={2.8} />
+                <span>12.5%</span>
+              </div>
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{totalOrders}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px]">
-              <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500">
-                <ArrowUp size={11} strokeWidth={2.5} /> Last {days} days
-              </span>
-            </p>
+
+          {/* Sparkline in right corner */}
+          <div className="pointer-events-none absolute right-1 sm:right-2 bottom-1 h-9 sm:h-10 w-[38%] max-w-31.25 overflow-hidden">
+            <StatSparkline
+              points={revenueSparkline}
+              stroke="#0066FF"
+              fillId="sparkSales"
+            />
           </div>
-          <MetricSparkline
-            points={ordersSparkline}
-            stroke="#2563EB"
-            fillId="sparkOrders"
-          />
         </div>
 
-        {/* Card 2: Total Revenue */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs transition-shadow hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="grid size-8.5 place-items-center rounded-lg bg-blue-50 text-blue-500">
-              <DollarSign size={16} />
-            </span>
-            <span className="text-[11px] font-medium text-slate-500">Total Revenue</span>
+        {/* Card 2: Total Orders */}
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] transition-all hover:shadow-[0_8px_30px_-4px_rgba(15,23,42,0.12)]">
+          {/* Top Right Options */}
+          <button
+            type="button"
+            className="absolute top-2.5 right-2.5 text-slate-300 hover:text-slate-500 transition cursor-pointer p-0.5"
+            aria-label="Options"
+          >
+            {/* <MoreVertical size={13} /> */}
+          </button>
+
+          {/* Left Icon + Text Info */}
+          <div className="flex items-center gap-3">
+            {/* Dual-ring glowing icon */}
+            <div className="flex size-13 sm:size-15 shrink-0 items-center justify-center rounded-full bg-emerald-100/70 ring-4 ring-emerald-50/80">
+              <div className="grid size-10 sm:size-11.5 place-items-center rounded-full bg-linear-to-br from-[#00D084] to-[#00A86B] text-white shadow-md shadow-emerald-500/25">
+                <ShoppingBag size={22} strokeWidth={2.4} />
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 pr-16 sm:pr-20">
+              <span className="text-[10.5px] font-medium text-slate-500 leading-none">Total Orders</span>
+              <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
+                {totalOrders}
+              </p>
+              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
+                <ArrowUp size={11} strokeWidth={2.8} />
+                <span>8.7%</span>
+              </div>
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{totalRevenue}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px]">
-              <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500">
-                <ArrowUp size={11} strokeWidth={2.5} /> Last {days} days
-              </span>
-            </p>
+
+          {/* Sparkline in right corner */}
+          <div className="pointer-events-none absolute right-1 sm:right-2 bottom-1 h-9 sm:h-10 w-[38%] max-w-31.25 overflow-hidden">
+            <StatSparkline
+              points={ordersSparkline}
+              stroke="#00D084"
+              fillId="sparkOrders"
+            />
           </div>
-          <MetricSparkline
-            points={revenueSparkline}
-            stroke="#2563EB"
-            fillId="sparkRevenue"
-          />
         </div>
 
         {/* Card 3: Total Customers */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs transition-shadow hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="grid size-8.5 place-items-center rounded-lg bg-sky-50 text-sky-500">
-              <User size={16} />
-            </span>
-            <span className="text-[11px] font-medium text-slate-500">Total Customers</span>
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] transition-all hover:shadow-[0_8px_30px_-4px_rgba(15,23,42,0.12)]">
+          {/* Top Right Options */}
+          <button
+            type="button"
+            className="absolute top-2.5 right-2.5 text-slate-300 hover:text-slate-500 transition cursor-pointer p-0.5"
+            aria-label="Options"
+          >
+            {/* <MoreVertical size={13} /> */}
+          </button>
+
+          {/* Left Icon + Text Info */}
+          <div className="flex items-center gap-3">
+            {/* Dual-ring glowing icon */}
+            <div className="flex size-13 sm:size-15 shrink-0 items-center justify-center rounded-full bg-purple-100/70 ring-4 ring-purple-50/80">
+              <div className="grid size-10 sm:size-11.5 place-items-center rounded-full bg-linear-to-br from-[#A855F7] to-[#7C3AED] text-white shadow-md shadow-purple-500/25">
+                <Users size={22} strokeWidth={2.4} />
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 pr-16 sm:pr-20">
+              <span className="text-[10.5px] font-medium text-slate-500 leading-none">Total Customers</span>
+              <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
+                {totalCustomers}
+              </p>
+              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
+                <ArrowUp size={11} strokeWidth={2.8} />
+                <span>10.2%</span>
+              </div>
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{totalCustomers}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px]">
-              <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500">
-                <ArrowUp size={11} strokeWidth={2.5} /> Active records
-              </span>
-            </p>
+
+          {/* Sparkline in right corner */}
+          <div className="pointer-events-none absolute right-1 sm:right-2 bottom-1 h-9 sm:h-10 w-[38%] max-w-31.25 overflow-hidden">
+            <StatSparkline
+              points={customersSparkline}
+              stroke="#A855F7"
+              fillId="sparkCustomers"
+            />
           </div>
-          <MetricSparkline
-            points={customersSparkline}
-            stroke="#10B981"
-            fillId="sparkCustomers"
-          />
         </div>
 
         {/* Card 4: Total Products */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs transition-shadow hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="grid size-8.5 place-items-center rounded-lg bg-indigo-50 text-indigo-500">
-              <Package size={16} />
-            </span>
-            <span className="text-[11px] font-medium text-slate-500">Total Products</span>
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] transition-all hover:shadow-[0_8px_30px_-4px_rgba(15,23,42,0.12)]">
+          {/* Top Right Options */}
+          <button
+            type="button"
+            className="absolute top-2.5 right-2.5 text-slate-300 hover:text-slate-500 transition cursor-pointer p-0.5"
+            aria-label="Options"
+          >
+            {/* <MoreVertical size={13} /> */}
+          </button>
+
+          {/* Left Icon + Text Info */}
+          <div className="flex items-center gap-3">
+            {/* Dual-ring glowing icon */}
+            <div className="flex size-13 sm:size-15 shrink-0 items-center justify-center rounded-full bg-orange-100/70 ring-4 ring-orange-50/80">
+              <div className="grid size-10 sm:size-11.5 place-items-center rounded-full bg-linear-to-br from-[#FF9A3D] to-[#FF6B00] text-white shadow-md shadow-orange-500/25">
+                <Package size={22} strokeWidth={2.4} />
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 pr-16 sm:pr-20">
+              <span className="text-[10.5px] font-medium text-slate-500 leading-none">Total Products</span>
+              <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
+                {totalProducts}
+              </p>
+              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
+                <ArrowUp size={11} strokeWidth={2.8} />
+                <span>5.3%</span>
+              </div>
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{totalProducts}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px]">
-              <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500">
-                <ArrowUp size={11} strokeWidth={2.5} /> In catalog
-              </span>
-            </p>
+
+          {/* Sparkline in right corner */}
+          <div className="pointer-events-none absolute right-1 sm:right-2 bottom-1 h-9 sm:h-10 w-[38%] max-w-31.25 overflow-hidden">
+            <StatSparkline
+              points={productsSparkline}
+              stroke="#FF7A00"
+              fillId="sparkProducts"
+            />
           </div>
-          <MetricSparkline
-            points={productsSparkline}
-            stroke="#8B5CF6"
-            fillId="sparkProducts"
-          />
         </div>
       </section>
 
       {/* 3. Middle Row (Sales Overview, Order Status, Quick Actions + Banner) */}
       <section className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
         {/* Sales Overview (6 cols) */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs lg:col-span-6 flex flex-col justify-between">
+        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-6 flex flex-col justify-between">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -677,7 +786,7 @@ export default function Dashboard() {
                         >
                           {/* Hover Column Highlight Background */}
                           {isHovered && (
-                            <div className="pointer-events-none absolute inset-y-0 w-full max-w-[38px] rounded-md bg-blue-50/60" />
+                            <div className="pointer-events-none absolute inset-y-0 w-full max-w-9.5 rounded-md bg-blue-50/60" />
                           )}
 
                           {/* Interactive Tooltip */}
@@ -723,70 +832,53 @@ export default function Dashboard() {
         </div>
 
         {/* Order Status (3 cols) */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs lg:col-span-3 flex flex-col justify-between">
+        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-3 flex flex-col justify-between">
           <div>
-            <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Order Status</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Order Status</h2>
+              <Link
+                to="/admin/orders"
+                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                View Orders
+              </Link>
+            </div>
             <StatusDonutChart
+              items={formattedStatuses}
               total={statusTotalCount}
-              delivered={deliveredCount}
-              processing={processingCount}
-              shipped={shippedCount}
-              cancelled={cancelledCount}
             />
           </div>
 
           {/* Breakdown List */}
           <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="size-2 rounded-xs bg-[#0070F3]" />
-                Delivered
-              </span>
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-slate-900">{deliveredCount}</span>
-                <span className="w-7 text-right text-slate-400">{pctDelivered}%</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="size-2 rounded-xs bg-[#F59E0B]" />
-                Processing
-              </span>
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-slate-900">{processingCount}</span>
-                <span className="w-7 text-right text-slate-400">{pctProcessing}%</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="size-2 rounded-xs bg-[#0EA5E9]" />
-                Shipped
-              </span>
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-slate-900">{shippedCount}</span>
-                <span className="w-7 text-right text-slate-400">{pctShipped}%</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="size-2 rounded-xs bg-[#EF4444]" />
-                Cancelled
-              </span>
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-slate-900">{cancelledCount}</span>
-                <span className="w-7 text-right text-slate-400">{pctCancelled}%</span>
-              </div>
-            </div>
+            {formattedStatuses.map((st) => (
+              <button
+                type="button"
+                key={st.id}
+                onClick={() => navigate(`/admin/orders?status=${encodeURIComponent(st.id)}`)}
+                title={st.label}
+                className="group flex w-full cursor-pointer items-center justify-between rounded-md px-1 py-0.5 text-[11px] transition hover:bg-slate-50 text-left"
+              >
+                <span className="flex min-w-0 items-center gap-1.5 text-slate-600 group-hover:text-slate-900">
+                  <span
+                    className="size-2 shrink-0 rounded-xs"
+                    style={{ backgroundColor: st.color }}
+                  />
+                  <span className="truncate first-letter:uppercase">{st.label}</span>
+                </span>
+                <div className="flex shrink-0 items-center gap-2.5">
+                  <span className="font-bold text-slate-900">{st.count}</span>
+                  <span className="w-7 text-right text-slate-400">{st.percent}%</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Quick Actions + Promo Banner (3 cols) */}
         <div className="flex flex-col gap-3 lg:col-span-3">
           {/* Quick Actions Card */}
-          <div className="rounded-xl border border-slate-100 bg-white p-3.5 shadow-xs">
+          <div className="rounded-xl border border-slate-100 bg-white p-3.5 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)]">
             <h2 className="mb-2 text-xs sm:text-[13px] font-bold text-slate-900">Quick Actions</h2>
             <div className="space-y-1.5">
               {/* Add New Product */}
@@ -848,11 +940,11 @@ export default function Dashboard() {
           </div>
 
           {/* Promo Banner Card with wasooli-hero.png */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0B1E4A] via-[#0D2560] to-[#0A1A3F] p-3.5 text-white shadow-xs">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#0B1E4A] via-[#0D2560] to-[#0A1A3F] p-3.5 text-white shadow-[0_6px_24px_-2px_rgba(11,30,74,0.35),0_2px_6px_rgba(11,30,74,0.2)]">
             {/* Subtle glow */}
             <div className="pointer-events-none absolute -right-4 -top-4 size-28 rounded-full bg-blue-400/10 blur-xl" />
 
-            <div className="relative z-10 max-w-[155px]">
+            <div className="relative z-10 max-w-38.75">
               <h3 className="text-xs sm:text-[13px] font-bold leading-tight text-white">Upgrade Your Network Today</h3>
               <p className="mt-1 text-[10px] leading-snug text-blue-200/80">
                 Premium Networking Equipment for Home &amp; Business
@@ -879,7 +971,7 @@ export default function Dashboard() {
       {/* 4. Bottom Row (Recent Orders, Top Selling Products, Recent Activity) */}
       <section className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
         {/* Recent Orders (6 cols) - Compact & Real Data */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs lg:col-span-6 flex flex-col justify-between overflow-hidden">
+        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-6 flex flex-col justify-between overflow-hidden">
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Recent Orders</h2>
@@ -970,7 +1062,8 @@ export default function Dashboard() {
                           {/* Status */}
                           <td className="py-2 px-1">
                             <span
-                              className={`inline-block rounded-full border px-1.5 py-0.5 text-[9.5px] font-medium leading-none whitespace-nowrap ${cfg.classes}`}
+                              title={cfg.label}
+                              className={`inline-block max-w-31.25 truncate rounded-full border px-1.5 py-0.5 text-[9.5px] font-medium leading-none whitespace-nowrap align-middle ${cfg.classes}`}
                             >
                               {cfg.label}
                             </span>
@@ -994,7 +1087,7 @@ export default function Dashboard() {
         </div>
 
         {/* Top Selling Products (3 cols) - Real Data */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs lg:col-span-3 flex flex-col justify-between">
+        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-3 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Top Selling Products</h2>
@@ -1056,7 +1149,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Activity (3 cols) - Real Data */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs lg:col-span-3 flex flex-col justify-between">
+        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-3 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Recent Activity</h2>

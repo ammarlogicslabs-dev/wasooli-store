@@ -398,6 +398,23 @@ export function validateProduct(input, products = listProducts()) {
   if (tierError) errors.priceTiers = tierError;
 
   const currentId = input.id != null ? String(input.id) : null;
+
+  if (title && brand) {
+    const cleanTitle = title.toLowerCase().replace(/\s+/g, " ");
+    const cleanBrand = brand.toLowerCase().replace(/\s+/g, " ");
+    const nameBrandTaken = products.some(
+      (product) =>
+        String(product.id) !== currentId &&
+        String(product.title || "").trim().toLowerCase().replace(/\s+/g, " ") === cleanTitle &&
+        String(product.brand || "").trim().toLowerCase().replace(/\s+/g, " ") === cleanBrand
+    );
+    if (nameBrandTaken) {
+      const duplicateMsg = "A product with this name and brand already exists.";
+      errors.title = duplicateMsg;
+      errors.brand = duplicateMsg;
+    }
+  }
+
   const skuTaken = products.some(
     (product) =>
       product.sku &&
@@ -520,6 +537,11 @@ export async function bulkSaveProducts(items, onProgress) {
   const existingProducts = listProducts();
   const usedSkus = new Set(existingProducts.map((p) => String(p.sku || "").toLowerCase()));
   const usedSlugs = new Set(existingProducts.map((p) => String(p.slug || "").toLowerCase()));
+  const usedNameBrands = new Set(
+    existingProducts.map(
+      (p) => `${String(p.title || "").trim().toLowerCase().replace(/\s+/g, " ")}:::${String(p.brand || "").trim().toLowerCase().replace(/\s+/g, " ")}`
+    )
+  );
 
   const results = {
     total: items.length,
@@ -530,6 +552,18 @@ export async function bulkSaveProducts(items, onProgress) {
 
   for (let i = 0; i < items.length; i++) {
     const raw = items[i];
+
+    const cleanRawTitle = String(raw.title || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const cleanRawBrand = String(raw.brand || "Generic").trim().toLowerCase().replace(/\s+/g, " ");
+    const nameBrandKey = `${cleanRawTitle}:::${cleanRawBrand}`;
+
+    if (cleanRawTitle && cleanRawBrand && usedNameBrands.has(nameBrandKey)) {
+      results.failedCount++;
+      results.errors.push(`Row ${i + 1}: Product with name "${raw.title}" and brand "${raw.brand || "Generic"}" already exists.`);
+      continue;
+    }
+    usedNameBrands.add(nameBrandKey);
+
     let sku = String(raw.sku || "").trim();
     if (!sku) {
       sku = `WAS-${Date.now().toString(36).toUpperCase()}-${i + 1}`;
