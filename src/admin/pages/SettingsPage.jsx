@@ -9,6 +9,7 @@ import {
 import PageHeader from "../components/PageHeader";
 import AdminModal from "../components/AdminModal";
 import { buttonClass, inputClass } from "../components/formStyles";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import { useAdminData } from "../hooks/useAdminData";
 
 export default function SettingsPage() {
@@ -220,8 +221,10 @@ export default function SettingsPage() {
             <label className="block text-sm font-semibold text-slate-900">
               Standard shipping fee (PKR)
               <input
+                type="text"
                 value={form.shippingFee}
-                onChange={(event) => setForm({ ...form, shippingFee: event.target.value })}
+                onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                onChange={(event) => setForm({ ...form, shippingFee: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
                 placeholder="e.g. 200"
                 inputMode="decimal"
                 className={`${inputClass} mt-1.5`}
@@ -231,8 +234,10 @@ export default function SettingsPage() {
             <label className="block text-sm font-semibold text-slate-900">
               Express shipping fee (PKR)
               <input
+                type="text"
                 value={form.expressShippingFee ?? 300}
-                onChange={(event) => setForm({ ...form, expressShippingFee: event.target.value })}
+                onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                onChange={(event) => setForm({ ...form, expressShippingFee: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
                 placeholder="e.g. 350"
                 inputMode="decimal"
                 className={`${inputClass} mt-1.5`}
@@ -243,8 +248,10 @@ export default function SettingsPage() {
           <label className="block text-sm font-semibold text-slate-900">
             Low-stock threshold
             <input
+              type="text"
               value={form.lowStockThreshold}
-              onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })}
+              onKeyDown={(event) => filterNumericKeyDown(event)}
+              onChange={(event) => setForm({ ...form, lowStockThreshold: sanitizeNumber(event.target.value) })}
               placeholder="e.g. 5"
               inputMode="numeric"
               className={`${inputClass} mt-1.5`}

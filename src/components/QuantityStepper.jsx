@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { filterNumericKeyDown } from "../utils/numberInput";
 
 const SIZES = {
   sm: {
@@ -71,7 +72,9 @@ export default function QuantityStepper({
     if (event.key === "Enter") {
       event.preventDefault();
       event.currentTarget.blur();
+      return;
     }
+    filterNumericKeyDown(event);
   }
 
   return (

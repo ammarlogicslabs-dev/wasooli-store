@@ -18,6 +18,7 @@ import {
   Check,
 } from "lucide-react";
 import { formatPrice, getProductCondition } from "../data/product";
+import { filterNumericKeyDown } from "../utils/numberInput";
 import {
   CANONICAL_CATEGORIES,
   CATEGORY_SUBCATEGORIES,
@@ -764,6 +765,7 @@ function FilterPanel({
                 type="text"
                 inputMode="numeric"
                 value={minPriceLimit}
+                onKeyDown={(e) => filterNumericKeyDown(e)}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9]/g, "");
                   setMinPriceLimit(val === "" ? "" : Number(val));
@@ -783,6 +785,7 @@ function FilterPanel({
                 type="text"
                 inputMode="numeric"
                 value={priceLimit}
+                onKeyDown={(e) => filterNumericKeyDown(e)}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9]/g, "");
                   setPriceLimit(val === "" ? "" : Number(val));

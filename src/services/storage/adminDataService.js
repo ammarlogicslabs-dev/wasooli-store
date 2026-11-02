@@ -375,6 +375,7 @@ export function validateProduct(input, products = listProducts()) {
   const title = String(input.title || "").trim();
   const sku = String(input.sku || "").trim();
   const category = String(input.category || "").trim();
+  const brand = String(input.brand || "").trim();
   const price = Number(input.price);
   const oldPrice = input.oldPrice === "" || input.oldPrice == null ? null : Number(input.oldPrice);
   const stock = Number(input.stock);
@@ -384,6 +385,7 @@ export function validateProduct(input, products = listProducts()) {
   if (!title) errors.title = "Product name is required.";
   if (!sku) errors.sku = "SKU is required.";
   if (!category) errors.category = "Category is required.";
+  if (!brand) errors.brand = "Brand name is required.";
   if (!image) errors.image = "Select a product image.";
   if (!Number.isFinite(price) || price < 0) errors.price = "Enter a valid price.";
   if (oldPrice != null && (!Number.isFinite(oldPrice) || oldPrice < price)) {
@@ -559,7 +561,7 @@ export async function bulkSaveProducts(items, onProgress) {
       category,
       subcategory: raw.subcategory || "SOHO Home Routers",
       status: raw.status || "active",
-      brand: raw.brand || "",
+      brand: raw.brand || "Generic",
       stock,
       price,
       oldPrice,
@@ -713,13 +715,13 @@ export async function fetchPublicCoupons() {
         cache.coupons = data;
         writeLocalCoupons(data);
         emit(STORAGE_KEYS.coupons);
-        return data.slice();
+        return data.filter((c) => c && c.active !== false);
       }
     }
   } catch {
     // fallback
   }
-  return listCoupons();
+  return listCoupons().filter((c) => c && c.active !== false);
 }
 
 export async function saveCoupon(input) {

@@ -36,6 +36,7 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { filterNumericKeyDown, sanitizeNumber } from "../utils/numberInput";
 import {
   fetchMyOrders,
   fetchPublicCoupons,
@@ -205,6 +206,11 @@ export default function Account() {
     submitting: false,
   });
 
+  const [selectProductModal, setSelectProductModal] = useState({
+    open: false,
+    order: null,
+  });
+
   const [reviewVersion, setReviewVersion] = useState(0);
   const userIdentifier = user?.email || user?.id || "";
 
@@ -270,16 +276,18 @@ export default function Account() {
     };
   }, []);
 
+  const visibleCoupons = useMemo(() => {
+    return (couponsList || []).filter((c) => c && c.active !== false);
+  }, [couponsList]);
+
   const activeCoupons = useMemo(() => {
     const now = new Date().toISOString().slice(0, 10);
-    return couponsList.filter((c) => {
-      if (!c) return false;
-      if (c.active === false) return false;
+    return visibleCoupons.filter((c) => {
       if (c.expiryDate && c.expiryDate < now) return false;
       if (c.usageLimit && Number(c.used || 0) >= Number(c.usageLimit)) return false;
       return true;
     });
-  }, [couponsList]);
+  }, [visibleCoupons]);
 
   function handleCopyCoupon(code) {
     if (!code) return;
@@ -369,6 +377,23 @@ export default function Account() {
     });
   }
 
+  function handleWriteReviewClick(order) {
+    const items = order?.items || [];
+    if (items.length > 1) {
+      setSelectProductModal({
+        open: true,
+        order,
+      });
+    } else if (items.length === 1) {
+      openReviewModal(order, items[0]);
+    }
+  }
+
+  function handleSelectProductToReview(order, item) {
+    setSelectProductModal({ open: false, order: null });
+    openReviewModal(order, item);
+  }
+
   function handleReviewSubmit(e) {
     e.preventDefault();
     if (!reviewModal.item || !reviewModal.order) return;
@@ -384,6 +409,7 @@ export default function Account() {
         comment: reviewModal.comment,
         user,
       });
+      setReviewVersion((v) => v + 1);
       toast.success("Thank you! Your verified product review has been submitted.");
       setReviewModal({
         open: false,
@@ -647,7 +673,8 @@ export default function Account() {
                         id="profile-phone"
                         type="tel"
                         value={profileForm.phone}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        onKeyDown={(e) => filterNumericKeyDown(e)}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: sanitizeNumber(e.target.value) })}
                         placeholder="e.g. 0300 1234567"
                         className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                       />
@@ -982,23 +1009,12 @@ export default function Account() {
                                   </div>
                                 </div>
 
-                                {isDelivered && (order.items || []).length > 1 && (
+                                {isDelivered && userReview && (
                                   <div className="shrink-0 self-start sm:self-auto pl-11.5 sm:pl-0">
-                                    {userReview ? (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                                        <CheckCircle2 size={12} className="text-emerald-600" />
-                                        Reviewed ({userReview.rating}★)
-                                      </span>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => openReviewModal(order, item)}
-                                        className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-amber-500 to-amber-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 cursor-pointer"
-                                      >
-                                        <Star size={12} fill="currentColor" />
-                                        Review
-                                      </button>
-                                    )}
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                                      <CheckCircle2 size={12} className="text-emerald-600" />
+                                      Reviewed ({userReview.rating}★)
+                                    </span>
                                   </div>
                                 )}
                               </li>
@@ -1033,7 +1049,7 @@ export default function Account() {
                                   ) : unreviewedItems.length > 0 ? (
                                     <button
                                       type="button"
-                                      onClick={() => openReviewModal(order, unreviewedItems[0])}
+                                      onClick={() => handleWriteReviewClick(order)}
                                       className="inline-flex h-8.5 flex-1 sm:flex-initial cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 px-3.5 text-xs font-semibold text-white shadow-xs transition hover:from-amber-600 hover:to-amber-700 active:scale-95 shrink-0"
                                     >
                                       <Star size={13} fill="currentColor" />
@@ -1346,7 +1362,7 @@ export default function Account() {
                   : `${activeCoupons.length} active ${activeCoupons.length === 1 ? "coupon" : "coupons"} available to redeem.`
               }
             >
-              {couponsList.length === 0 ? (
+              {visibleCoupons.length === 0 ? (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-8 text-center">
                   <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 mb-3">
                     <Ticket size={24} />
@@ -1369,7 +1385,7 @@ export default function Account() {
                   </p>
 
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {couponsList.map((coupon) => {
+                    {visibleCoupons.map((coupon) => {
                       const isPercent = coupon.type === "percent";
                       const discountLabel = isPercent
                         ? `${coupon.value}% OFF`
@@ -1379,7 +1395,7 @@ export default function Account() {
                       const usageLimit = Number(coupon.usageLimit) || 0;
                       const usedCount = Number(coupon.used) || 0;
                       const isLimitReached = usageLimit > 0 && usedCount >= usageLimit;
-                      const isInactive = coupon.active === false || isExpired || isLimitReached;
+                      const isInactive = isExpired || isLimitReached;
                       const remainingCount = usageLimit > 0 ? Math.max(0, usageLimit - usedCount) : null;
                       const isCopied = copiedCode === coupon.code;
 
@@ -1412,8 +1428,6 @@ export default function Account() {
                                     ? "bg-red-50 text-red-600 border border-red-200"
                                     : isLimitReached
                                     ? "bg-rose-50 text-rose-600 border border-rose-200"
-                                    : coupon.active === false
-                                    ? "bg-slate-100 text-slate-600 border border-slate-200"
                                     : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 }`}
                               >
@@ -1421,8 +1435,6 @@ export default function Account() {
                                   ? "Expired"
                                   : isLimitReached
                                   ? "Redeemed Out"
-                                  : coupon.active === false
-                                  ? "Inactive"
                                   : "Active"}
                               </span>
                             </div>
@@ -1705,6 +1717,98 @@ export default function Account() {
           </div>
         </div>
       </div>
+      {/* Product Selection Modal (when order has multiple products) */}
+      {selectProductModal.open && selectProductModal.order && (
+        <div
+          onClick={() => setSelectProductModal({ open: false, order: null })}
+          className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+          >
+            <button
+              type="button"
+              onClick={() => setSelectProductModal({ open: false, order: null })}
+              className="absolute right-4 top-4 grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <span className="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
+                <Star size={20} fill="currentColor" />
+              </span>
+              <div className="min-w-0 pr-6">
+                <h3 className="text-base font-bold text-slate-900">Select Product to Review</h3>
+                <p className="text-xs text-slate-500 truncate">
+                  Order #{selectProductModal.order.id} · Kis product ka review karna chahte hain?
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {(selectProductModal.order.items || []).map((item, idx) => {
+                const revKey1 = `${selectProductModal.order.id}_${item.id}`;
+                const revKey2 = `${selectProductModal.order.id}_${item.slug}`;
+                const revKey3 = `${selectProductModal.order.id}_${item.productId}`;
+                const userReview = reviewedMap[revKey1] || reviewedMap[revKey2] || reviewedMap[revKey3];
+
+                return (
+                  <div
+                    key={item.id || idx}
+                    onClick={() => handleSelectProductToReview(selectProductModal.order, item)}
+                    className="group flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-amber-300 hover:bg-amber-50/30 transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-1">
+                        <img
+                          src={resolveMediaUrl(item.image)}
+                          alt={item.title}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs sm:text-sm font-semibold text-slate-900 group-hover:text-amber-700 transition">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Qty: {item.quantity} · {formatPrice(item.price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {userReview ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 size={12} className="text-emerald-600" />
+                          Reviewed ({userReview.rating}★)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition group-hover:from-amber-600 group-hover:to-amber-700">
+                          <Star size={12} fill="currentColor" />
+                          Write Review
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectProductModal({ open: false, order: null })}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Review Modal Dialog */}
       {reviewModal.open && (
         <div

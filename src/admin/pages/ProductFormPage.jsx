@@ -18,6 +18,7 @@ import { inputClass, quietButtonClass } from "../components/formStyles";
 import PageLoader from "../../components/PageLoader";
 import { useAdminData } from "../hooks/useAdminData";
 import { normalizePriceTiers } from "../../utils/priceTiers";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import {
   CANONICAL_CATEGORIES,
   CATEGORY_SUBCATEGORIES,
@@ -146,7 +147,13 @@ export default function ProductFormPage() {
   }
 
   function update(field, value) {
-    setForm((current) => ({ ...current, [field]: value }));
+    let nextValue = value;
+    if (field === "price" || field === "oldPrice") {
+      nextValue = sanitizeNumber(value, { allowDecimal: true });
+    } else if (field === "stock") {
+      nextValue = sanitizeNumber(value, { allowDecimal: false });
+    }
+    setForm((current) => ({ ...current, [field]: nextValue }));
     setErrors((current) => ({ ...current, [field]: "" }));
   }
 
@@ -247,13 +254,51 @@ export default function ProductFormPage() {
     }
   }
 
-  const field = (name, label, props = {}) => (
-    <label className="block text-sm font-semibold text-slate-900">
-      {label}
-      <input {...props} value={form[name]} onChange={(event) => update(name, event.target.value)} className={`${inputClass} mt-1.5`} />
-      {errors[name] ? <span className="mt-1 block text-xs font-medium text-red-600">{errors[name]}</span> : null}
-    </label>
-  );
+  const field = (name, label, props = {}, required = false) => {
+    const isDecimalNumeric = props.inputMode === "decimal" || name === "price" || name === "oldPrice";
+    const isIntegerNumeric = props.inputMode === "numeric" || name === "stock";
+    const isNumeric = isDecimalNumeric || isIntegerNumeric;
+
+    return (
+      <label className="block text-sm font-semibold text-slate-900">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+        <input
+          type="text"
+          {...props}
+          value={form[name] ?? ""}
+          onKeyDown={(event) => {
+            if (isNumeric) {
+              filterNumericKeyDown(event, { allowDecimal: isDecimalNumeric });
+            }
+            props.onKeyDown?.(event);
+          }}
+          onChange={(event) => {
+            const raw = event.target.value;
+            const val = isNumeric
+              ? sanitizeNumber(raw, { allowDecimal: isDecimalNumeric })
+              : raw;
+            update(name, val);
+          }}
+          className={`${inputClass} mt-1.5 ${
+            errors[name] ? "border-red-400 focus:border-red-500 focus:ring-red-200" : ""
+          }`}
+        />
+        {errors[name] ? <span className="mt-1 block text-xs font-medium text-red-600">{errors[name]}</span> : null}
+      </label>
+    );
+  };
+
+  const brandSuggestions = (() => {
+    const list = ["Huawei", "ZTE", "FiberHome", "TP-Link", "Cisco", "MikroTik", "Ubiquiti", "Tenda", "D-Link"];
+    const set = new Set(list);
+    (products || []).forEach((p) => {
+      if (p.brand && typeof p.brand === "string" && p.brand.trim()) {
+        set.add(p.brand.trim());
+      }
+    });
+    return Array.from(set);
+  })();
 
   const availableSubcategories = form.category
     ? CATEGORY_SUBCATEGORIES[form.category] ||
@@ -298,8 +343,8 @@ export default function ProductFormPage() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
-            {field("title", "Name", { placeholder: "e.g. Cat6 High-Speed Network Cable 305m" })}
-            {field("sku", "SKU", { placeholder: "e.g. WAS-CAT6-305" })}
+            {field("title", "Name", { placeholder: "e.g. Cat6 High-Speed Network Cable 305m" }, true)}
+            {field("sku", "SKU", { placeholder: "e.g. WAS-CAT6-305" }, true)}
             {field("slug", "Link slug", { placeholder: "Optional, generated from the name" })}
             <label className="block text-sm font-semibold text-slate-900">
               Category <span className="text-red-500">*</span>
@@ -424,7 +469,43 @@ export default function ProductFormPage() {
               </div>
             ) : null} */}
 
-            {field("brand", "Brand", { placeholder: "e.g. Cisco, TP-Link, Ubiquiti" })}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900">
+                Brand <span className="text-red-500">*</span>
+                <input
+                  value={form.brand}
+                  onChange={(event) => update("brand", event.target.value)}
+                  placeholder="e.g. Cisco, TP-Link, Ubiquiti, Huawei"
+                  className={`${inputClass} mt-1.5 ${
+                    errors.brand ? "border-red-400 focus:border-red-500 focus:ring-red-200" : ""
+                  }`}
+                />
+              </label>
+              {errors.brand ? (
+                <span className="mt-1 block text-xs font-medium text-red-600">
+                  {errors.brand}
+                </span>
+              ) : null}
+              {brandSuggestions.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[11px] font-medium text-slate-400">Suggestions:</span>
+                  {brandSuggestions.slice(0, 8).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => update("brand", b)}
+                      className={`cursor-pointer rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
+                        form.brand?.toLowerCase() === b.toLowerCase()
+                          ? "bg-brand-500 text-white font-semibold"
+                          : "bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700"
+                      }`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <label className="block text-sm font-semibold text-slate-900">
               Port type
@@ -455,9 +536,9 @@ export default function ProductFormPage() {
               )}
             </label>
 
-            {field("price", "Price", { inputMode: "decimal", placeholder: "e.g. 4500" })}
+            {field("price", "Price", { inputMode: "decimal", placeholder: "e.g. 4500" }, true)}
             {field("oldPrice", "Compare-at price", { inputMode: "decimal", placeholder: "e.g. 5200" })}
-            {field("stock", "Stock", { inputMode: "numeric", placeholder: "e.g. 50" })}
+            {field("stock", "Stock", { inputMode: "numeric", placeholder: "e.g. 50" }, true)}
             <label className="block text-sm font-semibold text-slate-900">
               Visibility
               <select value={form.status} onChange={(event) => update("status", event.target.value)} className={`${inputClass} mt-1.5`}>
@@ -511,7 +592,7 @@ export default function ProductFormPage() {
           </label>
         </section>
         <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-4 lg:self-start">
-          <p className="text-sm font-semibold text-slate-900">Images</p>
+          <p className="text-sm font-semibold text-slate-900">Product Image <span className="text-red-500">*</span></p>
           <input
             ref={extraInputRef}
             type="file"

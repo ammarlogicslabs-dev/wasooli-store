@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 import { formatTierRange, normalizePriceTiers } from "../../utils/priceTiers";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import { inputClass, quietButtonClass } from "./formStyles";
 
 export default function PriceTiersEditor({ value = [], onChange, basePrice, error }) {
@@ -73,9 +74,11 @@ export default function PriceTiersEditor({ value = [], onChange, basePrice, erro
               <label className="block text-xs font-semibold text-slate-700">
                 Min qty
                 <input
+                  type="text"
                   inputMode="numeric"
                   value={tier.minQty}
-                  onChange={(event) => updateTier(index, { minQty: event.target.value.replace(/[^\d]/g, "") })}
+                  onKeyDown={(event) => filterNumericKeyDown(event)}
+                  onChange={(event) => updateTier(index, { minQty: sanitizeNumber(event.target.value) })}
                   className={`${inputClass} mt-1`}
                   placeholder="1"
                 />
@@ -83,9 +86,11 @@ export default function PriceTiersEditor({ value = [], onChange, basePrice, erro
               <label className="block text-xs font-semibold text-slate-700">
                 Max qty
                 <input
+                  type="text"
                   inputMode="numeric"
                   value={tier.maxQty}
-                  onChange={(event) => updateTier(index, { maxQty: event.target.value.replace(/[^\d]/g, "") })}
+                  onKeyDown={(event) => filterNumericKeyDown(event)}
+                  onChange={(event) => updateTier(index, { maxQty: sanitizeNumber(event.target.value) })}
                   className={`${inputClass} mt-1`}
                   placeholder="Open end"
                 />
@@ -93,9 +98,11 @@ export default function PriceTiersEditor({ value = [], onChange, basePrice, erro
               <label className="block text-xs font-semibold text-slate-700">
                 Unit price
                 <input
+                  type="text"
                   inputMode="decimal"
                   value={tier.price}
-                  onChange={(event) => updateTier(index, { price: event.target.value })}
+                  onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                  onChange={(event) => updateTier(index, { price: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
                   className={`${inputClass} mt-1`}
                   placeholder="0"
                 />

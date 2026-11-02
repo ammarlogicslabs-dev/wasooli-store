@@ -28,6 +28,7 @@ import AdminTable from "../components/AdminTable";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import { useAdminData } from "../hooks/useAdminData";
 
 const HISTORY_REASONS = ["all", "Restock", "Damaged", "Returned", "Correction", "Order", "Other"];
@@ -489,11 +490,11 @@ export default function InventoryPage() {
                   <label className="block text-xs font-semibold text-slate-900">
                     Quantity to add (Pieces) *
                     <input
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       value={restockQty}
-                      onChange={(e) => setRestockQty(e.target.value.replace(/[^0-9]/g, ""))}
+                      onKeyDown={(e) => filterNumericKeyDown(e)}
+                      onChange={(e) => setRestockQty(sanitizeNumber(e.target.value))}
                       placeholder="e.g. 10"
                       disabled={saving}
                       className={`${inputClass} mt-1`}
@@ -507,11 +508,11 @@ export default function InventoryPage() {
                      
                     </span>
                     <input
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputMode="decimal"
                       value={costPerPiece}
-                      onChange={(e) => setCostPerPiece(e.target.value.replace(/[^0-9]/g, ""))}
+                      onKeyDown={(e) => filterNumericKeyDown(e, { allowDecimal: true })}
+                      onChange={(e) => setCostPerPiece(sanitizeNumber(e.target.value, { allowDecimal: true }))}
                       placeholder="e.g. 1500"
                       disabled={saving}
                       className={`${inputClass} mt-1 ${
@@ -563,12 +564,11 @@ export default function InventoryPage() {
                   <label className="block text-xs font-semibold text-slate-900">
                     How many pieces damaged? *
                     <input
-                      type="number"
-                      min="1"
-                      max={selected.stock}
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       value={damagedQty}
-                      onChange={(e) => setDamagedQty(e.target.value.replace(/[^0-9]/g, ""))}
+                      onKeyDown={(e) => filterNumericKeyDown(e)}
+                      onChange={(e) => setDamagedQty(sanitizeNumber(e.target.value))}
                       placeholder={`Max ${selected.stock}`}
                       disabled={saving}
                       className={`${inputClass} mt-1`}
@@ -608,11 +608,11 @@ export default function InventoryPage() {
                   <label className="block text-xs font-semibold text-slate-900">
                     Returned Quantity (Pieces) *
                     <input
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       value={returnedQty}
-                      onChange={(e) => setReturnedQty(e.target.value.replace(/[^0-9]/g, ""))}
+                      onKeyDown={(e) => filterNumericKeyDown(e)}
+                      onChange={(e) => setReturnedQty(sanitizeNumber(e.target.value))}
                       placeholder="e.g. 1"
                       disabled={saving}
                       className={`${inputClass} mt-1`}
@@ -660,11 +660,11 @@ export default function InventoryPage() {
                 <label className="block text-xs font-semibold text-slate-900">
                   Actual Physical Count in Warehouse *
                   <input
-                    type="number"
-                    min="0"
-                    step="1"
+                    type="text"
+                    inputMode="numeric"
                     value={correctionCount}
-                    onChange={(e) => setCorrectionCount(e.target.value.replace(/[^0-9]/g, ""))}
+                    onKeyDown={(e) => filterNumericKeyDown(e)}
+                    onChange={(e) => setCorrectionCount(sanitizeNumber(e.target.value))}
                     placeholder="e.g. 25"
                     disabled={saving}
                     className={`${inputClass} mt-1`}
@@ -693,11 +693,11 @@ export default function InventoryPage() {
                   <div>
                     <label className="block text-xs font-semibold text-slate-900">Quantity *</label>
                     <input
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       value={otherQty}
-                      onChange={(e) => setOtherQty(e.target.value.replace(/[^0-9]/g, ""))}
+                      onKeyDown={(e) => filterNumericKeyDown(e)}
+                      onChange={(e) => setOtherQty(sanitizeNumber(e.target.value))}
                       placeholder="e.g. 5"
                       disabled={saving}
                       className={`${inputClass} mt-1`}

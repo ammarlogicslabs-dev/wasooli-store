@@ -15,6 +15,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import { useAdminData } from "../hooks/useAdminData";
 import {
   deleteFaq,
@@ -313,10 +314,11 @@ export default function FaqsPage() {
                   Display Order
                 </label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={form.order}
-                  onChange={(e) => setForm({ ...form, order: Number(e.target.value) || 1 })}
+                  onKeyDown={(e) => filterNumericKeyDown(e)}
+                  onChange={(e) => setForm({ ...form, order: sanitizeNumber(e.target.value) })}
                   className={`${inputClass} mt-1`}
                 />
               </div>

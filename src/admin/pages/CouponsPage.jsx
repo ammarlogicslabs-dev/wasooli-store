@@ -8,6 +8,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass } from "../components/formStyles";
+import { filterNumericKeyDown, sanitizeNumber } from "../../utils/numberInput";
 import { useAdminData } from "../hooks/useAdminData";
 
 const EMPTY = {
@@ -119,13 +120,37 @@ export default function CouponsPage() {
               </select>
             </label>
             <label className="text-sm font-semibold text-slate-900">Value
-              <input value={form.value} onChange={(event) => setForm({ ...form, value: event.target.value })} placeholder="e.g. 10 (for 10%) or 500" inputMode="decimal" className={`${inputClass} mt-1.5`} />
+              <input
+                type="text"
+                value={form.value}
+                onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                onChange={(event) => setForm({ ...form, value: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
+                placeholder="e.g. 10 (for 10%) or 500"
+                inputMode="decimal"
+                className={`${inputClass} mt-1.5`}
+              />
             </label>
             <label className="text-sm font-semibold text-slate-900">Minimum order
-              <input value={form.minOrder} onChange={(event) => setForm({ ...form, minOrder: event.target.value })} placeholder="e.g. 2000" inputMode="decimal" className={`${inputClass} mt-1.5`} />
+              <input
+                type="text"
+                value={form.minOrder}
+                onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                onChange={(event) => setForm({ ...form, minOrder: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
+                placeholder="e.g. 2000"
+                inputMode="decimal"
+                className={`${inputClass} mt-1.5`}
+              />
             </label>
             <label className="text-sm font-semibold text-slate-900">Usage limit
-              <input value={form.usageLimit} onChange={(event) => setForm({ ...form, usageLimit: event.target.value })} placeholder="e.g. 100" inputMode="numeric" className={`${inputClass} mt-1.5`} />
+              <input
+                type="text"
+                value={form.usageLimit}
+                onKeyDown={(event) => filterNumericKeyDown(event)}
+                onChange={(event) => setForm({ ...form, usageLimit: sanitizeNumber(event.target.value) })}
+                placeholder="e.g. 100"
+                inputMode="numeric"
+                className={`${inputClass} mt-1.5`}
+              />
             </label>
             <label className="text-sm font-semibold text-slate-900">Start
               <input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} className={`${inputClass} mt-1.5`} />

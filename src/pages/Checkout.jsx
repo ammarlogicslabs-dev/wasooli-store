@@ -17,6 +17,7 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import { filterNumericKeyDown } from "../utils/numberInput";
 import {
   fetchPublicSettings,
   fetchSavedAddress,
@@ -701,6 +702,7 @@ export default function Checkout() {
                       inputMode="tel"
                       autoComplete="tel"
                       value={form.phone}
+                      onKeyDown={(e) => filterNumericKeyDown(e)}
                       onChange={handleChange}
                       onBlur={handleBlur}
                       placeholder="03XXXXXXXXX"
