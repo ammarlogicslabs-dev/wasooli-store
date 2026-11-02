@@ -1140,90 +1140,314 @@ export default function Account() {
             </Section>
             ) : null}
 
-            {section === "notifications" ? (
-            <Section
-              icon={Bell}
-              title="Notifications"
-              detail="Real-time order push notifications and stock alerts."
-            >
-              <PushNotificationCard user={user} />
-              {notifications.length === 0 ? (
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center">
-                  <p className="text-sm font-semibold text-slate-900">No notifications right now</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    When an out-of-stock product becomes available again, you'll see a message here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => clearNotifications?.()}
-                      className="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-red-600"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  <ul className="space-y-3">
-                    {notifications.map((notif) => {
-                      const isAvailable = notif.type !== "out_of_stock";
-                      return (
-                        <li
-                          key={notif.id}
-                          className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5"
+            {section === "notifications" ? (() => {
+              const allNotificationsList = [];
+              if (notifFilter === "all" || notifFilter === "orders") {
+                combinedOrderNotifications.forEach((item) => {
+                  allNotificationsList.push({ ...item, isOrder: true });
+                });
+              }
+              if (notifFilter === "all" || notifFilter === "stock") {
+                (notifications || []).forEach((item) => {
+                  allNotificationsList.push({ ...item, isOrder: false });
+                });
+              }
+              allNotificationsList.sort(
+                (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+              );
+
+              const totalCount = combinedOrderNotifications.length + notifications.length;
+
+              return (
+                <Section
+                  icon={Bell}
+                  title="Notifications"
+                  detail="Real-time order push notifications and stock alerts."
+                >
+                  <PushNotificationCard user={user} />
+
+                  {/* Filter and Clear bar */}
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setNotifFilter("all")}
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                          notifFilter === "all"
+                            ? "bg-brand-500 text-white shadow-xs"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        <span>All</span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                            notifFilter === "all" ? "bg-white/20 text-white" : "bg-white text-slate-700 shadow-2xs"
+                          }`}
                         >
-                          {notif.image && (
-                            <Link
-                              to={`/products/${notif.slug}`}
-                              className="size-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
+                          {totalCount}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNotifFilter("orders")}
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                          notifFilter === "orders"
+                            ? "bg-brand-500 text-white shadow-xs"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        <Package size={13} />
+                        <span>Order Updates</span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                            notifFilter === "orders" ? "bg-white/20 text-white" : "bg-white text-slate-700 shadow-2xs"
+                          }`}
+                        >
+                          {combinedOrderNotifications.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNotifFilter("stock")}
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                          notifFilter === "stock"
+                            ? "bg-brand-500 text-white shadow-xs"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        <Bell size={13} />
+                        <span>Stock Alerts</span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                            notifFilter === "stock" ? "bg-white/20 text-white" : "bg-white text-slate-700 shadow-2xs"
+                          }`}
+                        >
+                          {notifications.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    {allNotificationsList.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllNotifications}
+                        className="inline-flex cursor-pointer items-center gap-1.5 self-end sm:self-auto text-xs font-semibold text-slate-500 transition hover:text-red-600"
+                      >
+                        <Trash2 size={13} />
+                        <span>Clear {notifFilter === "all" ? "all" : notifFilter}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {allNotificationsList.length === 0 ? (
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-center">
+                      <div className="mx-auto mb-2.5 grid size-12 place-items-center rounded-2xl bg-white text-slate-400 shadow-xs">
+                        <Bell size={22} />
+                      </div>
+                      <p className="text-sm font-bold text-slate-900">
+                        {notifFilter === "orders"
+                          ? "No order updates yet"
+                          : notifFilter === "stock"
+                          ? "No stock alerts right now"
+                          : "No notifications right now"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+                        {notifFilter === "orders"
+                          ? "Jab aapka order confirm, pack, ship ya deliver hoga, notification yahan show hoga."
+                          : notifFilter === "stock"
+                          ? "When an out-of-stock product returns, you'll receive an alert here."
+                          : "Real-time order status updates and stock alerts will appear here."}
+                      </p>
+                      {notifFilter === "orders" && (
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSection("orders")}
+                          className="mt-3.5 inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-500 px-4 text-xs font-semibold text-white transition hover:bg-brand-600 active:scale-95 shadow-xs"
+                        >
+                          <Package size={13} />
+                          <span>View Order History</span>
+                        </button>
+                      )}
+                      {notifFilter === "stock" && (
+                        <Link
+                          to="/shop"
+                          className="mt-3.5 inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-500 px-4 text-xs font-semibold text-white transition hover:bg-brand-600"
+                        >
+                          <span>Browse products</span>
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {allNotificationsList.map((notif) => {
+                        if (notif.isOrder) {
+                          const style = getOrderStatusCardStyle(notif.status);
+                          const StatusIcon = style.icon;
+
+                          return (
+                            <li
+                              key={notif.id}
+                              className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 rounded-2xl border transition p-3.5 sm:p-4 ${
+                                !notif.read
+                                  ? "border-brand-300 bg-brand-50/25 shadow-xs"
+                                  : "border-slate-200/90 bg-white hover:border-slate-300"
+                              }`}
                             >
-                              <img src={resolveMediaUrl(notif.image)} alt="" className="h-full w-full object-cover" />
-                            </Link>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                                  isAvailable
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "bg-red-50 text-red-600"
-                                }`}
-                              >
-                                {isAvailable ? "Back in stock" : "Out of stock"}
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                {formatDate(notif.createdAt)}
-                              </span>
-                            </div>
-                            <p className="mt-1.5 text-sm font-medium text-slate-900">
-                              {notif.message}
-                            </p>
-                            {notif.slug && (
+                              <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                                <div
+                                  className={`grid size-11 shrink-0 place-items-center rounded-2xl ${style.iconBg}`}
+                                >
+                                  <StatusIcon size={20} />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${style.badgeBg} ${style.badgeText}`}
+                                    >
+                                      <span
+                                        className={`size-1.5 rounded-full ${style.dotBg} ${
+                                          style.pulse ? "animate-pulse" : ""
+                                        }`}
+                                      />
+                                      {style.badgeLabel}
+                                    </span>
+
+                                    <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                                      #{notif.orderId}
+                                    </span>
+
+                                    <span className="text-xs text-slate-400">
+                                      {formatDate(notif.createdAt)}
+                                    </span>
+
+                                    {!notif.read && (
+                                      <span className="inline-flex items-center rounded-full bg-brand-500 px-1.5 py-0.2 text-[9px] font-black text-white uppercase tracking-wider">
+                                        New
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <p className="mt-1.5 text-sm font-bold text-slate-900 leading-snug">
+                                    {notif.title}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">
+                                    {notif.message}
+                                  </p>
+
+                                  {notif.items && notif.items.length > 0 && (
+                                    <div className="mt-2.5 flex items-center gap-2">
+                                      <div className="flex -space-x-1.5 overflow-hidden">
+                                        {notif.items.slice(0, 3).map((item, idx) =>
+                                          item.image ? (
+                                            <img
+                                              key={idx}
+                                              src={resolveMediaUrl(item.image)}
+                                              alt=""
+                                              className="inline-block size-7 rounded-lg border-2 border-white object-cover bg-slate-50 ring-1 ring-slate-200"
+                                              title={item.title}
+                                            />
+                                          ) : null
+                                        )}
+                                      </div>
+                                      <span className="text-[11px] text-slate-500 font-medium truncate max-w-xs">
+                                        {notif.items[0]?.title}
+                                        {notif.items.length > 1
+                                          ? ` +${notif.items.length - 1} more`
+                                          : ""}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-1 sm:pt-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTrackFromNotification(notif.orderId)}
+                                  className="inline-flex h-8.5 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-500 px-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-600 active:scale-95"
+                                >
+                                  <Truck size={13} />
+                                  <span>Track Order</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveOrderNotification(notif.id)}
+                                  aria-label="Remove notification"
+                                  className="grid size-8.5 cursor-pointer place-items-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        }
+
+                        // Stock alert card
+                        const isAvailable = notif.type !== "out_of_stock";
+                        return (
+                          <li
+                            key={notif.id}
+                            className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs"
+                          >
+                            {notif.image && (
                               <Link
                                 to={`/products/${notif.slug}`}
-                                className="mt-2 inline-flex h-8 items-center rounded-lg bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600"
+                                className="size-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
                               >
-                                View product
+                                <img
+                                  src={resolveMediaUrl(notif.image)}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
                               </Link>
                             )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeNotification?.(notif.id)}
-                            aria-label="Remove notification"
-                            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </Section>
-            ) : null}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                                    isAvailable
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-red-50 text-red-600 border border-red-200"
+                                  }`}
+                                >
+                                  {isAvailable ? "Back in stock" : "Out of stock"}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {formatDate(notif.createdAt)}
+                                </span>
+                              </div>
+                              <p className="mt-1.5 text-sm font-medium text-slate-900">
+                                {notif.message}
+                              </p>
+                              {notif.slug && (
+                                <Link
+                                  to={`/products/${notif.slug}`}
+                                  className="mt-2 inline-flex h-8 items-center rounded-lg bg-brand-500 px-3 text-xs font-semibold text-white transition hover:bg-brand-600"
+                                >
+                                  View product
+                                </Link>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeNotification?.(notif.id)}
+                              aria-label="Remove notification"
+                              className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </Section>
+              );
+            })() : null}
 
             {section === "orders" ? (
             <Section
@@ -1254,6 +1478,7 @@ export default function Account() {
                     return (
                       <li
                         key={order.id}
+                        id={`order-card-${order.id}`}
                         className={`rounded-xl sm:rounded-2xl border transition ${
                           isTrackingOpen
                             ? "border-brand-300 bg-white shadow-md"
