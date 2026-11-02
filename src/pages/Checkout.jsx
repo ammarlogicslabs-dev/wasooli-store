@@ -326,7 +326,7 @@ function CheckoutNotificationPrompt({ user }) {
               Get live status alerts on your phone
             </p>
             <p className="text-[11px] text-slate-500">
-              Notification jab order pack, dispatch aur deliver hoga.
+              Get notified when your order is packed, dispatched, and delivered.
             </p>
           </div>
         </div>
@@ -338,7 +338,7 @@ function CheckoutNotificationPrompt({ user }) {
             try {
               await subscribeToPushNotifications(user);
               setPermission("granted");
-              toast.success("Delivery alerts active ho gaye hain! 🔔");
+              toast.success("Live delivery alerts enabled! 🔔");
             } catch (err) {
               toast.error(err.message || "Could not enable alerts.");
             } finally {

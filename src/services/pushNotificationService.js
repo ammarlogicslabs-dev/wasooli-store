@@ -24,7 +24,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "pending",
         badgeLabel: "Order Confirmed",
         title: `Order Confirmed: #${orderId} 📋`,
-        message: `Aapka order Wasooli Store par receive ho chuka hai. Hamari team isko prepare kar rahi hai.`,
+        message: `Your order has been received and confirmed. Our team is preparing your items.`,
         tone: "amber",
       };
     case "packed":
@@ -32,7 +32,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "packed",
         badgeLabel: "Order Packed",
         title: `Order Packed: #${orderId} 📦`,
-        message: `Aapka package warehouse me safely pack ho chuka hai aur dispatch ke liye ready hai.`,
+        message: `Your package has been safely packed in our warehouse and is ready for dispatch.`,
         tone: "sky",
       };
     case "shipped":
@@ -41,7 +41,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "shipped",
         badgeLabel: "In Transit",
         title: `Handed Over to Courier: #${orderId} 🚚`,
-        message: `Aapka package courier delivery partner ko handover kar diya gaya hai aur transit me hai.`,
+        message: `Your package has been handed over to our delivery partner and is on its way.`,
         tone: "indigo",
       };
     case "out_for_delivery":
@@ -49,7 +49,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "out_for_delivery",
         badgeLabel: "Out for Delivery",
         title: `Out for Delivery: #${orderId} 🛵`,
-        message: `Rider aapke delivery address par rawana ho chuka hai! Jald hi delivery pohnch jayegi.`,
+        message: `Our rider is on the way to your delivery address! Your package will arrive shortly.`,
         tone: "purple",
       };
     case "delivered":
@@ -57,7 +57,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "delivered",
         badgeLabel: "Delivered",
         title: `Order Delivered: #${orderId} 🎉`,
-        message: `Aapka order kamyabi se deliver ho gaya hai. Wasooli Store se shopping ka shukriya!`,
+        message: `Your order has been delivered successfully. Thank you for shopping with Wasooli Store!`,
         tone: "emerald",
       };
     case "cancelled":
@@ -65,7 +65,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: "cancelled",
         badgeLabel: "Cancelled",
         title: `Order Cancelled: #${orderId} ❌`,
-        message: `Aapka order cancel kar diya gaya hai. Kisi bhi sawal ki soorat me support team se rabta karein.`,
+        message: `Your order has been cancelled. If you have any questions, please contact our support team.`,
         tone: "rose",
       };
     default:
@@ -73,7 +73,7 @@ export function getOrderStatusNotificationInfo(orderId, status) {
         status: normStatus || "pending",
         badgeLabel: statusLabel(status) || "Order Update",
         title: `Order Update: #${orderId}`,
-        message: `Aapke order ka status ab "${statusLabel(status) || status}" update ho chuka hai.`,
+        message: `Your order status has been updated to "${statusLabel(status) || status}".`,
         tone: "brand",
       };
   }
@@ -324,21 +324,21 @@ export async function subscribeToPushNotifications(user = null) {
   if (!isPushSupported()) {
     if (isIOS() && !isStandalonePWA()) {
       throw new Error(
-        "iPhone par push notifications ke liye pehle Safari menu se 'Add to Home Screen' karein."
+        "For push notifications on iPhone, please tap the Safari Share menu and select 'Add to Home Screen'."
       );
     }
-    throw new Error("Aapka browser Web Push notifications support nahi karta.");
+    throw new Error("Your browser does not support Web Push notifications.");
   }
 
   // 1. Request Permission from customer
   const permission = await Notification.requestPermission();
   if (permission === "denied") {
     throw new Error(
-      "Notification permission block hai. Browser settings me ja kar allow karein."
+      "Notification permission is blocked. Please allow notifications in your browser settings."
     );
   }
   if (permission !== "granted") {
-    throw new Error("Notification permission allow nahi ki gayi.");
+    throw new Error("Notification permission was not granted.");
   }
 
   // 2. Register with PushManager (with timeout protection)
@@ -456,11 +456,11 @@ export async function unsubscribeFromPushNotifications(user = null) {
  */
 export async function sendLocalTestNotification({
   title = "Wasooli Store Order Update 📦",
-  body = "Aapka Order #WAS-8921 ab 'Out for Delivery' ho chuka hai! Delivery boy aapke address par rawana hai.",
+  body = "Your Order #WAS-8921 is out for delivery! The rider is on the way to your address.",
   url = "/account?section=orders",
 } = {}) {
   if (typeof window === "undefined" || !("Notification" in window)) {
-    throw new Error("Notifications is device par support nahi hain.");
+    throw new Error("Notifications are not supported on this device.");
   }
 
   // Ensure permission is granted
@@ -469,7 +469,7 @@ export async function sendLocalTestNotification({
     permission = await Notification.requestPermission();
   }
   if (permission !== "granted") {
-    throw new Error("Pehle browser notification allow karein.");
+    throw new Error("Please allow browser notifications first.");
   }
 
   let shown = false;
@@ -524,7 +524,7 @@ export async function sendLocalTestNotification({
   });
 
   if (!shown) {
-    throw new Error("Notification display nahi ho saki. Browser permissions check karein.");
+    throw new Error("Could not display notification. Please check browser permissions.");
   }
 
   // Also save in-app notification so it appears in the Notification section immediately

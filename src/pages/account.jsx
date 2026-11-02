@@ -278,14 +278,14 @@ function PushNotificationCard({ user }) {
       if (permission === "granted") {
         await unsubscribeFromPushNotifications(user);
         setPermission(getPushPermission());
-        toast.info("Push notifications band kar di gayi hain.");
+        toast.info("Push notifications have been disabled.");
       } else {
         await subscribeToPushNotifications(user);
         setPermission("granted");
-        toast.success("Mobile push notifications active ho chuki hain! 🎉");
+        toast.success("Mobile push notifications enabled! 🎉");
       }
     } catch (err) {
-      toast.error(err.message || "Push notifications enable nahi ho sakeen.");
+      toast.error(err.message || "Could not enable push notifications.");
     } finally {
       setLoading(false);
     }
@@ -296,12 +296,12 @@ function PushNotificationCard({ user }) {
     try {
       await sendLocalTestNotification({
         title: "Wasooli Store Order Update 📦",
-        body: "Aapka Order #WAS-8921 ab 'Out for Delivery' ho chuka hai! Delivery boy aapke address par rawana hai.",
+        body: "Your Order #WAS-8921 is out for delivery! The rider is on the way to your address.",
         url: "/account?section=orders",
       });
-      toast.success("Test notification bhej di gayi hai! Screen / phone check karein.");
+      toast.success("Test notification sent! Check your device screen.");
     } catch (err) {
-      toast.error(err.message || "Test notification send nahi ho saki.");
+      toast.error(err.message || "Failed to send test notification.");
     } finally {
       setTesting(false);
     }
@@ -342,7 +342,7 @@ function PushNotificationCard({ user }) {
             </p>
             {isIOS() && !isStandalonePWA() && (
               <p className="mt-1.5 text-[11px] font-medium text-amber-800 bg-amber-50/90 rounded-lg p-1.5 border border-amber-200/80 inline-block">
-                📱 iPhone users: Safari menu se <strong>&quot;Add to Home Screen&quot;</strong> karein taake background push notifications chal sakein.
+                📱 iPhone users: Tap the Safari Share icon and select <strong>&quot;Add to Home Screen&quot;</strong> to receive background notifications.
               </p>
             )}
           </div>
@@ -1255,7 +1255,7 @@ export default function Account() {
                       </p>
                       <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
                         {notifFilter === "orders"
-                          ? "Jab aapka order confirm, pack, ship ya deliver hoga, notification yahan show hoga."
+                          ? "When your order is confirmed, packed, shipped, or delivered, live updates will appear here."
                           : notifFilter === "stock"
                           ? "When an out-of-stock product returns, you'll receive an alert here."
                           : "Real-time order status updates and stock alerts will appear here."}
@@ -2282,7 +2282,7 @@ export default function Account() {
               <div className="min-w-0 pr-6">
                 <h3 className="text-base font-bold text-slate-900">Select Product to Review</h3>
                 <p className="text-xs text-slate-500 truncate">
-                  Order #{selectProductModal.order.id} · Kis product ka review karna chahte hain?
+                  Order #{selectProductModal.order.id} · Which product would you like to review?
                 </p>
               </div>
             </div>
