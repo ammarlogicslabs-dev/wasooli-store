@@ -13,6 +13,12 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: {
+        enabled: true,
+      },
+      workbox: {
+        importScripts: ['/sw-push.js'],
+      },
       manifest: {
         name: "Wasooli Store - ISP Supplies",
         short_name: "Wasooli Store",

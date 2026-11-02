@@ -57,3 +57,33 @@ export const PAYMENT_LABELS = {
   paid: "Paid",
   refunded: "Refunded",
 };
+
+export function isExpressOrder(order) {
+  if (!order) return false;
+  if (order.isExpress === true || order.delivery?.isExpress === true) return true;
+
+  const candidateFields = [
+    order.delivery?.method,
+    order.delivery?.shippingMethod,
+    order.delivery?.deliveryMethod,
+    order.delivery?.type,
+    order.delivery?.option,
+    order.delivery?.title,
+    order.delivery?.service,
+    typeof order.delivery === "string" ? order.delivery : null,
+    order.deliveryMethod,
+    order.shippingMethod,
+    order.shippingOption,
+    order.shipping_method,
+    order.delivery_method,
+    order.deliveryType,
+  ];
+
+  for (const field of candidateFields) {
+    if (typeof field === "string" && field.toLowerCase().includes("express")) {
+      return true;
+    }
+  }
+
+  return false;
+}

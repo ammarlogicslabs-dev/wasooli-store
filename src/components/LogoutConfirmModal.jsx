@@ -134,7 +134,7 @@ export default function LogoutConfirmModal({
 
             {/* Action Buttons */}
             <motion.div
-              className="relative mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end"
+              className="relative mt-6 flex  gap-2.5 sm:flex-row justify-end"
               initial={reduceMotion ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={itemTransition(0.26)}

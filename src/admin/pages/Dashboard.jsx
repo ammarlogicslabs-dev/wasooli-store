@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowDown,
   ArrowRight,
   ArrowUp,
   BarChart2,
@@ -16,12 +17,34 @@ import {
   Truck,
   User,
   Users,
+  Zap,
 } from "lucide-react";
 import { fetchDashboard, getDashboard } from "../../services/storage/adminDataService";
-import { ORDER_STATUSES, statusLabel } from "../../services/storage/orderStatus";
+import { ORDER_STATUSES, statusLabel, isExpressOrder } from "../../services/storage/orderStatus";
 import { useAdminData } from "../hooks/useAdminData";
 
 const RANGES = [7, 30, 90];
+
+function createSmoothPath(points) {
+  if (!points || points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i === 0 ? 0 : i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
 
 function formatRs(amount) {
   const num = Number(amount) || 0;
@@ -29,9 +52,40 @@ function formatRs(amount) {
 }
 
 function formatCompactRs(num) {
-  if (num >= 1000000) return `Rs. ${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `Rs. ${Math.round(num / 1000)}K`;
-  return `Rs. ${Math.round(num)}`;
+  const val = Number(num) || 0;
+  if (val <= 0) return "Rs. 0";
+  if (val >= 1000000) {
+    const formatted = (val / 1000000).toFixed(1).replace(/\.0$/, "");
+    return `Rs. ${formatted}M`;
+  }
+  if (val >= 1000) {
+    const formatted = (val / 1000).toFixed(1).replace(/\.0$/, "");
+    return `Rs. ${formatted}K`;
+  }
+  return `Rs. ${Math.round(val)}`;
+}
+
+function getNiceRevenueScale(maxVal, targetSteps = 4) {
+  if (!maxVal || maxVal <= 0) return 60000;
+  const rawStep = maxVal / targetSteps;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const residual = rawStep / magnitude;
+  let niceStep;
+  if (residual <= 1) niceStep = 1 * magnitude;
+  else if (residual <= 2) niceStep = 2 * magnitude;
+  else if (residual <= 2.5) niceStep = 2.5 * magnitude;
+  else if (residual <= 5) niceStep = 5 * magnitude;
+  else niceStep = 10 * magnitude;
+  return niceStep * targetSteps;
+}
+
+function getNiceOrdersScale(maxOrders) {
+  if (!maxOrders || maxOrders <= 5) return 5;
+  if (maxOrders <= 10) return 10;
+  if (maxOrders <= 15) return 15;
+  if (maxOrders <= 20) return 20;
+  if (maxOrders <= 25) return 25;
+  return Math.ceil(maxOrders / 5) * 5;
 }
 
 function formatOrderDate(dateString) {
@@ -224,6 +278,37 @@ function getStatusBadgeConfig(status) {
   return { label, classes: "bg-amber-50 text-amber-600 border-amber-200/60" };
 }
 
+function TrendIndicator({ value, label = "" }) {
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num)) {
+    return (
+      <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-slate-400 leading-none">
+        <span>0.0%</span>
+      </div>
+    );
+  }
+
+  const isPositive = num > 0;
+  const isNegative = num < 0;
+  const formatted = `${Math.abs(num).toFixed(1)}%`;
+
+  return (
+    <div
+      className={`mt-1 flex items-center gap-0.5 text-[11px] font-semibold leading-none ${
+        isPositive ? "text-emerald-500" : isNegative ? "text-rose-500" : "text-slate-400"
+      }`}
+      title={label ? `${label}: ${num >= 0 ? "+" : ""}${num.toFixed(1)}%` : undefined}
+    >
+      {isPositive ? (
+        <ArrowUp size={11} strokeWidth={2.8} />
+      ) : isNegative ? (
+        <ArrowDown size={11} strokeWidth={2.8} />
+      ) : null}
+      <span>{formatted}</span>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const data = useAdminData();
   const navigate = useNavigate();
@@ -269,50 +354,113 @@ export default function Dashboard() {
   const totalCustomers = (dashboard.customerCount ?? 0).toLocaleString();
   const totalProducts = (dashboard.productCount ?? 0).toLocaleString();
 
-  // Real chart points calculated from real orders & API
+  // Growth / trend percentage change vs previous period (Backend API or calculated from actual data)
+  const salesGrowth = Number.isFinite(Number(dashboard.salesGrowth ?? dashboard.salesChange ?? dashboard.revenueGrowth ?? dashboard.growth?.sales))
+    ? Number(dashboard.salesGrowth ?? dashboard.salesChange ?? dashboard.revenueGrowth ?? dashboard.growth?.sales)
+    : localDashboard.salesGrowth ?? 0;
+
+  const ordersGrowth = Number.isFinite(Number(dashboard.ordersGrowth ?? dashboard.ordersChange ?? dashboard.growth?.orders))
+    ? Number(dashboard.ordersGrowth ?? dashboard.ordersChange ?? dashboard.growth?.orders)
+    : localDashboard.ordersGrowth ?? 0;
+
+  const customersGrowth = Number.isFinite(Number(dashboard.customersGrowth ?? dashboard.customersChange ?? dashboard.growth?.customers))
+    ? Number(dashboard.customersGrowth ?? dashboard.customersChange ?? dashboard.growth?.customers)
+    : localDashboard.customersGrowth ?? 0;
+
+  const productsGrowth = Number.isFinite(Number(dashboard.productsGrowth ?? dashboard.productsChange ?? dashboard.growth?.products))
+    ? Number(dashboard.productsGrowth ?? dashboard.productsChange ?? dashboard.growth?.products)
+    : localDashboard.productsGrowth ?? 0;
+
+  // Actual chart points calculated directly from backend API / real orders
   const chartDays = useMemo(() => {
+    // 1. If backend API returned chart points, use them
     if (Array.isArray(dashboard.chart) && dashboard.chart.length > 0) {
-      return dashboard.chart.map((point) => ({
-        label: point.label || point.date || "",
-        revenue: Number(point.total ?? point.revenue ?? 0),
-        orders: Number(point.orders ?? point.count ?? 0),
-      }));
+      return dashboard.chart.map((point) => {
+        const rawRevenue = Number(point.total ?? point.revenue ?? point.sales ?? point.amount ?? 0);
+        let rawOrders = Number(
+          point.orders ??
+          point.orderCount ??
+          point.ordersCount ??
+          point.totalOrders ??
+          point.count ??
+          point.numOrders ??
+          0
+        );
+
+        // If backend chart returned 0 orders on a day with orders, compute from data.orders
+        if (rawOrders === 0 && Array.isArray(data.orders)) {
+          const pointDateStr = String(point.date || point.label || "").trim().toLowerCase();
+          const matched = data.orders.filter((o) => {
+            if (!o.createdAt && !o.created_at) return false;
+            if (o.adminStatus === "cancelled") return false;
+            const oDate = new Date(o.createdAt || o.created_at);
+            if (Number.isNaN(oDate.getTime())) return false;
+            const iso = oDate.toISOString().slice(0, 10);
+            const usLabel = `${oDate.getDate()} ${oDate.toLocaleDateString("en-US", { month: "short" })}`.toLowerCase();
+            return pointDateStr.includes(iso) || pointDateStr === usLabel || pointDateStr.includes(usLabel);
+          });
+          if (matched.length > 0) {
+            rawOrders = matched.length;
+          }
+        }
+
+        let label = point.label || point.date || "";
+        if (point.date && !Number.isNaN(new Date(point.date).getTime())) {
+          const d = new Date(point.date);
+          label = `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })}`;
+        }
+
+        return {
+          label,
+          revenue: Math.max(0, rawRevenue),
+          orders: Math.max(0, rawOrders),
+        };
+      });
     }
 
-    const points = [];
+    // 2. Otherwise calculate directly from live backend orders
+    const activeOrders = (data.orders || []).filter((o) => o.adminStatus !== "cancelled");
     const stepCount = days <= 7 ? 7 : days <= 30 ? 7 : 8;
-    const baseTime = data.orders?.[0]?.createdAt
-      ? new Date(data.orders[0].createdAt).getTime()
-      : 1761998400000;
-    const dayInterval = Math.max(1, Math.floor(days / stepCount));
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const intervalDays = Math.max(1, Math.floor(days / stepCount));
+    const points = [];
 
     for (let i = stepCount - 1; i >= 0; i--) {
-      const timeMs = baseTime - i * dayInterval * 86400000;
-      const d = new Date(timeMs);
-      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0).getTime();
-      const end = start + dayInterval * 86400000;
-      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const dayStart = todayMidnight - i * intervalDays * 86400000;
+      const dayEnd = dayStart + intervalDays * 86400000;
+      const d = new Date(dayStart);
+      const label = `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })}`;
 
-      const matchingOrders = (data.orders || []).filter((o) => {
-        const orderTime = o.createdAt ? new Date(o.createdAt).getTime() : 0;
-        return orderTime >= start && orderTime < end && o.adminStatus !== "cancelled";
+      const matching = activeOrders.filter((o) => {
+        const t = new Date(o.createdAt || o.created_at || 0).getTime();
+        return !Number.isNaN(t) && t >= dayStart && t < dayEnd;
       });
 
-      const revenue = matchingOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const revenue = matching.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
       points.push({
         label,
+        date: d.toISOString().slice(0, 10),
         revenue,
-        orders: matchingOrders.length,
+        orders: matching.length,
       });
     }
 
     return points;
   }, [dashboard.chart, data.orders, days]);
 
-  const maxRevenueVal = Math.max(...chartDays.map((d) => d.revenue), 1000);
-  const maxRevenueScale = Math.ceil(maxRevenueVal / 1000) * 1000;
-  const maxOrdersVal = Math.max(...chartDays.map((d) => d.orders), 5);
-  const maxOrdersScale = Math.ceil(maxOrdersVal / 5) * 5;
+  const maxRevenueVal = Math.max(...chartDays.map((d) => d.revenue), 0);
+  const maxRevenueScale = useMemo(() => getNiceRevenueScale(maxRevenueVal), [maxRevenueVal]);
+
+  const maxOrdersVal = Math.max(...chartDays.map((d) => d.orders), 0);
+  const maxOrdersScale = useMemo(() => getNiceOrdersScale(maxOrdersVal), [maxOrdersVal]);
+
+  const chartPoints = chartDays.map((d, i) => {
+    const x = ((i + 0.5) / chartDays.length) * 100;
+    const y = 100 - (Math.min(maxOrdersScale, Math.max(0, d.orders)) / maxOrdersScale) * 100;
+    return { x, y, orders: d.orders, label: d.label, revenue: d.revenue };
+  });
+  const smoothOrdersPath = createSmoothPath(chartPoints);
 
   // Real sparklines from daily order/revenue trend
   const ordersSparkline = chartDays.map((d) => d.orders);
@@ -536,10 +684,7 @@ export default function Dashboard() {
               <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
                 {totalRevenue}
               </p>
-              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
-                <ArrowUp size={11} strokeWidth={2.8} />
-                <span>12.5%</span>
-              </div>
+              <TrendIndicator value={salesGrowth} label="Sales Growth" />
             </div>
           </div>
 
@@ -579,10 +724,7 @@ export default function Dashboard() {
               <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
                 {totalOrders}
               </p>
-              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
-                <ArrowUp size={11} strokeWidth={2.8} />
-                <span>8.7%</span>
-              </div>
+              <TrendIndicator value={ordersGrowth} label="Orders Growth" />
             </div>
           </div>
 
@@ -622,10 +764,7 @@ export default function Dashboard() {
               <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
                 {totalCustomers}
               </p>
-              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
-                <ArrowUp size={11} strokeWidth={2.8} />
-                <span>10.2%</span>
-              </div>
+              <TrendIndicator value={customersGrowth} label="Customers Growth" />
             </div>
           </div>
 
@@ -665,10 +804,7 @@ export default function Dashboard() {
               <p className="mt-1 text-lg sm:text-[18px] font-bold tracking-tight text-slate-900 leading-tight truncate">
                 {totalProducts}
               </p>
-              <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500 leading-none">
-                <ArrowUp size={11} strokeWidth={2.8} />
-                <span>5.3%</span>
-              </div>
+              <TrendIndicator value={productsGrowth} label="Products Growth" />
             </div>
           </div>
 
@@ -686,33 +822,104 @@ export default function Dashboard() {
       {/* 3. Middle Row (Sales Overview, Order Status, Quick Actions + Banner) */}
       <section className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
         {/* Sales Overview (6 cols) */}
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-6 flex flex-col justify-between">
+        <div className="relative overflow-hidden rounded-3xl border border-slate-100/90 bg-white p-5 sm:p-6 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] lg:col-span-6 flex flex-col justify-between">
+          {/* Faint ambient sky-blue glow in background matching reference image */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-12 -top-12 h-64 w-96 rounded-full bg-linear-to-br from-sky-100/40 via-blue-50/20 to-transparent blur-3xl"
+          />
+
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="text-xs sm:text-[13px] font-bold text-slate-900">Sales Overview</h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">Revenue comparison (last {days} days)</p>
+            {/* Header: Left Icon Box + Title/Subtitle, Right Last 7 Days Dropdown */}
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+              {/* Left: Soft blue rounded rectangle + custom chart icon + Title */}
+              <div className="flex items-center gap-3">
+                <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#EAF3FF] border border-[#D5E6FF] text-[#0070F3] shadow-2xs">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M3 16.5L8.5 12L13 14.5L20.5 7"
+                      stroke="#0070F3"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M16 7H20.5V11.5"
+                      stroke="#0070F3"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M3 16.5L8.5 12L13 14.5L20.5 7V19.5C20.5 20.05 20.05 20.5 19.5 20.5H4.5C3.95 20.5 3.5 20.05 3.5 19.5V16.5Z"
+                      fill="#0070F3"
+                      fillOpacity="0.16"
+                    />
+                    <rect x="4.5" y="15" width="2" height="4.5" rx="1" fill="#0070F3" fillOpacity="0.85" />
+                    <rect x="9.5" y="13.5" width="2" height="6" rx="1" fill="#0070F3" fillOpacity="0.85" />
+                    <rect x="14.5" y="15.5" width="2" height="4" rx="1" fill="#0070F3" fillOpacity="0.85" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-[17px] font-bold text-slate-900 leading-tight">Sales Overview</h2>
+                  <p className="mt-0.5 text-xs text-slate-500 font-normal">Revenue comparison (last {days} days)</p>
+                </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex items-center gap-3 text-[11px]">
-                <span className="flex items-center gap-1.5 font-medium text-slate-600">
-                  <span className="size-2 rounded-full bg-[#0070F3]" />
-                  Revenue
-                </span>
-                <span className="flex items-center gap-1.5 font-medium text-slate-600">
-                  <span className="size-2 rounded-full bg-[#F59E0B]" />
-                  Orders
-                </span>
+              {/* Right: Last 7 Days Dropdown Pill */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setRangeOpen(!rangeOpen)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer"
+                >
+                  <Calendar size={14} className="text-[#0070F3]" />
+                  <span>Last {days} Days</span>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform ${rangeOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {rangeOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 z-40 w-36 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95">
+                    {RANGES.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => {
+                          setDays(r);
+                          setRangeOpen(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-xs transition ${
+                          days === r
+                            ? "bg-blue-50 font-semibold text-blue-600"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span>Last {r} Days</span>
+                        {days === r && <Check size={13} className="text-blue-600" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Dual Axis Combo Chart Container */}
-            <div className="relative mt-4">
-              {/* Ticks Grid & Labels */}
+            {/* Sub-header Legend: Right Aligned directly above the chart */}
+            <div className="relative z-10 mt-2 flex items-center justify-end gap-5 pb-2">
+              <span className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                <span className="size-2.5 rounded-full bg-[#0070F3]" />
+                Revenue
+              </span>
+              <span className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                <span className="size-2.5 rounded-full bg-[#FF8A00]" />
+                Orders
+              </span>
+            </div>
+
+            {/* Main Dual-Axis Chart Area */}
+            <div className="relative z-10 mt-1">
               <div className="flex">
-                {/* Left Y-Axis (Revenue) */}
-                <div className="flex h-44 flex-col justify-between pr-2 text-right text-[10px] font-medium text-slate-400 select-none">
+                {/* Left Y-Axis (Revenue): 5 ticks aligning with 5 horizontal divisions */}
+                <div className="flex h-48 sm:h-52 w-16 sm:w-18 shrink-0 flex-col justify-between pr-2.5 text-right text-xs font-semibold text-slate-700 select-none">
                   <span>{formatCompactRs(maxRevenueScale)}</span>
                   <span>{formatCompactRs(maxRevenueScale * 0.75)}</span>
                   <span>{formatCompactRs(maxRevenueScale * 0.5)}</span>
@@ -720,112 +927,137 @@ export default function Dashboard() {
                   <span>Rs. 0</span>
                 </div>
 
-                {/* Main Chart Area */}
-                <div className="relative h-44 min-w-0 flex-1">
-                  {/* Horizontal Dashed Lines */}
+                {/* Center Chart Plot Area with Grid Box */}
+                <div className="relative h-48 sm:h-52 min-w-0 flex-1 border-l border-r border-b border-[#D5E3F7]">
+                  {/* 4 Horizontal Grid Lines + Top Line */}
                   <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-                    <div className="border-t border-dashed border-slate-100" />
-                    <div className="border-t border-dashed border-slate-100" />
-                    <div className="border-t border-dashed border-slate-100" />
-                    <div className="border-t border-dashed border-slate-100" />
-                    <div className="border-t border-slate-100" />
+                    <div className="border-t border-[#EEF4FD]" />
+                    <div className="border-t border-[#EEF4FD]" />
+                    <div className="border-t border-[#EEF4FD]" />
+                    <div className="border-t border-[#EEF4FD]" />
+                    <div className="border-t border-[#EEF4FD]" />
                   </div>
 
-                  {/* SVG Orders Line Overlay */}
+                  {/* Vertical Column Grid Lines */}
+                  <div className="pointer-events-none absolute inset-0 flex">
+                    {chartDays.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`flex-1 ${i < chartDays.length - 1 ? "border-r border-[#EEF4FD]" : ""}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Smooth Spline Curve (Thin 2px Orange Line with vectorEffect non-scaling-stroke) */}
                   <svg
-                    className="pointer-events-none absolute inset-0 h-full w-full z-10"
+                    className="pointer-events-none absolute inset-0 h-full w-full z-20 overflow-visible"
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
                   >
-                    {/* Amber Orders Polyline */}
-                    <polyline
-                      fill="none"
-                      stroke="#F59E0B"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={chartDays
-                        .map((d, i) => {
-                          const x = ((i + 0.5) / chartDays.length) * 100;
-                          const y = 100 - (d.orders / maxOrdersScale) * 100;
-                          return `${x},${y}`;
-                        })
-                        .join(" ")}
-                    />
-
-                    {/* Circular Markers on Line */}
-                    {chartDays.map((d, i) => {
-                      const x = ((i + 0.5) / chartDays.length) * 100;
-                      const y = 100 - (d.orders / maxOrdersScale) * 100;
-                      return (
-                        <circle
-                          key={d.label}
-                          cx={x}
-                          cy={y}
-                          r="2.8"
-                          fill="#ffffff"
-                          stroke="#F59E0B"
-                          strokeWidth="2"
-                        />
-                      );
-                    })}
+                    {smoothOrdersPath && (
+                      <path
+                        d={smoothOrdersPath}
+                        fill="none"
+                        stroke="#FF8A00"
+                        strokeWidth="2"
+                        vectorEffect="non-scaling-stroke"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
                   </svg>
 
-                  {/* Revenue Columns */}
-                  <div className="relative flex h-full items-end justify-around">
+                  {/* Circular Node Markers: HTML CSS circles, 100% immune to aspect-ratio distortion! */}
+                  {chartPoints.map((pt, i) => (
+                    <div
+                      key={`node-${pt.label}-${i}`}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 size-2.5 sm:size-3 rounded-full bg-white border-2 border-[#FF8A00] shadow-2xs pointer-events-none z-30 transition-transform duration-200"
+                      style={{
+                        left: `${pt.x}%`,
+                        top: `${pt.y}%`,
+                      }}
+                    />
+                  ))}
+
+                  {/* Revenue Columns (Gradient Blue, exact match to image, Zero Purple) */}
+                  <div className="relative z-10 flex h-full items-end">
                     {chartDays.map((day, idx) => {
-                      const barHeightPct = Math.min(100, Math.max(day.revenue > 0 ? 6 : 1, (day.revenue / maxRevenueScale) * 100));
+                      const barHeightPct = maxRevenueScale > 0
+                        ? Math.min(100, Math.max(day.revenue > 0 ? 5 : 0, (day.revenue / maxRevenueScale) * 100))
+                        : 0;
                       const isHovered = hoveredBarIndex === idx;
 
                       return (
                         <div
-                          key={day.label}
+                          key={`bar-${day.label}-${idx}`}
                           onMouseEnter={() => setHoveredBarIndex(idx)}
                           onMouseLeave={() => setHoveredBarIndex(null)}
-                          className="group relative flex h-full min-w-0 flex-1 cursor-pointer flex-col items-center justify-end px-0.5 sm:px-1"
+                          className="group relative flex h-full min-w-0 flex-1 cursor-pointer flex-col items-center justify-end px-1 sm:px-2"
                         >
-                          {/* Hover Column Highlight Background */}
+                          {/* Hover Column Highlight */}
                           {isHovered && (
-                            <div className="pointer-events-none absolute inset-y-0 w-full max-w-9.5 rounded-md bg-blue-50/60" />
+                            <div className="pointer-events-none absolute inset-y-0 w-full max-w-14 rounded-lg bg-sky-50/50" />
                           )}
 
-                          {/* Interactive Tooltip */}
+                          {/* Hover Tooltip */}
                           {isHovered && (
-                            <div className="pointer-events-none absolute -top-11 z-30 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-center text-[11px] text-white shadow-xl animate-in fade-in zoom-in-95">
-                              <p className="font-semibold">{day.label}</p>
-                              <p className="text-[10px] text-blue-300">Revenue: {formatRs(day.revenue)}</p>
-                              <p className="text-[10px] text-amber-300">Orders: {day.orders}</p>
+                            <div className="pointer-events-none absolute -top-12 z-40 flex flex-col items-center animate-in fade-in zoom-in-95">
+                              <div className="whitespace-nowrap rounded-xl border border-slate-100 bg-white px-2.5 py-1 text-center shadow-[0_8px_25px_rgba(0,112,243,0.18)]">
+                                <p className="text-xs font-bold text-slate-900 leading-tight">
+                                  {formatRs(day.revenue)}
+                                </p>
+                                <p className="text-[10px] font-medium text-slate-500">
+                                  {day.label} · {day.orders} {day.orders === 1 ? "Order" : "Orders"}
+                                </p>
+                              </div>
+                              <div className="size-2 -mt-1 rotate-45 border-r border-b border-slate-100 bg-white" />
                             </div>
                           )}
 
-                          {/* Solid Blue Bar */}
-                          <div
-                            className="relative z-0 w-5 sm:w-6.5 rounded-t-xs sm:rounded-t-sm bg-[#0070F3] transition-all duration-300 group-hover:bg-blue-600"
-                            style={{ height: `${barHeightPct}%` }}
-                          />
+                          {/* Radiant Blue Bar (Zero Purple) - renders if revenue > 0 */}
+                          {day.revenue > 0 ? (
+                            <div
+                              className={`relative z-10 w-9 sm:w-11 md:w-12 lg:w-10 xl:w-12 rounded-t-lg rounded-b-xs transition-all duration-300 shadow-xs ${
+                                isHovered ? "brightness-105 shadow-md shadow-blue-500/25" : ""
+                              }`}
+                              style={{
+                                height: `${barHeightPct}%`,
+                                background: "linear-gradient(180deg, #2B8EFF 0%, #5AA2FF 50%, rgba(213, 232, 255, 0.7) 100%)",
+                              }}
+                            />
+                          ) : (
+                            <div className="relative z-10 w-9 sm:w-11 md:w-12 lg:w-10 xl:w-12 h-1 rounded-full bg-slate-200/80 transition-all duration-300" />
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Right Y-Axis (Orders) */}
-                <div className="flex h-44 flex-col justify-between pl-2 text-left text-[10px] font-medium text-slate-400 select-none">
+                {/* Right Y-Axis (Orders): 6 ticks from maxOrdersScale down to 0 */}
+                <div className="flex h-48 sm:h-52 w-7 sm:w-8 shrink-0 flex-col justify-between pl-2.5 text-left text-xs font-semibold text-slate-700 select-none">
                   <span>{maxOrdersScale}</span>
-                  <span>{Math.round(maxOrdersScale * 0.75)}</span>
-                  <span>{Math.round(maxOrdersScale * 0.5)}</span>
-                  <span>{Math.round(maxOrdersScale * 0.25)}</span>
+                  <span>{Math.round(maxOrdersScale * 0.8)}</span>
+                  <span>{Math.round(maxOrdersScale * 0.6)}</span>
+                  <span>{Math.round(maxOrdersScale * 0.4)}</span>
+                  <span>{Math.round(maxOrdersScale * 0.2)}</span>
                   <span>0</span>
                 </div>
               </div>
 
-              {/* Bottom X-Axis Labels */}
-              <div className="flex justify-around pl-11 pr-5 pt-1.5">
-                {chartDays.map((d) => (
-                  <span key={d.label} className="text-center text-[10px] font-medium text-slate-400">
-                    {d.label}
-                  </span>
-                ))}
+              {/* Bottom X-Axis Date Labels: Mathematically centered below each column */}
+              <div className="flex pt-3">
+                <div className="w-16 sm:w-18 shrink-0" />
+                <div className="flex flex-1">
+                  {chartDays.map((d) => (
+                    <div key={d.label} className="flex-1 text-center">
+                      <span className="text-xs font-semibold text-slate-800">
+                        {d.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="w-7 sm:w-8 shrink-0" />
               </div>
             </div>
           </div>
@@ -1021,15 +1253,29 @@ export default function Dashboard() {
                         ? order.id
                         : String(order.id).slice(-6).toUpperCase();
 
+                      const isExpress = isExpressOrder(order);
+
                       return (
                         <tr
                           key={order.id}
                           onClick={() => navigate(`/admin/orders/${encodeURIComponent(order.id)}`)}
-                          className="group cursor-pointer transition hover:bg-slate-50/70"
+                          className={`group cursor-pointer transition ${
+                            isExpress
+                              ? "bg-sky-50/80 hover:bg-sky-100/75"
+                              : "hover:bg-slate-50/70"
+                          }`}
                         >
                           {/* Order # */}
                           <td className="py-2 pr-1 font-medium text-slate-700 text-[11px] truncate">
-                            #{orderCode}
+                            <div className="flex items-center gap-1">
+                              <span>#{orderCode}</span>
+                              {isExpress && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-1.5 py-0.2 text-[9px] font-bold text-sky-700 border border-sky-200/80">
+                                  <Zap size={8} className="fill-sky-600 text-sky-600" />
+                                  Express
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Customer */}

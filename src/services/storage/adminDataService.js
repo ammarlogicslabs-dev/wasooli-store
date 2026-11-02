@@ -826,13 +826,95 @@ function inRange(order, days) {
   return created >= start.getTime();
 }
 
+function inPreviousRange(order, days) {
+  const created = new Date(order.createdAt).getTime();
+  if (Number.isNaN(created)) return false;
+  const currentStart = new Date();
+  currentStart.setHours(0, 0, 0, 0);
+  currentStart.setDate(currentStart.getDate() - (days - 1));
+  const prevStart = new Date(currentStart);
+  prevStart.setDate(prevStart.getDate() - days);
+  return created >= prevStart.getTime() && created < currentStart.getTime();
+}
+
+function calcPercentageChange(current, previous) {
+  if (previous > 0) {
+    return Number((((current - previous) / previous) * 100).toFixed(1));
+  }
+  if (current > 0) {
+    return 100.0;
+  }
+  return 0.0;
+}
+
 export function getDashboard(days = 30, source = null) {
   const allOrders = Array.isArray(source?.orders) ? source.orders : listOrders();
   const orders = allOrders.filter((order) => inRange(order, days));
   const activeOrders = orders.filter((order) => order.adminStatus !== "cancelled");
+  const prevOrders = allOrders.filter((order) => inPreviousRange(order, days));
+  const activePrevOrders = prevOrders.filter((order) => order.adminStatus !== "cancelled");
+
+  const currentSales = activeOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+  const prevSales = activePrevOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+  const salesGrowth = calcPercentageChange(currentSales, prevSales);
+  const ordersGrowth = calcPercentageChange(activeOrders.length, activePrevOrders.length);
+
   const products = Array.isArray(source?.products) ? source.products : listProducts();
   const customers = Array.isArray(source?.customers) ? source.customers : listCustomers();
   const threshold = (source?.settings || getSettings()).lowStockThreshold;
+
+  const currentStart = new Date();
+  currentStart.setHours(0, 0, 0, 0);
+  currentStart.setDate(currentStart.getDate() - (days - 1));
+  const currentStartTime = currentStart.getTime();
+
+  const prevStart = new Date(currentStart);
+  prevStart.setDate(prevStart.getDate() - days);
+  const prevStartTime = prevStart.getTime();
+
+  // Active customer growth (new signups or unique customers who ordered)
+  const validCustomers = customers.filter((customer) => customer.status !== "inactive");
+  const currentNewCust = validCustomers.filter((c) => {
+    const t = new Date(c.createdAt || c.date || 0).getTime();
+    return !Number.isNaN(t) && t >= currentStartTime;
+  });
+  const prevNewCust = validCustomers.filter((c) => {
+    const t = new Date(c.createdAt || c.date || 0).getTime();
+    return !Number.isNaN(t) && t >= prevStartTime && t < currentStartTime;
+  });
+
+  const customersGrowth =
+    currentNewCust.length > 0 || prevNewCust.length > 0
+      ? calcPercentageChange(currentNewCust.length, prevNewCust.length)
+      : calcPercentageChange(
+          new Set(
+            activeOrders
+              .map((o) => o.customerPhone || o.customerEmail || o.delivery?.phone || o.delivery?.email || o.customerId)
+              .filter(Boolean)
+          ).size,
+          new Set(
+            activePrevOrders
+              .map((o) => o.customerPhone || o.customerEmail || o.delivery?.phone || o.delivery?.email || o.customerId)
+              .filter(Boolean)
+          ).size
+        );
+
+  // Active product catalog growth
+  const activeProducts = products.filter((product) => product.status !== "archived");
+  const currentNewProd = activeProducts.filter((p) => {
+    const t = new Date(p.createdAt || p.date || 0).getTime();
+    return !Number.isNaN(t) && t >= currentStartTime;
+  });
+  const prevNewProd = activeProducts.filter((p) => {
+    const t = new Date(p.createdAt || p.date || 0).getTime();
+    return !Number.isNaN(t) && t >= prevStartTime && t < currentStartTime;
+  });
+
+  const productsGrowth =
+    currentNewProd.length > 0 || prevNewProd.length > 0
+      ? calcPercentageChange(currentNewProd.length, prevNewProd.length)
+      : 0.0;
+
   const statusCounts = ORDER_FLOW.map((step) => ({
     ...step,
     count: orders.filter((order) => (order.adminStatus || "pending") === step.id).length,
@@ -855,15 +937,53 @@ export function getDashboard(days = 30, source = null) {
 
   return {
     totalOrders: activeOrders.length,
-    sales: activeOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0),
-    productCount: products.filter((product) => product.status !== "archived").length,
-    customerCount: customers.filter((customer) => customer.status !== "inactive").length,
+    sales: currentSales,
+    salesGrowth,
+    salesChange: salesGrowth,
+    ordersGrowth,
+    ordersChange: ordersGrowth,
+    productCount: activeProducts.length,
+    productsGrowth,
+    productsChange: productsGrowth,
+    customerCount: validCustomers.length,
+    customersGrowth,
+    customersChange: customersGrowth,
     statusCounts,
     recent: allOrders.slice(0, 6),
     top: [...productSales.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5),
     lowStock: products.filter((product) => product.status === "active" && product.stock > 0 && product.stock <= threshold),
     outOfStock: products.filter((product) => product.status === "active" && product.stock <= 0),
-    chart: [],
+    chart: (() => {
+      const stepCount = days <= 7 ? 7 : days <= 30 ? 7 : 8;
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const intervalDays = Math.max(1, Math.floor(days / stepCount));
+      const points = [];
+
+      for (let i = stepCount - 1; i >= 0; i--) {
+        const dayStart = todayMidnight - i * intervalDays * 86400000;
+        const dayEnd = dayStart + intervalDays * 86400000;
+        const d = new Date(dayStart);
+        const label = `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })}`;
+
+        const matching = activeOrders.filter((o) => {
+          const t = new Date(o.createdAt || o.created_at || 0).getTime();
+          return !Number.isNaN(t) && t >= dayStart && t < dayEnd;
+        });
+
+        const revenue = matching.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        points.push({
+          label,
+          date: d.toISOString().slice(0, 10),
+          revenue,
+          total: revenue,
+          sales: revenue,
+          orders: matching.length,
+          count: matching.length,
+        });
+      }
+      return points;
+    })(),
   };
 }
 

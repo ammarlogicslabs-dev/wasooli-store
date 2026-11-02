@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
+  Bell,
   Banknote,
   Building2,
   Copy,
@@ -17,6 +18,14 @@ import StoreHeader from "../components/StoreHeader";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../cart/CartContext";
 import { formatPrice } from "../data/product";
+import {
+  isPushSupported,
+  getPushPermission,
+  subscribeToPushNotifications,
+  saveOrderNotification,
+  getOrderStatusNotificationInfo,
+} from "../services/pushNotificationService";
+
 import { filterNumericKeyDown } from "../utils/numberInput";
 import {
   fetchPublicSettings,
@@ -285,6 +294,67 @@ function FieldError({ id, message }) {
   );
 }
 
+
+function CheckoutNotificationPrompt({ user }) {
+  const [supported, setSupported] = useState(false);
+  const [permission, setPermission] = useState("default");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setSupported(isPushSupported());
+    setPermission(getPushPermission());
+  }, []);
+
+  if (!supported) return null;
+
+  if (permission === "granted") {
+    return (
+      <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 border border-emerald-200/80">
+        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span>Live delivery alerts active on this device</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-brand-200/80 bg-brand-50/50 p-3 sm:p-3.5 text-left">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2.5">
+          <Bell size={18} className="text-brand-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-slate-900">
+              Get live status alerts on your phone
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Notification jab order pack, dispatch aur deliver hoga.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              await subscribeToPushNotifications(user);
+              setPermission("granted");
+              toast.success("Delivery alerts active ho gaye hain! 🔔");
+            } catch (err) {
+              toast.error(err.message || "Could not enable alerts.");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-brand-600 shrink-0 disabled:opacity-50"
+        >
+          <Bell size={12} />
+          <span>{loading ? "Activating..." : "Enable Alerts"}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Checkout() {
   const { user } = useAuth();
   const location = useLocation();
@@ -501,6 +571,28 @@ export default function Checkout() {
       });
       await deductStock();
       setOrder(placed);
+
+      if (placed) {
+        try {
+          const oId = placed.id || placed.internalId || ("WAS-" + Math.floor(1000 + Math.random() * 9000));
+          const info = getOrderStatusNotificationInfo(oId, "pending");
+          saveOrderNotification({
+            id: "notif-order-" + oId + "-pending-" + Date.now(),
+            orderId: oId,
+            status: "pending",
+            title: info.title,
+            message: info.message,
+            url: "/account?section=orders&orderId=" + encodeURIComponent(oId),
+            createdAt: new Date().toISOString(),
+            read: false,
+            items: orderItems,
+            total: subtotal + deliveryFee - couponDiscount,
+          });
+        } catch {
+          // ignore
+        }
+      }
+
       if (!buyNowItem) clearCart();
       setConfirmOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -555,6 +647,7 @@ export default function Checkout() {
                   ? `Bank transfer reference ${order.payment.reference} is saved. The order ships after the payment is confirmed.`
                   : "Pay this amount in cash when it arrives."}
               </motion.p>
+              <CheckoutNotificationPrompt user={user} />
               <motion.div className="mt-3" {...riseMotion(1.05, reduceMotion)}>
                 <Link
                   to="/shop"

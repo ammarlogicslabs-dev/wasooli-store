@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { ChevronDown, Search, X } from "lucide-react";
+import { ChevronDown, Search, X, Zap } from "lucide-react";
 import { formatPrice } from "../../data/product";
 import { getOrder, updateOrder } from "../../services/storage/adminDataService";
-import { ORDER_STATUSES, paymentBucket, PAYMENT_LABELS, statusLabel } from "../../services/storage/orderStatus";
+import { ORDER_STATUSES, paymentBucket, PAYMENT_LABELS, statusLabel, isExpressOrder } from "../../services/storage/orderStatus";
+import { notifyOrderStatusChange } from "../../services/pushNotificationService";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { buttonClass, inputClass, quietButtonClass } from "../components/formStyles";
@@ -209,6 +210,7 @@ export default function OrderDetailsPage() {
       changes.adminStatus !== order.adminStatus
     ) {
       updates.adminStatusUpdatedAt = new Date().toISOString();
+      notifyOrderStatusChange(order, changes.adminStatus).catch(() => {});
     }
 
     const result = await updateOrder(order.id, updates);
@@ -305,7 +307,14 @@ export default function OrderDetailsPage() {
         </div>
         <div className="space-y-5">
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Customer</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">Customer</h2>
+              {isExpressOrder(order) && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-bold text-sky-700 border border-sky-200">
+                  <Zap size={11} className="fill-sky-600 text-sky-600" /> Express Delivery
+                </span>
+              )}
+            </div>
             <p className="mt-3 text-sm font-semibold text-slate-900">{order.delivery?.fullName}</p>
             <p className="text-sm text-slate-600">{order.delivery?.phone}</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">

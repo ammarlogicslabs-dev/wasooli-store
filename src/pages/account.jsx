@@ -27,6 +27,7 @@ import {
   Ticket,
   Trash2,
   Truck,
+  Volume2,
   User,
   X,
   XCircle,
@@ -48,6 +49,23 @@ import {
 import { getUserReviewedOrderMap, submitReview } from "../services/storage/reviewService";
 import { adminStage, historyTimeForStage } from "../services/storage/orderStatus";
 import { resolveMediaUrl } from "../utils/mediaUrl";
+import {
+  isPushSupported,
+  getPushPermission,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  sendLocalTestNotification,
+  isIOS,
+  isStandalonePWA,
+  getStoredOrderNotifications,
+  getDismissedOrderNotificationIds,
+  saveOrderNotification,
+  markOrderNotificationsRead,
+  removeOrderNotification,
+  clearOrderNotifications,
+  getOrderStatusNotificationInfo,
+} from "../services/pushNotificationService";
+
 import { PASSWORD_HINT, passwordPolicyError } from "../utils/passwordPolicy";
 
 const TRACKING_STEPS = [
@@ -118,6 +136,84 @@ function formatDate(value) {
   }).format(date);
 }
 
+function getOrderStatusCardStyle(status) {
+  const norm = String(status || "").toLowerCase().trim();
+  switch (norm) {
+    case "pending":
+    case "confirmed":
+      return {
+        icon: Clock,
+        iconBg: "bg-amber-100 text-amber-700",
+        badgeBg: "bg-amber-50 border border-amber-200/80",
+        badgeText: "text-amber-800",
+        dotBg: "bg-amber-500",
+        pulse: true,
+        badgeLabel: "Order Confirmed",
+      };
+    case "packed":
+      return {
+        icon: Package,
+        iconBg: "bg-sky-100 text-sky-700",
+        badgeBg: "bg-sky-50 border border-sky-200/80",
+        badgeText: "text-sky-800",
+        dotBg: "bg-sky-500",
+        pulse: true,
+        badgeLabel: "Order Packed",
+      };
+    case "shipped":
+    case "handover":
+      return {
+        icon: Truck,
+        iconBg: "bg-indigo-100 text-indigo-700",
+        badgeBg: "bg-indigo-50 border border-indigo-200/80",
+        badgeText: "text-indigo-800",
+        dotBg: "bg-indigo-500",
+        pulse: true,
+        badgeLabel: "In Transit",
+      };
+    case "out_for_delivery":
+      return {
+        icon: Navigation,
+        iconBg: "bg-purple-100 text-purple-700",
+        badgeBg: "bg-purple-50 border border-purple-200/80",
+        badgeText: "text-purple-800",
+        dotBg: "bg-purple-500",
+        pulse: true,
+        badgeLabel: "Out for Delivery",
+      };
+    case "delivered":
+      return {
+        icon: PackageCheck,
+        iconBg: "bg-emerald-100 text-emerald-700",
+        badgeBg: "bg-emerald-50 border border-emerald-200/80",
+        badgeText: "text-emerald-800",
+        dotBg: "bg-emerald-500",
+        pulse: false,
+        badgeLabel: "Delivered",
+      };
+    case "cancelled":
+      return {
+        icon: XCircle,
+        iconBg: "bg-rose-100 text-rose-700",
+        badgeBg: "bg-rose-50 border border-rose-200/80",
+        badgeText: "text-rose-800",
+        dotBg: "bg-rose-500",
+        pulse: false,
+        badgeLabel: "Cancelled",
+      };
+    default:
+      return {
+        icon: Package,
+        iconBg: "bg-brand-100 text-brand-700",
+        badgeBg: "bg-brand-50 border border-brand-200/80",
+        badgeText: "text-brand-800",
+        dotBg: "bg-brand-500",
+        pulse: false,
+        badgeLabel: "Order Updated",
+      };
+  }
+}
+
 function PasswordField({ id, label, value, shown, onToggle, onChange, autoComplete }) {
   return (
     <div>
@@ -165,6 +261,133 @@ function Section({ icon: Icon, title, detail, children }) {
   );
 }
 
+function PushNotificationCard({ user }) {
+  const [supported, setSupported] = useState(true);
+  const [permission, setPermission] = useState("default");
+  const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    setSupported(isPushSupported());
+    setPermission(getPushPermission());
+  }, []);
+
+  async function handleToggle() {
+    setLoading(true);
+    try {
+      if (permission === "granted") {
+        await unsubscribeFromPushNotifications(user);
+        setPermission(getPushPermission());
+        toast.info("Push notifications band kar di gayi hain.");
+      } else {
+        await subscribeToPushNotifications(user);
+        setPermission("granted");
+        toast.success("Mobile push notifications active ho chuki hain! 🎉");
+      }
+    } catch (err) {
+      toast.error(err.message || "Push notifications enable nahi ho sakeen.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    try {
+      await sendLocalTestNotification({
+        title: "Wasooli Store Order Update 📦",
+        body: "Aapka Order #WAS-8921 ab 'Out for Delivery' ho chuka hai! Delivery boy aapke address par rawana hai.",
+        url: "/account?section=orders",
+      });
+      toast.success("Test notification bhej di gayi hai! Screen / phone check karein.");
+    } catch (err) {
+      toast.error(err.message || "Test notification send nahi ho saki.");
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  const isGranted = permission === "granted";
+  const isDenied = permission === "denied";
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-linear-to-br from-white via-brand-50/20 to-brand-50/40 p-4 sm:p-5 shadow-xs">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3.5">
+          <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-500 text-white shadow-sm shadow-brand-500/25">
+            <Bell size={20} className={isGranted ? "animate-pulse" : ""} />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900">
+                Mobile & Browser Push Notifications
+              </h3>
+              {isGranted ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 border border-emerald-200">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Active on this device
+                </span>
+              ) : isDenied ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10.5px] font-semibold text-red-600 border border-red-200">
+                  Blocked in browser settings
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 border border-amber-200">
+                  Not Enabled
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600 max-w-xl">
+              Real-time push alerts on your phone or PC when your order is packed, shipped, out for delivery, or delivered — even when Wasooli Store is closed.
+            </p>
+            {isIOS() && !isStandalonePWA() && (
+              <p className="mt-1.5 text-[11px] font-medium text-amber-800 bg-amber-50/90 rounded-lg p-1.5 border border-amber-200/80 inline-block">
+                📱 iPhone users: Safari menu se <strong>&quot;Add to Home Screen&quot;</strong> karein taake background push notifications chal sakein.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:self-center shrink-0">
+          {isGranted && (
+            <button
+              type="button"
+              disabled={testing}
+              onClick={handleTest}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-700 shadow-2xs transition hover:bg-brand-50 disabled:opacity-50"
+            >
+              <Volume2 size={13} />
+              <span>{testing ? "Sending..." : "Send Test Push"}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            disabled={loading || !supported || isDenied}
+            onClick={handleToggle}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold shadow-xs transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              isGranted
+                ? "border border-slate-200 bg-white text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                : "bg-brand-500 text-white hover:bg-brand-600 shadow-brand-500/20"
+            }`}
+          >
+            {loading ? (
+              <span>Saving...</span>
+            ) : isGranted ? (
+              <span>Turn Off</span>
+            ) : (
+              <>
+                <Bell size={13} />
+                <span>Enable Notifications</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Account() {
   const { user, logout, changePassword, updateProfile } = useAuth();
   const {
@@ -186,6 +409,59 @@ export default function Account() {
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
+  const [orderNotifs, setOrderNotifs] = useState(() => getStoredOrderNotifications());
+  const [notifFilter, setNotifFilter] = useState("all"); // "all" | "orders" | "stock"
+
+  useEffect(() => {
+    function handleOrderNotifChange(e) {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setOrderNotifs(e.detail);
+      } else {
+        setOrderNotifs(getStoredOrderNotifications());
+      }
+    }
+    window.addEventListener("wasooli-order-notification-change", handleOrderNotifChange);
+    window.addEventListener("storage", handleOrderNotifChange);
+    return () => {
+      window.removeEventListener("wasooli-order-notification-change", handleOrderNotifChange);
+      window.removeEventListener("storage", handleOrderNotifChange);
+    };
+  }, []);
+
+  const combinedOrderNotifications = useMemo(() => {
+    const list = [...orderNotifs];
+    const existingOrderIds = new Set(list.map((n) => String(n.orderId)));
+    const dismissedIds = getDismissedOrderNotificationIds();
+
+    (orders || []).forEach((order) => {
+      const oId = String(order.id || order.internalId || "");
+      if (!oId || existingOrderIds.has(oId)) return;
+      const synthId = `auto-order-${oId}-${order.adminStatus || "pending"}`;
+      if (dismissedIds.has(synthId)) return;
+
+      const st = order.adminStatus || "pending";
+      const info = getOrderStatusNotificationInfo(oId, st);
+      list.push({
+        id: synthId,
+        orderId: oId,
+        status: st,
+        title: info.title,
+        message: info.message,
+        url: `/account?section=orders&orderId=${encodeURIComponent(oId)}`,
+        createdAt: order.adminStatusUpdatedAt || order.createdAt || new Date().toISOString(),
+        read: true,
+        items: order.items || [],
+        total: order.total || 0,
+        isAutoSeeded: true,
+      });
+      existingOrderIds.add(oId);
+    });
+
+    return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }, [orderNotifs, orders]);
+
+  const unreadOrderNotifsCount = combinedOrderNotifications.filter((n) => !n.read).length;
+  const totalNotificationsBadge = (notificationCount || 0) + unreadOrderNotifsCount;
 
   const [profileForm, setProfileForm] = useState({
     name: user?.name || "",
@@ -251,6 +527,8 @@ export default function Account() {
     setSearchParams({ section: nextSection }, { replace: true });
     if (nextSection === "notifications") {
       markNotificationsRead?.();
+      markOrderNotificationsRead();
+      setOrderNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
     }
   }
 
@@ -445,6 +723,8 @@ export default function Account() {
   useEffect(() => {
     if (section !== "notifications") return undefined;
     let cancelled = false;
+    markOrderNotificationsRead();
+    setOrderNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
     Promise.resolve(refreshNotifications?.()).finally(() => {
       if (!cancelled) markNotificationsRead?.();
     });
@@ -452,6 +732,39 @@ export default function Account() {
       cancelled = true;
     };
   }, [section, markNotificationsRead, refreshNotifications]);
+
+  function handleTrackFromNotification(orderId) {
+    handleSelectSection("orders");
+    setTrackingOrderId(orderId);
+    setTimeout(() => {
+      const el = document.getElementById(`order-card-${orderId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 120);
+  }
+
+  function handleRemoveOrderNotification(id) {
+    removeOrderNotification(id);
+    setOrderNotifs((prev) => prev.filter((item) => item.id !== id));
+    toast.info("Notification removed.");
+  }
+
+  function handleClearAllNotifications() {
+    if (notifFilter === "orders") {
+      clearOrderNotifications();
+      setOrderNotifs([]);
+      toast.info("Order notifications cleared.");
+    } else if (notifFilter === "stock") {
+      clearNotifications?.();
+      toast.info("Stock alerts cleared.");
+    } else {
+      clearOrderNotifications();
+      setOrderNotifs([]);
+      clearNotifications?.();
+      toast.info("All notifications cleared.");
+    }
+  }
 
   function getOrderStage(order) {
     const managedStage = adminStage(order);
@@ -544,7 +857,7 @@ export default function Account() {
       id: "notifications",
       label: "Notifications",
       detail: null,
-      badge: notificationCount,
+      badge: totalNotificationsBadge,
     },
     { id: "password", label: "Change password" },
     {
@@ -831,8 +1144,9 @@ export default function Account() {
             <Section
               icon={Bell}
               title="Notifications"
-              detail="Stock updates and availability alerts."
+              detail="Real-time order push notifications and stock alerts."
             >
+              <PushNotificationCard user={user} />
               {notifications.length === 0 ? (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center">
                   <p className="text-sm font-semibold text-slate-900">No notifications right now</p>
