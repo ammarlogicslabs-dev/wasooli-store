@@ -344,36 +344,36 @@ export default function Login() {
 
 
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 size={19} className="animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign in
-                    <ArrowRight size={19} />
-                  </>
-                )}
-              </button>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-brand-500 bg-white px-3 text-sm font-semibold text-brand-600 shadow-2xs transition hover:bg-brand-50/70 focus:outline-none focus:ring-4 focus:ring-brand-100 active:scale-[0.99] sm:px-4"
+                >
+                  Sign Up
+                  <ArrowRight size={19} />
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-70 active:scale-[0.99] sm:px-4"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={19} className="animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight size={19} />
+                    </>
+                  )}
+                </button>
+              </div>
+              
             </form>
 
-            {/* <div className="mt-5 border-t border-slate-100 pt-4 text-center">
-              <p className="text-xs text-slate-500">
-                Want to continue without signing in?{" "}
-                <Link
-                  to="/shop"
-                  className="font-semibold text-brand-600 transition hover:text-brand-700 hover:underline"
-                >
-                  Browse Products &rarr;
-                </Link>
-              </p>
-            </div> */}
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-200 pt-5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">

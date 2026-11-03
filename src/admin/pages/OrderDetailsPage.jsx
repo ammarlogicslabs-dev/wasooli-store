@@ -200,7 +200,26 @@ export default function OrderDetailsPage() {
   }
 
   const isCancelled = order.adminStatus === "cancelled";
+  const isDelivered = order.adminStatus === "delivered";
   const isRefunded = paymentBucket(order) === "refunded";
+
+  async function handleSaveStatus() {
+    if (status === "cancelled") {
+      if (!note.trim()) {
+        toast.error("Please provide a reason for cancelling this order.");
+        return;
+      }
+    }
+    const ok = await apply(
+      { adminStatus: status, note, courier, trackingNumber },
+      status === "cancelled"
+        ? "Order cancelled successfully."
+        : "Order updated. The customer tracking page will follow this status."
+    );
+    if (ok) {
+      setNote("");
+    }
+  }
 
   async function apply(changes, success) {
     const updates = { ...changes };
@@ -326,41 +345,92 @@ export default function OrderDetailsPage() {
           <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Fulfillment</h2>
             <label className="block text-sm font-semibold text-slate-900">Status
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className={`${inputClass} mt-1.5`}>
-                {ORDER_STATUSES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                disabled={isCancelled}
+                className={`${inputClass} mt-1.5 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-75`}
+              >
+                {ORDER_STATUSES.map((item) => {
+                  const isDisabled = (isDelivered && item.id !== "delivered" && item.id !== "cancelled") ||
+                    (isCancelled && item.id !== "cancelled");
+                  return (
+                    <option key={item.id} value={item.id} disabled={isDisabled}>
+                      {item.label}
+                    </option>
+                  );
+                })}
               </select>
             </label>
+
             <label className="block text-sm font-semibold text-slate-900">Courier
-              <input value={courier} onChange={(event) => setCourier(event.target.value)} placeholder="e.g. TCS, Leopards, Trax" className={`${inputClass} mt-1.5`} />
+              <input
+                value={courier}
+                onChange={(event) => setCourier(event.target.value)}
+                placeholder="e.g. TCS, Leopards, Trax"
+                disabled={isCancelled}
+                className={`${inputClass} mt-1.5 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-75`}
+              />
             </label>
             <label className="block text-sm font-semibold text-slate-900">Tracking number
-              <input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} placeholder="e.g. TRK123456789" className={`${inputClass} mt-1.5`} />
+              <input
+                value={trackingNumber}
+                onChange={(event) => setTrackingNumber(event.target.value)}
+                placeholder="e.g. TRK123456789"
+                disabled={isCancelled}
+                className={`${inputClass} mt-1.5 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-75`}
+              />
             </label>
-            <label className="block text-sm font-semibold text-slate-900">Internal note
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add an internal note or update about this order..." rows={3} className={`${inputClass} mt-1.5`} />
-            </label>
-           <div className="flex flex-wrap items-center gap-3">
-  <button
-    type="button"
-    className={buttonClass}
-    onClick={() => apply({ adminStatus: status, note, courier, trackingNumber }, "Order updated. The customer tracking page will follow this status.")}
-  >
-    Save status
-  </button>
-  <button
-    type="button"
-    className={quietButtonClass}
-    onClick={() => { apply({ note, courier, trackingNumber }, "Note saved."); setNote(""); }}
-  >
-    Add note only
-  </button>
-</div>
+            {status === "cancelled" ? (
+              <label className="block text-sm font-semibold text-red-700">
+                Cancellation Reason <span className="text-red-500">*</span>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Enter mandatory reason for cancelling this order..."
+                  rows={3}
+                  className={`${inputClass} mt-1.5 border-red-300 bg-red-50/30 focus:border-red-500 focus:ring-red-100`}
+                  required
+                />
+              </label>
+            ) : (
+              <label className="block text-sm font-semibold text-slate-900">Internal note
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Add an internal note or update about this order..."
+                  rows={3}
+                  className={`${inputClass} mt-1.5`}
+                />
+              </label>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                disabled={isCancelled && status === "cancelled"}
+                className={
+                  status === "cancelled" && !isCancelled
+                    ? "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    : buttonClass
+                }
+                onClick={handleSaveStatus}
+              >
+                {status === "cancelled" && !isCancelled ? "Cancel Order" : "Save status"}
+              </button>
+              <button
+                type="button"
+                className={quietButtonClass}
+                onClick={() => { apply({ note, courier, trackingNumber }, "Note saved."); setNote(""); }}
+              >
+                Add note only
+              </button>
+            </div>
           </section>
           <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Payment</h2>
             <p className="text-sm text-slate-500">{order.payment?.label || "Payment"} {order.payment?.reference ? `· ${order.payment.reference}` : ""}</p>
             {/* {isRefunded ? (
-              <p className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
                 Refund recorded. Payment details are read-only.
               </p>
             ) : !isCancelled ? (
@@ -391,7 +461,7 @@ export default function OrderDetailsPage() {
             <button
               type="button"
               disabled={isRefunded}
-              className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-rose-200 px-4 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleRecordRefund}
             >
               Record refund

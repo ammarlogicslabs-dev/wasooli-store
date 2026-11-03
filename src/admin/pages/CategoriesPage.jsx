@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCategory, saveCategory } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -133,26 +133,57 @@ export default function CategoriesPage() {
                     <span className="block font-semibold text-slate-900">{category.name}</span>
                     {/* <span className="text-xs text-slate-500">{category.slug}</span> */}
                   </span>
-                </span>
-              ),
-            },
+                  </span>
+                ),
+              },
             { key: "productCount", label: "Products" },
             { key: "status", label: "Status", render: (category) => <StatusBadge status={category.status} /> },
             {
               key: "actions",
-              label: "",
+              label: "Actions",
               render: (category) => (
-                <span className="flex justify-end gap-3">
-                  <button type="button" onClick={() => { setError(""); setForm(category); }} className="cursor-pointer text-xs font-semibold text-brand-600">Edit</button>
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setForm(category);
+                    }}
+                    title="Edit category"
+                    aria-label="Edit category"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-brand-500/50 bg-brand-50/50 text-brand-600 shadow-2xs transition hover:border-brand-500 hover:bg-brand-200/50 hover:text-brand-600"
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button type="button" onClick={async () => {
                     const result = await saveCategory({ ...category, status: category.status === "archived" ? "active" : "archived" });
                     if (!result.ok) toast.error(result.message);
                     else toast.success("Category updated.");
-                  }} className="cursor-pointer text-xs font-semibold text-slate-500">
-                    {category.status === "archived" ? "Restore" : "Archive"}
+                  }}
+                    title={category.status === "archived" ? "Restore category" : "Archive category"}
+                    aria-label={category.status === "archived" ? "Restore category" : "Archive category"}
+                    className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-amber-200 bg-amber-50/50 shadow-2xs transition ${
+                      category.status === "archived"
+                        ? "text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                        : "text-amber-400 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
+                    }`}
+                  >
+                    {category.status === "archived" ? (
+                      <ArchiveRestore size={14} />
+                    ) : (
+                      <Archive size={14} />
+                    )}
                   </button>
-                  <button type="button" onClick={() => setPendingDelete(category)} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
-                </span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(category)}
+                    title="Delete category"
+                    aria-label="Delete category"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-red-200/50 bg-red-100/50 text-red-400 shadow-2xs transition hover:border-red-400 hover:bg-red-200/50 hover:text-red-600"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ),
             },
           ]}

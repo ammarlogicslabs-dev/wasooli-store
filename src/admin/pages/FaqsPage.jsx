@@ -227,15 +227,19 @@ export default function FaqsPage() {
                     type="button"
                     onClick={() => handleToggleStatus(faq)}
                     title={faq.status === "published" ? "Set to draft" : "Publish on website"}
-                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 text-slate-500 hover:border-brand-500 hover:text-brand-600"
+                    className={`grid size-8 cursor-pointer place-items-center rounded-lg border shadow-2xs transition ${
+                      faq.status === "published"
+                        ? "border-emerald-200 bg-emerald-50/50 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                        : "border-amber-200 bg-amber-50/50 text-amber-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
+                    }`}
                   >
-                    {faq.status === "published" ? <Eye size={14} className="text-emerald-600" /> : <EyeOff size={14} className="text-amber-600" />}
+                    {faq.status === "published" ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...faq })}
                     title="Edit FAQ"
-                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 text-slate-600 hover:border-brand-500 hover:text-brand-600"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-brand-500/50 bg-brand-50/50 text-brand-600 shadow-2xs transition hover:border-brand-500 hover:bg-brand-200/50 hover:text-brand-600"
                   >
                     <Edit2 size={14} />
                   </button>
@@ -243,7 +247,7 @@ export default function FaqsPage() {
                     type="button"
                     onClick={() => setPendingDelete(faq)}
                     title="Delete FAQ"
-                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 text-slate-400 hover:border-red-500 hover:text-red-600"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-red-200/50 bg-red-100/50 text-red-400 shadow-2xs transition hover:border-red-400 hover:bg-red-200/50 hover:text-red-600"
                   >
                     <Trash2 size={14} />
                   </button>

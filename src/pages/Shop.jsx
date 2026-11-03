@@ -1529,7 +1529,7 @@ export default function Shop() {
       </div>
 
       <section
-        className="border-b border-slate-200/90 bg-white"
+        className="hidden sm:block border-b border-slate-200/90 bg-white"
         aria-label="Store benefits"
       >
         <div className="mx-auto max-w-8xl 2xl:max-w-384 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">

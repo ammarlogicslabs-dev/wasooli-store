@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FileSpreadsheet, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, FileSpreadsheet, Pencil, Plus, Trash2 } from "lucide-react";
 import { formatPrice } from "../../data/product";
 import { activateProduct, archiveProduct, deleteProduct } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -170,38 +170,41 @@ export default function ProductsPage() {
               { key: "status", label: "Status", render: (product) => <StatusBadge status={product.status} /> },
               {
                 key: "actions",
-                label: "",
+                label: "Actions",
                 render: (product) => {
                   const isArchived = product.status === "archived";
                   return (
-                    <span className="flex items-center justify-end gap-3">
-                      {isArchived ? (
-                        <button
-                          type="button"
-                          disabled={actionLoading}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (actionLoading) return;
-                            setPending({ product, mode: "activate" });
-                          }}
-                          className="cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Activate
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={actionLoading}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (actionLoading) return;
-                            setPending({ product, mode: "archive" });
-                          }}
-                          className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Archive
-                        </button>
-                      )}
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/admin/products/${product.id}`);
+                        }}
+                        title="Edit product"
+                        aria-label="Edit product"
+                        className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-2xs transition hover:border-brand-500 hover:bg-brand-50/50 hover:text-brand-600"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (actionLoading) return;
+                          setPending({ product, mode: isArchived ? "activate" : "archive" });
+                        }}
+                        title={isArchived ? "Activate product" : "Archive product"}
+                        aria-label={isArchived ? "Activate product" : "Archive product"}
+                        className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white shadow-2xs transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                          isArchived
+                            ? "text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                            : "text-slate-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
+                        }`}
+                      >
+                        {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                      </button>
                       <button
                         type="button"
                         disabled={actionLoading}
@@ -210,11 +213,13 @@ export default function ProductsPage() {
                           if (actionLoading) return;
                           setPending({ product, mode: "delete" });
                         }}
-                        className="cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                        title="Delete product"
+                        aria-label="Delete product"
+                        className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-400 shadow-2xs transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        Delete
+                        <Trash2 size={14} />
                       </button>
-                    </span>
+                    </div>
                   );
                 },
               },

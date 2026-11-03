@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { Pencil, Plus, Power, Search, Trash2, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCoupon, saveCoupon } from "../../services/storage/adminDataService";
 import AdminModal from "../components/AdminModal";
@@ -180,9 +180,9 @@ export default function CouponsPage() {
 
             {
               key: "actions",
-              label: "Action",
+              label: "Actions ",
               render: (coupon) => (
-                <span className="flex justify-end gap-3">
+                <div className="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -196,13 +196,35 @@ export default function CouponsPage() {
                         used: String(coupon.used ?? "0"),
                       });
                     }}
-                    className="cursor-pointer text-xs font-semibold text-brand-600"
+                    title="Edit coupon"
+                    aria-label="Edit coupon"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-brand-500/50 bg-brand-50/50 text-brand-600 shadow-2xs transition hover:border-brand-700 hover:bg-brand-500/50 hover:text-brand-700"
                   >
-                    Edit
+                    <Pencil size={14} />
                   </button>
-                  <button type="button" onClick={() => handleToggle(coupon)} className="cursor-pointer text-xs font-semibold text-slate-500">{coupon.active ? "Disable" : "Enable"}</button>
-                  <button type="button" onClick={() => setPending(coupon)} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
-                </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(coupon)}
+                    title={coupon.active ? "Disable coupon" : "Enable coupon"}
+                    aria-label={coupon.active ? "Disable coupon" : "Enable coupon"}
+                    className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white shadow-2xs transition ${
+                      coupon.active
+                        ? "text-emerald-600 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
+                        : "text-slate-400 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-600"
+                    }`}
+                  >
+                    <Power size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPending(coupon)}
+                    title="Delete coupon"
+                    aria-label="Delete coupon"
+                    className="grid size-8 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-red-100/50 text-red-400 shadow-2xs transition hover:border-red-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ),
             },
           ]}

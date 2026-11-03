@@ -25,6 +25,92 @@ import { useAdminData } from "../hooks/useAdminData";
 
 const RANGES = [7, 30, 90];
 
+const UPGRADE_CARD_IMAGES = [
+  "/cards/upgrade_card_1.png",
+  "/cards/upgrade_card_2.png",
+  "/cards/upgrade_card_3.png",
+  "/cards/upgrade_card_4.png",
+  "/cards/upgrade_card_5.png",
+  "/cards/upgrade_card_6.png",
+];
+
+function UpgradePromoBanner() {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % UPGRADE_CARD_IMAGES.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isPaused]);
+
+  return (
+    <div
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative overflow-hidden rounded-xl bg-slate-950 p-3 sm:p-3.5 text-white shadow-[0_6px_24px_-2px_rgba(11,30,74,0.35),0_2px_6px_rgba(11,30,74,0.2)] aspect-725/305 min-h-35.5 flex flex-col justify-between"
+    >
+      {/* 6 Background Images with 100% Accurate Fit & Smooth Transition */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        {UPGRADE_CARD_IMAGES.map((src, idx) => (
+          <img
+            key={src}
+            src={src}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-fill transition-opacity duration-700 ease-in-out ${
+              activeIdx === idx
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* High-legibility Soft Scrim Overlay on the left */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-slate-950/80 via-slate-950/35 to-transparent"
+      />
+
+      {/* Foreground Content: Title, Description & Action Button */}
+      <div className="relative z-10 max-w-[55%] sm:max-w-[58%]">
+        <h3 className="text-xs sm:text-[13px] font-bold leading-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
+          Upgrade Your Network Today
+        </h3>
+        <p className="mt-1 text-[9.5px] sm:text-[10px] leading-snug text-blue-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] font-medium">
+          Premium Networking Equipment for Home &amp; Business
+        </p>
+        <Link
+          to="/shop"
+          className="mt-2 inline-flex items-center gap-1 rounded-md bg-[#F59E0B] px-2.5 py-1 text-[10.5px] sm:text-[11px] font-bold text-slate-950 shadow-md transition-all hover:bg-amber-400 hover:shadow-lg active:translate-y-0.5"
+        >
+          <span>Shop Now</span>
+          <ArrowRight size={11} strokeWidth={2.5} />
+        </Link>
+      </div>
+
+      {/* Slide Navigation Dots (Placed on the bottom-left) */}
+      <div className="relative z-10 flex items-center justify-start gap-1 pt-1.5">
+        {UPGRADE_CARD_IMAGES.map((_, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setActiveIdx(idx)}
+            aria-label={`Show card ${idx + 1}`}
+            className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
+              activeIdx === idx
+                ? "w-4 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+                : "w-1.5 bg-white/45 hover:bg-white/80"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function createSmoothPath(points) {
   if (!points || points.length === 0) return "";
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
@@ -1138,32 +1224,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Promo Banner Card with wasooli-hero.png */}
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#0B1E4A] via-[#0D2560] to-[#0A1A3F] p-3.5 text-white shadow-[0_6px_24px_-2px_rgba(11,30,74,0.35),0_2px_6px_rgba(11,30,74,0.2)]">
-            {/* Subtle glow */}
-            <div className="pointer-events-none absolute -right-4 -top-4 size-28 rounded-full bg-blue-400/10 blur-xl" />
-
-            <div className="relative z-10 max-w-38.75">
-              <h3 className="text-xs sm:text-[13px] font-bold leading-tight text-white">Upgrade Your Network Today</h3>
-              <p className="mt-1 text-[10px] leading-snug text-blue-200/80">
-                Premium Networking Equipment for Home &amp; Business
-              </p>
-              <Link
-                to="/shop"
-                className="mt-2.5 inline-flex items-center gap-1 rounded-md bg-[#F59E0B] px-2.5 py-1 text-[11px] font-bold text-slate-950 shadow-xs transition hover:bg-amber-400"
-              >
-                <span>Shop Now</span>
-                <ArrowRight size={11} strokeWidth={2.5} />
-              </Link>
-            </div>
-
-            {/* Wasooli Hero Graphic */}
-            <img
-              src="/wasooli-hero.png"
-              alt="Wasooli Network Equipment"
-              className="pointer-events-none absolute -bottom-1 -right-1 h-22 w-28 object-contain drop-shadow-lg"
-            />
-          </div>
+          {/* Promo Banner Card with 6 sliding background images */}
+          <UpgradePromoBanner />
         </div>
       </section>
 
@@ -1209,8 +1271,6 @@ export default function Dashboard() {
                       const cfg = getStatusBadgeConfig(order.adminStatus || "pending");
                       const customerName =
                         order.delivery?.fullName || order.customer?.name || order.customerName || "Customer";
-                      const customerEmail =
-                        order.delivery?.email || order.customer?.email || order.email || "No email";
                       const itemCount = Array.isArray(order.items)
                         ? order.items.reduce((s, it) => s + (Number(it.quantity) || 1), 0)
                         : 1;
@@ -1248,16 +1308,16 @@ export default function Dashboard() {
                           {/* Customer */}
                           <td className="py-2 px-1">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-600 font-bold text-[10px]">
+                              {/* <span className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-600 font-bold text-[10px]">
                                 {customerName.charAt(0).toUpperCase()}
-                              </span>
+                              </span> */}
                               <div className="min-w-0 truncate">
                                 <p className="truncate font-semibold text-slate-900 leading-tight text-[11px]">
                                   {customerName}
                                 </p>
-                                <p className="truncate text-[9.5px] text-slate-400 leading-tight">
+                                {/* <p className="truncate text-[9.5px] text-slate-400 leading-tight">
                                   {customerEmail}
-                                </p>
+                                </p> */}
                               </div>
                             </div>
                           </td>
