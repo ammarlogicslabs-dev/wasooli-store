@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Search, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCategory, saveCategory } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -19,9 +19,27 @@ export default function CategoriesPage() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Ignore any empty/null entries so rowKey and the table never read `.id` of null.
   const rows = (categories || []).filter(Boolean);
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((category) => {
+      if (statusFilter !== "all" && category.status !== statusFilter) {
+        return false;
+      }
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const name = String(category.name || "").toLowerCase();
+        if (!name.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [rows, search, statusFilter]);
 
   function openCreate() {
     setError("");
@@ -63,10 +81,47 @@ export default function CategoriesPage() {
         }
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by category name"
+              className={`${inputClass} pl-10 pr-9`}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+          <div className="w-full sm:w-48">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={inputClass}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
+
         <AdminTable
-          rows={rows}
+          rows={filteredRows}
           rowKey={(category) => category.id}
-          empty="No categories yet."
+          empty={search || statusFilter !== "all" ? "No categories match your search." : "No categories yet."}
           columns={[
             {
               key: "name",

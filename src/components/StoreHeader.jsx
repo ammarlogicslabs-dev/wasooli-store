@@ -701,7 +701,7 @@ export default function StoreHeader() {
 
                         {/* Icon container with depth & elevation on the LEFT */}
                         <span
-                          className={`relative z-10 grid size-9.5 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 ${
+                          className={`relative z-10 grid size-9.5 place-items-center rounded-2xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 ${
                             active
                               ? "border-brand-300 shadow-xs from-white to-brand-50/50"
                               : "border-slate-200/90 shadow-2xs group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40"

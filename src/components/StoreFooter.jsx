@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCart } from "../cart/CartContext";
 import {
   Cable,
   ChevronDown,
@@ -30,32 +31,38 @@ import {
 } from "../services/storage/adminDataService";
 import { DATA_EVENT } from "../services/storage/storageService";
 
-const FOOTER_CATEGORIES = [
-  { Icon: Router, label: "Routers", cat: "Routing" },
-  { Icon: Network, label: "Switches", cat: "Switching" },
-  { Icon: Wifi, label: "Access Points", cat: "Wireless" },
-  { Icon: Cable, label: "Cables", cat: "Cabling & Connectivity" },
-  { Icon: ShieldCheck, label: "Accessories", cat: "Tools & Accessories" },
+const FOOTER_CATEGORIES_CONFIG = [
+  {
+    Icon: Router,
+    defaultLabel: "Routers",
+    canonicalName: "Routing",
+    keywords: ["routing", "router"],
+  },
+  {
+    Icon: Network,
+    defaultLabel: "Switches",
+    canonicalName: "Switching",
+    keywords: ["switching", "switch"],
+  },
+  {
+    Icon: Wifi,
+    defaultLabel: "Wireless",
+    canonicalName: "Wireless",
+    keywords: ["wireless", "wifi", "access point"],
+  },
+  {
+    Icon: Cable,
+    defaultLabel: "Cables",
+    canonicalName: "Cabling & Connectivity",
+    keywords: ["cabling", "cable", "connectivity"],
+  },
+  {
+    Icon: ShieldCheck,
+    defaultLabel: "Tools & Accessories",
+    canonicalName: "Tools & Accessories",
+    keywords: ["tool", "accessory", "accessories"],
+  },
 ];
-
-const FOOTER_ICON_LOOKUP = [
-  { keywords: ["routing", "router"], icon: Router },
-  { keywords: ["switching", "switch"], icon: Network },
-  { keywords: ["wireless", "wifi", "access point"], icon: Wifi },
-  { keywords: ["cabling", "cable"], icon: Cable },
-  { keywords: ["tool", "accessory", "accessories"], icon: ShieldCheck },
-  { keywords: ["security", "firewall"], icon: ShieldCheck },
-];
-
-function getFooterCategoryIcon(name) {
-  const norm = String(name || "").toLowerCase();
-  for (const entry of FOOTER_ICON_LOOKUP) {
-    if (entry.keywords.some((kw) => norm.includes(kw))) {
-      return entry.icon;
-    }
-  }
-  return Network;
-}
 
 
 const TICKER_ANNOUNCEMENTS = [
@@ -129,11 +136,17 @@ function FooterSection({
 export default function StoreFooter() {
   const [openSection, setOpenSection] = useState(null);
   const [categoryTick, setCategoryTick] = useState(0);
+  const { categories: storeCategories = [] } = useCart();
 
   useEffect(() => {
     function handleStorage(event) {
       const key = event.key || event.detail?.key;
-      if (!key || key === "wasooli_admin_categories_v1" || key === ARCHIVED_CATEGORIES_KEY || key === DELETED_CATEGORIES_KEY) {
+      if (
+        !key ||
+        key === "wasooli_admin_categories_v1" ||
+        key === ARCHIVED_CATEGORIES_KEY ||
+        key === DELETED_CATEGORIES_KEY
+      ) {
         setCategoryTick((t) => t + 1);
       }
     }
@@ -147,19 +160,40 @@ export default function StoreFooter() {
 
   const visibleFooterCategories = useMemo(() => {
     void categoryTick;
-    const catList = getStorefrontCategories().filter((c) => !isCategoryHidden(c));
-    if (!catList.length) {
-      return FOOTER_CATEGORIES.filter((item) => !isCategoryHidden(item.cat));
-    }
-    return catList.slice(0, 7).map((c) => {
-      const name = typeof c === "string" ? c : c.name;
+    const catList =
+      Array.isArray(storeCategories) && storeCategories.length > 0
+        ? storeCategories
+        : getStorefrontCategories();
+
+    return FOOTER_CATEGORIES_CONFIG.map((config) => {
+      const matched = catList.find((c) => {
+        const name = (typeof c === "string" ? c : c?.name || "").toLowerCase();
+        return (
+          name === config.canonicalName.toLowerCase() ||
+          config.keywords.some((kw) => name.includes(kw))
+        );
+      });
+
+      if (matched && isCategoryHidden(matched)) return null;
+      if (isCategoryHidden(config.canonicalName)) return null;
+
+      const dynamicCatName =
+        typeof matched === "object" && matched?.name ? matched.name : config.canonicalName;
+      const label =
+        matched &&
+        typeof matched === "object" &&
+        matched.name &&
+        matched.name.toLowerCase() !== config.canonicalName.toLowerCase()
+          ? matched.name
+          : config.defaultLabel;
+
       return {
-        Icon: getFooterCategoryIcon(name),
-        label: name,
-        cat: name,
+        Icon: config.Icon,
+        label,
+        cat: dynamicCatName,
       };
-    });
-  }, [categoryTick]);
+    }).filter(Boolean);
+  }, [storeCategories, categoryTick]);
 
   const toggleSection = (sectionKey) => {
     setOpenSection((prev) => (prev === sectionKey ? null : sectionKey));

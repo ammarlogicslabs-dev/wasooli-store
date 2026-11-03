@@ -1996,6 +1996,14 @@ export default function Account() {
                               ) : (
                                 <p className="mt-1 text-xs text-slate-500">No minimum order required</p>
                               )}
+                              {Number(coupon.maxDiscount) > 0 ? (
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  Max discount:{" "}
+                                  <strong className="text-emerald-700 font-semibold">
+                                    Rs {Number(coupon.maxDiscount).toLocaleString()}
+                                  </strong>
+                                </p>
+                              ) : null}
                             </div>
                           </div>
 

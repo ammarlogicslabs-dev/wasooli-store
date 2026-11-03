@@ -1,36 +1,86 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { formatPrice } from "../../data/product";
-import { exportOrdersCsv, getReports } from "../../services/storage/adminDataService";
-import { PAYMENT_LABELS, statusLabel } from "../../services/storage/orderStatus";
+import { exportOrdersCsv, exportReportPdf, getReports } from "../../services/storage/adminDataService";
+import { PAYMENT_LABELS, paymentBucket, statusLabel } from "../../services/storage/orderStatus";
+import AdminTable from "../components/AdminTable";
 import PageHeader from "../components/PageHeader";
-import { buttonClass } from "../components/formStyles";
+import StatusBadge from "../components/StatusBadge";
 import { useAdminData } from "../hooks/useAdminData";
 
 const RANGES = [7, 30, 90];
 
 export default function ReportsPage() {
   const data = useAdminData();
+  const navigate = useNavigate();
   const [days, setDays] = useState(30);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const report = getReports(days, data);
   const paymentRows = Object.entries(report.payments);
+
+  const handleExportPdf = async () => {
+    try {
+      setExportingPdf(true);
+      await exportReportPdf(report, days);
+    } catch (err) {
+      console.error("Failed to generate PDF report:", err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
       <PageHeader
-        crumbs={[{ label: "Reports & Payments" }]}
-        title="Reports & Payments"
-        detail="Figures come from live orders in the API."
+        crumbs={[{ label: "Transactions & Reports" }]}
+        title="Transactions & Reports"
+        detail="Figures and transaction history generated from live store activity."
         actions={(
-          <>
-            {RANGES.map((range) => (
-              <button key={range} type="button" onClick={() => setDays(range)} className={`h-10 cursor-pointer rounded-xl px-3 text-sm font-semibold ${days === range ? "bg-brand-500 text-white" : "border border-slate-200 bg-white text-slate-600"}`}>
-                {range} days
-              </button>
-            ))}
-            <button type="button" onClick={() => exportOrdersCsv(report.orders)} className={buttonClass}>Export CSV</button>
-          </>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
+              {RANGES.map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => setDays(range)}
+                  className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold transition ${
+                    days === range
+                      ? "bg-brand-500 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {range} days
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => exportOrdersCsv(report.orders)}
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              title="Export transactions spreadsheet as CSV"
+            >
+              <FileSpreadsheet size={15} className="text-emerald-600" />
+              <span>Export CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-500 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-60"
+              title="Download full financial & transactions report as PDF"
+            >
+              {exportingPdf ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <FileText size={15} />
+              )}
+              <span>{exportingPdf ? "Generating PDF..." : "Export PDF"}</span>
+            </button>
+          </div>
         )}
       />
+
       <section className="grid gap-4 md:grid-cols-3">
         {[
           ["Sales", formatPrice(report.sales)],
@@ -43,6 +93,7 @@ export default function ReportsPage() {
           </article>
         ))}
       </section>
+
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Payment methods</h2>
@@ -88,6 +139,90 @@ export default function ReportsPage() {
             ))}
           </ul>
         </article>
+      </section>
+
+      {/* Transactions & Orders List */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">
+              Transactions & Orders ({report.orders.length})
+            </h2>
+            <p className="text-xs text-slate-500">
+              Orders recorded in the selected {days}-day period. Click any row to view complete order details.
+            </p>
+          </div>
+        </div>
+        <AdminTable
+          rows={report.orders}
+          rowKey={(order) => order.id}
+          onRowClick={(order) => navigate(`/admin/orders/${encodeURIComponent(order.id)}`)}
+          empty="No transactions found in this period."
+          columns={[
+            {
+              key: "id",
+              label: "Order #",
+              render: (order) => (
+                <span className="font-semibold text-slate-900">
+                  {String(order.id).startsWith("#") ? order.id : `#${order.id}`}
+                </span>
+              ),
+            },
+            {
+              key: "date",
+              label: "Date",
+              render: (order) =>
+                order.createdAt
+                  ? new Date(order.createdAt).toLocaleDateString("en-PK", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "—",
+            },
+            {
+              key: "customer",
+              label: "Customer",
+              render: (order) => (
+                <div>
+                  <span className="font-medium text-slate-900">
+                    {order.delivery?.fullName || "Guest Customer"}
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    {order.delivery?.city || "—"}
+                  </span>
+                </div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (order) => (
+                <StatusBadge status={order.adminStatus || "pending"}>
+                  {statusLabel(order.adminStatus || "pending")}
+                </StatusBadge>
+              ),
+            },
+            {
+              key: "payment",
+              label: "Payment",
+              render: (order) => (
+                <StatusBadge status={paymentBucket(order)}>
+                  {PAYMENT_LABELS[paymentBucket(order)] || paymentBucket(order)}
+                </StatusBadge>
+              ),
+            },
+            {
+              key: "total",
+              label: "Total Amount",
+              render: (order) => (
+                <span className="font-semibold text-slate-900">
+                  {formatPrice(order.total || 0)}
+                </span>
+              ),
+            },
+          ]}
+        />
       </section>
     </div>
   );

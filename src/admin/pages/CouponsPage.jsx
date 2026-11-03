@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Search, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { deleteCoupon, saveCoupon } from "../../services/storage/adminDataService";
 import AdminModal from "../components/AdminModal";
@@ -16,6 +16,7 @@ const EMPTY = {
   type: "percent",
   value: "",
   minOrder: "0",
+  maxDiscount: "",
   startDate: "",
   expiryDate: "",
   usageLimit: "10",
@@ -29,6 +30,24 @@ export default function CouponsPage() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const filteredCoupons = useMemo(() => {
+    return (coupons || []).filter((coupon) => {
+      if (statusFilter === "active" && !coupon.active) return false;
+      if (statusFilter === "inactive" && coupon.active) return false;
+      if (typeFilter !== "all" && coupon.type !== typeFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const code = String(coupon.code || "").toLowerCase();
+        const val = String(coupon.value || "").toLowerCase();
+        if (!code.includes(q) && !val.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [coupons, search, statusFilter, typeFilter]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -82,23 +101,105 @@ export default function CouponsPage() {
         }
       />
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search coupon code or discount value..."
+              className={`${inputClass} pl-10 pr-9`}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`${inputClass} sm:w-36`}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={`${inputClass} sm:w-36`}
+            >
+              <option value="all">All types</option>
+              <option value="percent">Percentage</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </div>
+        </div>
+
         <AdminTable
-          rows={coupons}
+          rows={filteredCoupons}
           rowKey={(coupon) => coupon.id}
-          empty="No coupons yet."
+          empty={
+            search || statusFilter !== "all" || typeFilter !== "all"
+              ? "No coupons match your search."
+              : "No coupons yet."
+          }
           columns={[
             { key: "code", label: "Code", render: (coupon) => <span className="font-semibold text-slate-900">{coupon.code}</span> },
-            { key: "value", label: "Discount", render: (coupon) => coupon.type === "percent" ? `${coupon.value}%` : `Rs ${coupon.value}` },
+            {
+              key: "value",
+              label: "Discount",
+              render: (coupon) => (
+                <div>
+                  <span className="font-semibold text-slate-900">
+                    {coupon.type === "percent" ? `${coupon.value}%` : `Rs ${coupon.value}`}
+                  </span>
+                  {coupon.type === "percent" && Number(coupon.maxDiscount) > 0 ? (
+                    <span className="block text-[11px] font-medium text-emerald-600">
+                      Max Rs {Number(coupon.maxDiscount).toLocaleString()}
+                    </span>
+                  ) : null}
+                </div>
+              ),
+            },
             { key: "min", label: "Minimum", render: (coupon) => `Rs ${coupon.minOrder}` },
             { key: "expiry", label: "Expiry", render: (coupon) => coupon.expiryDate || "None" },
             { key: "usage", label: "Usage", render: (coupon) => `${coupon.used}/${coupon.usageLimit}` },
             { key: "status", label: "Status", render: (coupon) => <StatusBadge status={coupon.active ? "active" : "archived"}>{coupon.active ? "Active" : "Inactive"}</StatusBadge> },
+
             {
               key: "actions",
-              label: "",
+              label: "Action",
               render: (coupon) => (
                 <span className="flex justify-end gap-3">
-                  <button type="button" onClick={() => { setError(""); setForm({ ...coupon, value: String(coupon.value), minOrder: String(coupon.minOrder), usageLimit: String(coupon.usageLimit), used: String(coupon.used) }); }} className="cursor-pointer text-xs font-semibold text-brand-600">Edit</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setForm({
+                        ...coupon,
+                        value: String(coupon.value ?? ""),
+                        minOrder: String(coupon.minOrder ?? "0"),
+                        maxDiscount: coupon.maxDiscount != null ? String(coupon.maxDiscount) : "",
+                        usageLimit: String(coupon.usageLimit ?? "10"),
+                        used: String(coupon.used ?? "0"),
+                      });
+                    }}
+                    className="cursor-pointer text-xs font-semibold text-brand-600"
+                  >
+                    Edit
+                  </button>
                   <button type="button" onClick={() => handleToggle(coupon)} className="cursor-pointer text-xs font-semibold text-slate-500">{coupon.active ? "Disable" : "Enable"}</button>
                   <button type="button" onClick={() => setPending(coupon)} className="cursor-pointer text-xs font-semibold text-red-600">Delete</button>
                 </span>
@@ -137,6 +238,17 @@ export default function CouponsPage() {
                 onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
                 onChange={(event) => setForm({ ...form, minOrder: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
                 placeholder="e.g. 2000"
+                inputMode="decimal"
+                className={`${inputClass} mt-1.5`}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-900">Maximum discount
+              <input
+                type="text"
+                value={form.maxDiscount ?? ""}
+                onKeyDown={(event) => filterNumericKeyDown(event, { allowDecimal: true })}
+                onChange={(event) => setForm({ ...form, maxDiscount: sanitizeNumber(event.target.value, { allowDecimal: true }) })}
+                placeholder="e.g. 2000 (Optional cap)"
                 inputMode="decimal"
                 className={`${inputClass} mt-1.5`}
               />

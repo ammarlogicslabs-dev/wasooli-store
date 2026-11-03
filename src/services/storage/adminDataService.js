@@ -8,7 +8,7 @@ import {
   validatePriceTiers,
 } from "../../utils/priceTiers";
 import { apiRequest, getToken } from "../api/client";
-import { ORDER_FLOW, paymentBucket } from "./orderStatus";
+import { ORDER_FLOW, paymentBucket, statusLabel, PAYMENT_LABELS } from "./orderStatus";
 
 export const STORAGE_KEYS = {
   products: "wasooli_admin_products_v1",
@@ -1031,6 +1031,9 @@ export async function saveCoupon(input) {
   const type = input.type === "fixed" ? "fixed" : "percent";
   const value = Number(input.value);
   const minOrder = Number(input.minOrder || 0);
+  const maxDiscountRaw = input.maxDiscount;
+  const maxDiscount =
+    maxDiscountRaw !== "" && maxDiscountRaw != null ? Number(maxDiscountRaw) : null;
   const usageLimit = Number(input.usageLimit);
   const used = Number(input.used || 0);
 
@@ -1042,6 +1045,9 @@ export async function saveCoupon(input) {
     return { ok: false, message: "Fixed discount must be greater than 0." };
   }
   if (!Number.isFinite(minOrder) || minOrder < 0) return { ok: false, message: "Minimum order cannot be negative." };
+  if (maxDiscount !== null && (!Number.isFinite(maxDiscount) || maxDiscount < 0)) {
+    return { ok: false, message: "Maximum discount cannot be negative." };
+  }
   if (!Number.isInteger(usageLimit) || usageLimit < 1) return { ok: false, message: "Usage limit must be at least 1." };
   if (!Number.isInteger(used) || used < 0 || used > usageLimit) {
     return { ok: false, message: "Used count must stay within the usage limit." };
@@ -1055,6 +1061,7 @@ export async function saveCoupon(input) {
     type,
     value,
     minOrder,
+    maxDiscount: Number.isFinite(maxDiscount) && maxDiscount > 0 ? maxDiscount : null,
     startDate: input.startDate || "",
     expiryDate: input.expiryDate || "",
     usageLimit,
@@ -1313,6 +1320,161 @@ export function exportOrdersCsv(orders) {
   URL.revokeObjectURL(url);
 }
 
+export async function exportReportPdf(report, days = 30) {
+  const { jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+
+  const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.width;
+
+  // Header Brand
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(2, 132, 199); // Sky / Wasooli Blue
+  doc.text("WASOOLI STORE", 14, 18);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Transactions & Financial Performance Report", 14, 24);
+
+  // Metadata block (right aligned)
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Generated: ${dateStr} ${timeStr}`, pageWidth - 14, 16, { align: "right" });
+  doc.text(`Period: Last ${days} Days`, pageWidth - 14, 21, { align: "right" });
+  doc.text(`Total Orders: ${report?.orders?.length || 0}`, pageWidth - 14, 26, { align: "right" });
+
+  // Accent Line
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.4);
+  doc.line(14, 29, pageWidth - 14, 29);
+
+  // Summary Metrics Table
+  const totalSales = Number(report?.sales || 0);
+  const totalOrders = report?.orders?.length || 0;
+  const collectedPaid = Number(report?.payments?.paid || 0) + Number(report?.payments?.cod_collected || 0);
+  const codPending = Number(report?.payments?.cod_pending || 0);
+
+  autoTable(doc, {
+    startY: 33,
+    margin: { left: 14, right: 14 },
+    head: [["TOTAL SALES", "TOTAL ORDERS", "COLLECTED / PAID", "COD PENDING"]],
+    body: [[
+      `Rs. ${totalSales.toLocaleString()}`,
+      `${totalOrders} Orders`,
+      `Rs. ${collectedPaid.toLocaleString()}`,
+      `Rs. ${codPending.toLocaleString()}`,
+    ]],
+    theme: "plain",
+    headStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [100, 116, 139],
+      fontStyle: "bold",
+      fontSize: 8,
+      halign: "center",
+      cellPadding: 2.5,
+    },
+    styles: {
+      fontSize: 10.5,
+      fontStyle: "bold",
+      textColor: [15, 23, 42],
+      halign: "center",
+      cellPadding: 3.5,
+    },
+    tableLineColor: [226, 232, 240],
+    tableLineWidth: 0.2,
+  });
+
+  const nextY = doc.lastAutoTable.finalY + 8;
+
+  // Section Heading
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Transactions & Orders List", 14, nextY);
+
+  const orders = Array.isArray(report?.orders) ? report.orders : [];
+  const rows = orders.length > 0 ? orders.map((order) => {
+    const rawDate = order.createdAt ? String(order.createdAt).slice(0, 10) : "-";
+    const custName = order.delivery?.fullName || "Guest Customer";
+    const city = order.delivery?.city || "-";
+    const status = statusLabel(order.adminStatus || "pending");
+    const payment = PAYMENT_LABELS[paymentBucket(order)] || paymentBucket(order);
+    const amount = `Rs. ${Number(order.total || 0).toLocaleString()}`;
+    return [
+      String(order.id || "").startsWith("#") ? String(order.id) : `#${order.id}`,
+      rawDate,
+      custName,
+      city,
+      status,
+      payment,
+      amount,
+    ];
+  }) : [["-", "-", "No orders found in this period", "-", "-", "-", "Rs. 0"]];
+
+  autoTable(doc, {
+    startY: nextY + 3,
+    margin: { left: 14, right: 14, bottom: 16 },
+    head: [["Order #", "Date", "Customer", "City", "Status", "Payment", "Amount"]],
+    body: rows,
+    foot: [["Total Sales", "", "", "", "", `${orders.length} orders`, `Rs. ${totalSales.toLocaleString()}`]],
+    theme: "striped",
+    headStyles: {
+      fillColor: [15, 23, 42],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8.5,
+      cellPadding: 3,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+      textColor: [30, 41, 59],
+      overflow: "linebreak",
+    },
+    columnStyles: {
+      0: { fontStyle: "bold" },
+      6: { halign: "right", fontStyle: "bold" },
+    },
+    footStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [15, 23, 42],
+      fontStyle: "bold",
+      fontSize: 8.5,
+      cellPadding: 3,
+    },
+  });
+
+  // Multi-page page numbers and professional footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const h = doc.internal.pageSize.height;
+    const w = doc.internal.pageSize.width;
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(14, h - 12, w - 14, h - 12);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Wasooli Store — Official Transactions & Sales Report (Confidential)", 14, h - 7);
+    doc.text(`Page ${i} of ${pageCount}`, w - 14, h - 7, { align: "right" });
+  }
+
+  const fileDate = now.toISOString().slice(0, 10);
+  doc.save(`wasooli-report-${days}days-${fileDate}.pdf`);
+}
+
 export async function placeOrderApi(payload) {
   return apiRequest("/api/orders", {
     method: "POST",
@@ -1409,11 +1571,48 @@ export async function markAllNotificationsReadApi() {
 }
 
 export async function validateCouponApi(code, subtotal) {
-  return apiRequest("/api/coupons/validate", {
-    method: "POST",
-    kind: "customer",
-    body: { code, subtotal },
-  });
+  try {
+    const result = await apiRequest("/api/coupons/validate", {
+      method: "POST",
+      kind: "customer",
+      body: { code, subtotal },
+    });
+    const local = listCoupons().find(
+      (c) => String(c?.code).toUpperCase() === String(code).toUpperCase()
+    );
+    const maxCap = Number(result?.coupon?.maxDiscount ?? result?.maxDiscount ?? local?.maxDiscount);
+    if (result && Number.isFinite(maxCap) && maxCap > 0 && Number(result.discount) > maxCap) {
+      result.discount = maxCap;
+    }
+    return result;
+  } catch (apiError) {
+    const local = listCoupons().find(
+      (c) => String(c?.code).toUpperCase() === String(code).toUpperCase() && c.active !== false
+    );
+    if (local) {
+      const sub = Number(subtotal) || 0;
+      const min = Number(local.minOrder) || 0;
+      if (sub < min) {
+        throw new Error(`Minimum order of Rs ${min.toLocaleString()} required for this coupon.`, {
+          cause: apiError,
+        });
+      }
+      let discount =
+        local.type === "percent"
+          ? (sub * Number(local.value)) / 100
+          : Number(local.value);
+      const maxDiscount = Number(local.maxDiscount);
+      if (Number.isFinite(maxDiscount) && maxDiscount > 0 && discount > maxDiscount) {
+        discount = maxDiscount;
+      }
+      return {
+        code: local.code,
+        discount: Math.round(discount),
+        coupon: local,
+      };
+    }
+    throw apiError;
+  }
 }
 
 export async function uploadImage(file, kind = "product") {
