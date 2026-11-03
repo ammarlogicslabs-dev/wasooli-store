@@ -1,3 +1,24 @@
+function recordPendingOrderNotification(placed, orderItems, total) {
+  if (!placed) return;
+  try {
+    const oId = placed.id || placed.internalId || ("WAS-" + Math.floor(1000 + Math.random() * 9000));
+    const info = getOrderStatusNotificationInfo(oId, "pending");
+    saveOrderNotification({
+      id: "notif-order-" + oId + "-pending-" + Date.now(),
+      orderId: oId,
+      status: "pending",
+      title: info.title,
+      message: info.message,
+      url: "/account?section=orders&orderId=" + encodeURIComponent(oId),
+      createdAt: new Date().toISOString(),
+      read: false,
+      items: orderItems,
+      total,
+    });
+  } catch {
+    // ignore
+  }
+}
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -296,14 +317,9 @@ function FieldError({ id, message }) {
 
 
 function CheckoutNotificationPrompt({ user }) {
-  const [supported, setSupported] = useState(false);
-  const [permission, setPermission] = useState("default");
+  const [supported] = useState(() => isPushSupported());
+  const [permission, setPermission] = useState(() => getPushPermission());
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setSupported(isPushSupported());
-    setPermission(getPushPermission());
-  }, []);
 
   if (!supported) return null;
 
@@ -572,26 +588,7 @@ export default function Checkout() {
       await deductStock();
       setOrder(placed);
 
-      if (placed) {
-        try {
-          const oId = placed.id || placed.internalId || ("WAS-" + Math.floor(1000 + Math.random() * 9000));
-          const info = getOrderStatusNotificationInfo(oId, "pending");
-          saveOrderNotification({
-            id: "notif-order-" + oId + "-pending-" + Date.now(),
-            orderId: oId,
-            status: "pending",
-            title: info.title,
-            message: info.message,
-            url: "/account?section=orders&orderId=" + encodeURIComponent(oId),
-            createdAt: new Date().toISOString(),
-            read: false,
-            items: orderItems,
-            total: subtotal + deliveryFee - couponDiscount,
-          });
-        } catch {
-          // ignore
-        }
-      }
+      recordPendingOrderNotification(placed, orderItems, subtotal + deliveryFee - couponDiscount);
 
       if (!buyNowItem) clearCart();
       setConfirmOpen(false);

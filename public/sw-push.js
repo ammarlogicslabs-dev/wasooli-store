@@ -45,7 +45,7 @@ self.addEventListener("notificationclick", (event) => {
   const targetUrl = event.notification.data?.url || "/account";
 
   event.waitUntil(
-    clients
+    self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((windowClients) => {
         for (const client of windowClients) {
@@ -58,8 +58,8 @@ self.addEventListener("notificationclick", (event) => {
           }
         }
         // If not open, open a new window
-        if (clients.openWindow) {
-          return clients.openWindow(targetUrl);
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
         }
       })
   );

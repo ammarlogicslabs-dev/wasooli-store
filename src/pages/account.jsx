@@ -59,7 +59,6 @@ import {
   isStandalonePWA,
   getStoredOrderNotifications,
   getDismissedOrderNotificationIds,
-  saveOrderNotification,
   markOrderNotificationsRead,
   removeOrderNotification,
   clearOrderNotifications,
@@ -262,15 +261,10 @@ function Section({ icon: Icon, title, detail, children }) {
 }
 
 function PushNotificationCard({ user }) {
-  const [supported, setSupported] = useState(true);
-  const [permission, setPermission] = useState("default");
+  const [supported] = useState(() => isPushSupported());
+  const [permission, setPermission] = useState(() => getPushPermission());
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
-
-  useEffect(() => {
-    setSupported(isPushSupported());
-    setPermission(getPushPermission());
-  }, []);
 
   async function handleToggle() {
     setLoading(true);
@@ -724,7 +718,11 @@ export default function Account() {
     if (section !== "notifications") return undefined;
     let cancelled = false;
     markOrderNotificationsRead();
-    setOrderNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setOrderNotifs((prev) => (prev.some((n) => !n.read) ? prev.map((n) => ({ ...n, read: true })) : prev));
+      }
+    });
     Promise.resolve(refreshNotifications?.()).finally(() => {
       if (!cancelled) markNotificationsRead?.();
     });

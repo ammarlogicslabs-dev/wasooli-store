@@ -69,7 +69,8 @@ export default function ImagePicker({
           </span>
         )}
         {previewSrc ? (
-          <span className={`absolute inset-x-0 bottom-0 bg-slate-900/60 py-2 text-center text-xs font-semibold text-white ${isDisabled ? "bg-slate-900/70" : ""}`}>
+          <span className={`absolute inset-x-0 bottom-0 bg-slate-900/60 py-2 text-center text-xs font-semibold text-white
+           ${isDisabled ? "bg-slate-900/70" : ""}`}>
             {reading ? "Uploading image..." : changeLabel}
           </span>
         ) : null}

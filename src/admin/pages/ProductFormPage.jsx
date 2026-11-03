@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FileSpreadsheet, Loader2, X } from "lucide-react";
@@ -8,7 +8,7 @@ import {
   EMPTY_BOT_INSTRUCTIONS,
   normalizeBotInstructions,
 } from "../../data/productInstructions";
-import { getProduct, saveProduct, uploadImage } from "../../services/storage/adminDataService";
+import { getProduct, readDeletedCategoryKeys, saveProduct, uploadImage } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
@@ -112,7 +112,7 @@ function toForm(product) {
 export default function ProductFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { products, loading } = useAdminData();
+  const { products, categories: adminCategories, loading } = useAdminData();
   const existing = id ? products.find((item) => Number(item.id) === Number(id)) || getProduct(id) : null;
   const [form, setForm] = useState(() => toForm(existing));
   const [errors, setErrors] = useState({});
@@ -123,6 +123,24 @@ export default function ProductFormPage() {
   const skipSync = Boolean(id && !existing && loading);
   const syncKey = skipSync ? null : `${id ?? "new"}:${existing?.id ?? "none"}`;
   const [syncedKey, setSyncedKey] = useState(syncKey);
+
+  const categoryOptions = useMemo(() => {
+    const deletedKeys = new Set(readDeletedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
+    if (Array.isArray(adminCategories) && adminCategories.length > 0) {
+      const active = adminCategories
+        .filter((cat) => cat && cat.status !== "archived" && !deletedKeys.has(String(cat.name).toLowerCase()))
+        .map((cat) => cat.name);
+      if (active.length > 0) return active;
+    }
+    return CANONICAL_CATEGORIES.filter((cat) => !deletedKeys.has(cat.toLowerCase()));
+  }, [adminCategories]);
+
+  const selectCategories = useMemo(() => {
+    if (form.category && !categoryOptions.includes(form.category)) {
+      return [form.category, ...categoryOptions];
+    }
+    return categoryOptions;
+  }, [categoryOptions, form.category]);
 
   if (!skipSync && syncKey !== syncedKey) {
     setSyncedKey(syncKey);
@@ -399,7 +417,7 @@ export default function ProductFormPage() {
                 className={`${inputClass} mt-1.5`}
               >
                 <option value="">Select category</option>
-                {CANONICAL_CATEGORIES.map((catName) => (
+                {selectCategories.map((catName) => (
                   <option key={catName} value={catName}>
                     {catName}
                   </option>

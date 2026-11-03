@@ -43,7 +43,7 @@ export default function CategoriesPage() {
   async function handleDelete() {
     // The dialog can call this while nothing is selected, so guard against null.
     if (!pendingDelete) return;
-    const result = await deleteCategory(pendingDelete.id);
+    const result = await deleteCategory(pendingDelete);
     if (!result.ok) toast.error(result.message);
     else toast.success("Category deleted.");
     setPendingDelete(null);

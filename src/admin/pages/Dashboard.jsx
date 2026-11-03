@@ -867,40 +867,7 @@ export default function Dashboard() {
               </div>
 
               {/* Right: Last 7 Days Dropdown Pill */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setRangeOpen(!rangeOpen)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer"
-                >
-                  <Calendar size={14} className="text-[#0070F3]" />
-                  <span>Last {days} Days</span>
-                  <ChevronDown size={14} className={`text-slate-400 transition-transform ${rangeOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                {rangeOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 z-40 w-36 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95">
-                    {RANGES.map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => {
-                          setDays(r);
-                          setRangeOpen(false);
-                        }}
-                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-xs transition ${
-                          days === r
-                            ? "bg-blue-50 font-semibold text-blue-600"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span>Last {r} Days</span>
-                        {days === r && <Check size={13} className="text-blue-600" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+             
             </div>
 
             {/* Sub-header Legend: Right Aligned directly above the chart */}

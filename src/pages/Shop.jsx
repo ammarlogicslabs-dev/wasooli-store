@@ -24,6 +24,7 @@ import {
   CATEGORY_SUBCATEGORIES,
   normalizeCategory,
 } from "../data/categories";
+import { readDeletedCategoryKeys } from "../services/storage/adminDataService";
 import ProductCard from "../components/ProductCard";
 import { Link, useSearchParams } from "react-router-dom";
 import StoreHeader from "../components/StoreHeader";
@@ -444,7 +445,7 @@ function CategoryFilterGroup({
 
                             {/* Top Dot */}
                             <span
-                              className={`absolute -top-1 -left-[3px] size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub || value === item
+                              className={`absolute -top-1 -left-0.75 size-2 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub || value === item
                                 ? "bg-brand-500 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"
                                 }`}
@@ -452,7 +453,7 @@ function CategoryFilterGroup({
 
                             {/* Bottom Dot */}
                             <span
-                              className={`absolute -bottom-1 -left-[2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub && activeSubIndex === subcategories.length - 1
+                              className={`absolute -bottom-1 left-[-2.5px] size-1.5 rounded-full ring-2 ring-white transition-colors duration-200 ${hasActiveSub && activeSubIndex === subcategories.length - 1
                                 ? "bg-brand-500 scale-125 shadow-[0_0_8px_rgba(44,154,255,0.6)]"
                                 : "bg-slate-300"
                                 }`}
@@ -893,6 +894,11 @@ export default function Shop() {
   }
 
 
+  const visibleCanonicalCategories = useMemo(() => {
+    const deletedCategoryKeys = new Set(readDeletedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
+    return CANONICAL_CATEGORIES.filter((cat) => !deletedCategoryKeys.has(cat.toLowerCase()));
+  }, []);
+
   // Faceted pool: apply every filter except the one being counted.
   const facetPool = useMemo(() => {
 
@@ -973,7 +979,7 @@ export default function Shop() {
     const forCondition = pool("condition");
 
     const categoryCounts = { All: forCategory.length };
-    CANONICAL_CATEGORIES.forEach((cat) => {
+    visibleCanonicalCategories.forEach((cat) => {
       categoryCounts[cat] = forCategory.filter(
         (p) => normalizeCategory(p.category) === cat
       ).length;
@@ -1008,7 +1014,7 @@ export default function Shop() {
     };
 
     return {
-      categories: ["All", ...CANONICAL_CATEGORIES],
+      categories: ["All", ...visibleCanonicalCategories],
       categoryCounts,
       brands: optionsFromCounts(brandCounts, brand),
       brandCounts,
@@ -1030,13 +1036,12 @@ export default function Shop() {
     };
   }, [
     products,
-
-
     category,
     brand,
     availability,
     portType,
     condition,
+    visibleCanonicalCategories,
   ]);
 
   const {
@@ -1056,7 +1061,7 @@ export default function Shop() {
   if (
     category !== "All" &&
     !categories.includes(category) &&
-    !CANONICAL_CATEGORIES.includes(normCurrentCat)
+    !visibleCanonicalCategories.includes(normCurrentCat)
   ) {
     setCategory("All");
   }
@@ -1497,7 +1502,7 @@ export default function Shop() {
         className="border-b border-slate-200/90 bg-white"
         aria-label="Store benefits"
       >
-        <div className="mx-auto max-w-8xl 2xl:max-w-[1536px] px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <div className="mx-auto max-w-8xl 2xl:max-w-384 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 sm:gap-3.5">
             {TRUST.map(({ icon: Icon, title, text }) => (
               <div
@@ -1520,7 +1525,7 @@ export default function Shop() {
 
       <section
         id="shop-browse"
-        className="mx-auto max-w-8xl scroll-mt-24 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 2xl:max-w-[1536px]"
+        className="mx-auto max-w-8xl scroll-mt-24 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 2xl:max-w-384"
       >
         <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-10">
           <aside className="hidden lg:block lg:self-start">
@@ -1763,7 +1768,7 @@ export default function Shop() {
               animate={{ x: 0 }}
               exit={reduceMotion ? undefined : { x: "-100%" }}
               transition={{ duration: reduceMotion ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-y-0 left-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-xs flex-col overflow-hidden bg-white shadow-2xl overscroll-contain sm:max-w-sm"
+              className="absolute inset-y-0 left-0 flex h-full max-h-dvh w-[85vw] max-w-xs flex-col overflow-hidden bg-white shadow-2xl overscroll-contain sm:max-w-sm"
             >
               <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
                 <p className="text-sm font-semibold text-slate-900">Filters</p>

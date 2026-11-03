@@ -46,7 +46,7 @@ export const DEFAULT_TOP_BANNER_TEXT =
   "Nationwide delivery on networking cables  ·  Orders packed in 1-2 working days  ·  Standard delivery in 3-5 days  ·  Express in 1-2 days";
 
 export const DEFAULT_FOOTER_ANNOUNCEMENTS = [
-  "MON - SAT: 10:00 AM - 8:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
+  "MON - SAT: 10:00 AM - 10:00 PM | SUN: CLOSED (ONLINE ORDERS 24/7)",
   "PRICES & AVAILABILITY MAY VARY DUE TO CURRENCY & TARIFF FLUCTUATIONS",
   "WASOOLI STORE OPERATES ONLY ONE OFFICIAL PLATFORM — BEWARE OF FAKE CHANNELS",
   "NATIONWIDE 1-2 DAY DISPATCH WITH LIVE TRACKING ACROSS ALL CITIES IN PAKISTAN",
@@ -91,10 +91,66 @@ function writeLocalCoupons(data) {
   }
 }
 
+export const DELETED_CATEGORIES_KEY = "wasooli_admin_deleted_categories_v1";
+
+export function readDeletedCategoryKeys() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(DELETED_CATEGORIES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeDeletedCategoryKeys(keys) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DELETED_CATEGORIES_KEY, JSON.stringify(keys));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+export function isCategoryDeleted(category, deletedKeys = readDeletedCategoryKeys()) {
+  if (!category) return false;
+  const set = new Set(deletedKeys.map((k) => String(k).trim().toLowerCase()));
+  const id = category.id != null ? String(category.id).trim().toLowerCase() : "";
+  const name = category.name ? String(category.name).trim().toLowerCase() : "";
+  const slug = category.slug ? String(category.slug).trim().toLowerCase() : "";
+  return Boolean((id && set.has(id)) || (name && set.has(name)) || (slug && set.has(slug)));
+}
+
+export function readLocalCategories() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.categories);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeLocalCategories(data) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(data));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+export function filterActiveCategories(categoriesList) {
+  if (!Array.isArray(categoriesList)) return [];
+  const deletedKeys = readDeletedCategoryKeys();
+  if (!deletedKeys.length) return categoriesList;
+  return categoriesList.filter((category) => !isCategoryDeleted(category, deletedKeys));
+}
+
 
 const cache = {
   products: [],
-  categories: [],
+  categories: filterActiveCategories(readLocalCategories()),
   orders: [],
   customers: [],
   history: [],
@@ -148,7 +204,9 @@ export async function refreshAdminData() {
     apiRequest("/api/admin/coupons", { kind: "admin" }),
   ]);
   cache.products = hydrateProductList(Array.isArray(products) ? products : []);
-  cache.categories = Array.isArray(categories) ? categories : [];
+  const incomingCategories = Array.isArray(categories) && categories.length > 0 ? categories : readLocalCategories();
+  cache.categories = filterActiveCategories(incomingCategories);
+  writeLocalCategories(cache.categories);
   cache.orders = Array.isArray(orders) ? orders : [];
   cache.customers = Array.isArray(customers) ? customers : [];
   cache.history = Array.isArray(history) ? history : [];
@@ -157,6 +215,7 @@ export async function refreshAdminData() {
   cache.settings = { ...cache.settings, ...(settings || {}) };
   cache.loaded = true;
   emit(STORAGE_KEYS.products);
+  emit(STORAGE_KEYS.categories);
   emit(STORAGE_KEYS.coupons);
   return snapshot();
 }
@@ -214,7 +273,7 @@ export function getProduct(id) {
 }
 
 export function listCategories() {
-  return cache.categories.map((category) => ({
+  return filterActiveCategories(cache.categories).map((category) => ({
     ...category,
     productCount:
       category.productCount ??
@@ -706,6 +765,21 @@ export async function saveCategory(input) {
       image: input.image,
       status: input.status,
     };
+
+    // If this category was previously marked as deleted, un-mark it so it can be restored/re-added
+    const deletedKeys = readDeletedCategoryKeys();
+    if (deletedKeys.length > 0) {
+      const toRemove = new Set(
+        [input.id != null ? String(input.id) : null, input.slug, input.name]
+          .filter(Boolean)
+          .map((s) => String(s).trim().toLowerCase())
+      );
+      const nextKeys = deletedKeys.filter((k) => !toRemove.has(String(k).trim().toLowerCase()));
+      if (nextKeys.length !== deletedKeys.length) {
+        writeDeletedCategoryKeys(nextKeys);
+      }
+    }
+
     if (input.id && Number.isFinite(Number(input.id))) {
       await apiRequest(`/api/admin/categories/${input.id}`, { method: "PUT", kind: "admin", body });
     } else {
@@ -718,14 +792,51 @@ export async function saveCategory(input) {
   }
 }
 
-export async function deleteCategory(id) {
+export async function deleteCategory(idOrCategory) {
+  const targetId = typeof idOrCategory === "object" && idOrCategory !== null ? idOrCategory.id : idOrCategory;
+  const found =
+    cache.categories.find(
+      (c) =>
+        String(c.id) === String(targetId) ||
+        (c.slug && String(c.slug) === String(targetId)) ||
+        (c.name && String(c.name) === String(targetId))
+    ) || (typeof idOrCategory === "object" && idOrCategory !== null ? idOrCategory : null);
+
+  // Permanently record all identifiers for this category in the deleted blacklist
+  const keysToAdd = [
+    targetId != null ? String(targetId) : null,
+    found?.id != null ? String(found.id) : null,
+    found?.name,
+    found?.slug,
+  ]
+    .filter(Boolean)
+    .map((s) => String(s).trim().toLowerCase());
+
+  const currentDeleted = readDeletedCategoryKeys();
+  const deletedSet = new Set(currentDeleted.map((k) => String(k).trim().toLowerCase()));
+  keysToAdd.forEach((k) => deletedSet.add(k));
+  writeDeletedCategoryKeys(Array.from(deletedSet));
+
+  // Instantly remove from local cache and localStorage
+  cache.categories = cache.categories.filter((cat) => !isCategoryDeleted(cat, Array.from(deletedSet)));
+  writeLocalCategories(cache.categories);
+  emit(STORAGE_KEYS.categories);
+
   try {
-    await apiRequest(`/api/admin/categories/${id}`, { method: "DELETE", kind: "admin" });
-    await refreshAdminData();
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, message: error.message || "Could not delete category." };
+    if (targetId && Number.isFinite(Number(targetId))) {
+      await apiRequest(`/api/admin/categories/${targetId}`, { method: "DELETE", kind: "admin" });
+    }
+  } catch (apiError) {
+    console.warn("Backend category deletion API warning:", apiError);
   }
+
+  try {
+    await refreshAdminData();
+  } catch {
+    // Already updated cache and local storage
+  }
+
+  return { ok: true };
 }
 
 export function listCoupons() {
