@@ -272,7 +272,7 @@ input, select, textarea {
 }
 
 .store-headline-track > span {
-    padding-right: 100cqi;
+    padding-right: 3.5rem;
 }
 
 .store-headline:hover .store-headline-track {

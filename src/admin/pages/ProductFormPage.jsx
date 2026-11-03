@@ -8,7 +8,7 @@ import {
   EMPTY_BOT_INSTRUCTIONS,
   normalizeBotInstructions,
 } from "../../data/productInstructions";
-import { getProduct, readDeletedCategoryKeys, saveProduct, uploadImage } from "../../services/storage/adminDataService";
+import { getProduct, isCategoryHidden, saveProduct, uploadImage } from "../../services/storage/adminDataService";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import BotInstructionsEditor from "../components/BotInstructionsEditor";
 import ImagePicker from "../components/ImagePicker";
@@ -27,7 +27,7 @@ import {
 
 const CATEGORY_PORT_SUGGESTIONS = {
   "Routing": ["Gigabit RJ45", "10G SFP+ / RJ45", "Cellular 4G/5G SIM", "Console RJ45"],
-  "Switching": ["10/100/1000M RJ45", "1G SFP", "10G SFP+", "PoE+ RJ45", "PoE++ RJ45"],
+  "Network Switches": ["10/100/1000M RJ45", "1G SFP", "10G SFP+", "PoE+ RJ45", "PoE++ RJ45"],
   "Wireless": ["Wi-Fi 6 / RJ45", "Wi-Fi 7 / 2.5GbE", "RP-SMA Antenna", "PoE PD RJ45"],
   "Network Security": ["Gigabit WAN/LAN", "10G SFP+ Interfaces", "Dedicated Management RJ45"],
   "Optical & Fiber": ["LC Duplex", "SC Simplex", "SFP 1.25G", "SFP+ 10G", "QSFP+ 40G"],
@@ -40,7 +40,7 @@ const CATEGORY_PORT_SUGGESTIONS = {
 
 const CATEGORY_DEFAULT_SPECS = {
   "Routing": "Port Interface | Gigabit RJ45\nRouting Protocols | Static, RIP, OSPF, BGP\nVPN Security | IPsec, OpenVPN, WireGuard\nPower Supply | 12V DC Adapter",
-  "Switching": "Port Interface | 10/100/1000 Mbps RJ45\nSwitching Fabric | Gigabit Non-blocking\nPoE Capability | 802.3af/at Auto-sensing\nMounting | Desktop & 19-inch Rackmount",
+  "Network Switches": "Port Interface | 10/100/1000 Mbps RJ45\nNetwork Switches Fabric | Gigabit Non-blocking\nPoE Capability | 802.3af/at Auto-sensing\nMounting | Desktop & 19-inch Rackmount",
   "Wireless": "Wi-Fi Standard | Wi-Fi 6 (802.11ax)\nFrequency Bands | 2.4 GHz & 5 GHz Dual-Band\nMax Data Rate | Up to 1800-3000 Mbps\nAntenna Gain | High-Gain Omnidirectional",
   "Network Security": "Form Factor | Desktop / 1U Rackmount\nFirewall Throughput | Enterprise Multi-Gbps\nThreat Protection | IPS, Antivirus, SSL Inspection\nInterfaces | Multiple Routed WAN/LAN Ports",
   "Optical & Fiber": "Connector Type | LC Duplex\nWavelength | 1310nm / 850nm\nFiber Type | Single-Mode (SMF) / Multi-Mode (MMF)\nMax Link Distance | Up to 10km / 20km",
@@ -125,14 +125,13 @@ export default function ProductFormPage() {
   const [syncedKey, setSyncedKey] = useState(syncKey);
 
   const categoryOptions = useMemo(() => {
-    const deletedKeys = new Set(readDeletedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
     if (Array.isArray(adminCategories) && adminCategories.length > 0) {
       const active = adminCategories
-        .filter((cat) => cat && cat.status !== "archived" && !deletedKeys.has(String(cat.name).toLowerCase()))
+        .filter((cat) => cat && !isCategoryHidden(cat))
         .map((cat) => cat.name);
       if (active.length > 0) return active;
     }
-    return CANONICAL_CATEGORIES.filter((cat) => !deletedKeys.has(cat.toLowerCase()));
+    return CANONICAL_CATEGORIES.filter((cat) => !isCategoryHidden(cat));
   }, [adminCategories]);
 
   const selectCategories = useMemo(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useSmoothNavigate } from "../auth/useSmoothNavigate";
 import { motion, useReducedMotion } from "framer-motion";
@@ -25,6 +25,13 @@ import { formatPrice } from "../data/product";
 import { normalizeCategory } from "../data/categories";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import QuantityStepper from "./QuantityStepper";
+import {
+  ARCHIVED_CATEGORIES_KEY,
+  DELETED_CATEGORIES_KEY,
+  getStorefrontCategories,
+  isCategoryHidden,
+} from "../services/storage/adminDataService";
+import { DATA_EVENT } from "../services/storage/storageService";
 import { PROGRAMMATIC_SCROLL_EVENT } from "../utils/smoothScroll";
 import {
   AdaptersNicIcon,
@@ -61,16 +68,50 @@ const NAV_ICONS = [
 
 const LABEL_WIDTHS = {
   "Routing": 52,
-  "Switching": 63,
-  "Wireless": 55,
-  "Network Security": 103,
-  "Optical & Fiber": 90,
-  "Cabling & Connectivity": 132,
-  "PoE": 31,
-  "Adapters & NICs": 98,
-  "Power & Racks": 91,
-  "Tools & Accessories": 118,
+  "Switching": 64,
+  "Network Switches": 104,
+  "Wireless": 56,
+  "Network Security": 102,
+  "Optical & Fiber": 86,
+  "Cabling & Connectivity": 128,
+  "PoE": 30,
+  "Adapters & NICs": 90,
+  "Power & Racks": 82,
+  "Tools & Accessories": 108,
+  "Routers": 52,
+  "Routers & Wireless": 108,
+  "Switches": 58,
+  "Switches & Adapters": 114,
 };
+
+const ICON_LOOKUP = [
+  { keywords: ["routing", "router"], icon: RoutingIcon },
+  { keywords: ["switching", "switch"], icon: SwitchingIcon },
+  { keywords: ["wireless", "wifi", "wi-fi", "access point"], icon: WirelessIcon },
+  { keywords: ["security", "firewall"], icon: NetworkSecurityIcon },
+  { keywords: ["optical", "fiber"], icon: OpticalFiberIcon },
+  { keywords: ["cabling", "cable", "connectivity"], icon: CablingIcon },
+  { keywords: ["poe"], icon: PoeIcon },
+  { keywords: ["adapter", "nic"], icon: AdaptersNicIcon },
+  { keywords: ["power", "rack"], icon: PowerRacksIcon },
+  { keywords: ["tool", "accessory", "accessories"], icon: ToolsAccessoriesIcon },
+];
+
+function getCategoryIcon(catName) {
+  const norm = String(catName || "").toLowerCase();
+  for (const entry of ICON_LOOKUP) {
+    if (entry.keywords.some((kw) => norm.includes(kw))) {
+      return entry.icon;
+    }
+  }
+  return NetworkSecurityIcon;
+}
+
+function getLabelWidth(label) {
+  if (label && LABEL_WIDTHS[label]) return LABEL_WIDTHS[label];
+  const str = String(label || "").trim();
+  return Math.max(30, Math.round(str.length * 6.2) + 10);
+}
 
 function navIconTo(category) {
   if (!category) return "/shop";
@@ -207,6 +248,7 @@ function CartItem({ item, onNavigate, onRemove, onQuantityChange }) {
 export default function StoreHeader() {
   const {
     products,
+    categories: storeCategories = [],
     items,
     cartCount,
     removeItem,
@@ -233,6 +275,44 @@ export default function StoreHeader() {
   const navRef = useRef(null);
   const [headlineHeight, setHeadlineHeight] = useState(0);
   const [navHeight, setNavHeight] = useState(0);
+  const [categoryTick, setCategoryTick] = useState(0);
+
+  useEffect(() => {
+    function handleStorage(event) {
+      const key = event.key || event.detail?.key;
+      if (!key || key === "wasooli_admin_categories_v1" || key === ARCHIVED_CATEGORIES_KEY || key === DELETED_CATEGORIES_KEY) {
+        setCategoryTick((t) => t + 1);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(DATA_EVENT, handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DATA_EVENT, handleStorage);
+    };
+  }, []);
+
+  const visibleNavIcons = useMemo(() => {
+    void categoryTick;
+    const catList = Array.isArray(storeCategories) && storeCategories.length > 0
+      ? storeCategories
+      : getStorefrontCategories();
+
+    const active = catList.filter((c) => !isCategoryHidden(c));
+    if (!active.length) {
+      return NAV_ICONS.filter((item) => !isCategoryHidden(item.category));
+    }
+
+    return active.map((c) => {
+      const name = typeof c === "string" ? c : c.name;
+      const Icon = getCategoryIcon(name);
+      return {
+        Icon,
+        label: name,
+        category: name,
+      };
+    });
+  }, [storeCategories, categoryTick]);
   // Headline collapses first, then the nav bar slides away.
   const [headlineHidden, setHeadlineHidden] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
@@ -519,13 +599,13 @@ export default function StoreHeader() {
             >
               <div
                 onMouseLeave={() => setHoveredIndex(null)}
-                className="flex max-w-full items-center justify-center gap-1.5 xl:gap-2.5 2xl:gap-3 p-1 overflow-visible"
+                className="flex max-w-full items-center justify-center gap-1 lg:gap-1.5 xl:gap-2 p-0.5 overflow-visible"
               >
                 {(() => {
                   const searchCat = new URLSearchParams(location.search).get("category");
                   const activeIndex =
                     location.pathname === "/shop" && searchCat
-                      ? NAV_ICONS.findIndex(
+                      ? visibleNavIcons.findIndex(
                           (item) =>
                             item.category === searchCat ||
                             normalizeCategory(item.category) === normalizeCategory(searchCat)
@@ -542,22 +622,22 @@ export default function StoreHeader() {
                     const H = hasHover ? hoveredIndex : null;
 
                     if (A !== null && H === null) {
-                      const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
+                      const shiftA = getLabelWidth(visibleNavIcons[A]?.label);
                       return index <= A ? shiftA : 0;
                     }
 
                     if (A === null && H !== null) {
-                      const shiftH = LABEL_WIDTHS[NAV_ICONS[H]?.label] || 80;
+                      const shiftH = getLabelWidth(visibleNavIcons[H]?.label);
                       return index <= H ? shiftH : 0;
                     }
 
                     if (A === H) {
-                      const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
+                      const shiftA = getLabelWidth(visibleNavIcons[A]?.label);
                       return index <= A ? shiftA : 0;
                     }
 
-                    const shiftA = LABEL_WIDTHS[NAV_ICONS[A]?.label] || 80;
-                    const shiftH = LABEL_WIDTHS[NAV_ICONS[H]?.label] || 80;
+                    const shiftA = getLabelWidth(visibleNavIcons[A]?.label);
+                    const shiftH = getLabelWidth(visibleNavIcons[H]?.label);
                     const minIdx = Math.min(A, H);
                     const maxIdx = Math.max(A, H);
                     const shiftMin = minIdx === A ? shiftA : shiftH;
@@ -572,12 +652,12 @@ export default function StoreHeader() {
                     return 0;
                   };
 
-                  return NAV_ICONS.map(({ Icon, label, category }, index) => {
+                  return visibleNavIcons.map(({ Icon, label, category }, index) => {
                     const to = navIconTo(category);
                     const active = activeIndex === index;
                     const isHovered = hoveredIndex === index;
                     const isExpanded = active || isHovered;
-                    const labelWidth = LABEL_WIDTHS[label] || 80;
+                    const labelWidth = getLabelWidth(label);
                     const shift = getShift(index);
 
                     return (
@@ -591,7 +671,7 @@ export default function StoreHeader() {
                         style={{
                           transform: `translateX(-${shift}px)`,
                         }}
-                        className={`group relative flex shrink-0 items-center rounded-2xl p-1.5 transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 cursor-pointer ${
+                        className={`group relative flex shrink-0 items-center rounded-2xl p-1 transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 cursor-pointer ${
                           active ? "text-brand-700" : "text-slate-600 hover:text-slate-900"
                         }`}
                       >
@@ -610,7 +690,7 @@ export default function StoreHeader() {
                         {/* Smooth expanding pill highlight on hover for non-active items */}
                         {!active && (
                           <span
-                            className={`absolute inset-y-0 left-0 rounded-2xl bg-linear-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out ${
+                            className={`absolute inset-y-0 left-0 rounded-3xl bg-linear-to-r from-brand-50/90 via-brand-100/70 to-brand-50/90 border border-brand-200/80 shadow-xs transition-all duration-300 ease-out ${
                               isHovered ? "opacity-100 cursor-pointer" : "opacity-0 pointer-events-none"
                             }`}
                             style={{
@@ -621,18 +701,18 @@ export default function StoreHeader() {
 
                         {/* Icon container with depth & elevation on the LEFT */}
                         <span
-                          className={`relative z-10 grid size-10 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 ${
+                          className={`relative z-10 grid size-9.5 place-items-center rounded-xl bg-linear-to-b from-white to-slate-50 border transition-all duration-200 ${
                             active
                               ? "border-brand-300 shadow-xs from-white to-brand-50/50"
                               : "border-slate-200/90 shadow-2xs group-hover:border-brand-300 group-hover:from-white group-hover:to-brand-50/40"
                           }`}
                         >
-                          <Icon size={26} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
+                          <Icon size={24} className="shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)]" />
                         </span>
 
                         {/* Smooth expanding pill name on the RIGHT */}
                         <span
-                          className={`absolute left-11.5 z-10 overflow-hidden transition-all duration-300 ease-out flex items-center ${
+                          className={`absolute left-10.5 z-10 overflow-hidden transition-all duration-300 ease-out flex items-center ${
                             isExpanded ? "cursor-pointer" : "pointer-events-none"
                           }`}
                           style={{
@@ -641,7 +721,7 @@ export default function StoreHeader() {
                           }}
                         >
                           <span
-                            className={`block whitespace-nowrap pl-1.5 pr-1 text-xs font-bold tracking-tight transition-colors ${
+                            className={`block whitespace-nowrap pl-1.5 pr-2 text-xs font-bold tracking-tight transition-colors ${
                               active ? "text-brand-700" : "text-slate-800 group-hover:text-brand-600"
                             }`}
                           >
@@ -772,7 +852,7 @@ export default function StoreHeader() {
         {/* Slide-in panel from left */}
         <aside
           data-lenis-prevent="true"
-          className={`absolute inset-y-0 left-0 flex h-full h-dvh max-h-dvh w-full sm:w-[88vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${
+          className={`absolute inset-y-0 left-0 flex h-dvh max-h-dvh w-full sm:w-[88vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${
             mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -807,7 +887,7 @@ export default function StoreHeader() {
                 Categories
               </p>
               <div className="space-y-1.5">
-                {NAV_ICONS.map(({ Icon, label, category }) => {
+                {visibleNavIcons.map(({ Icon, label, category }) => {
                   const to = navIconTo(category);
                   const searchCat = new URLSearchParams(location.search).get("category");
                   const active =
@@ -940,7 +1020,7 @@ export default function StoreHeader() {
 
         <aside
           data-lenis-prevent="true"
-          className={`absolute inset-y-0 right-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${cartOpen ? "translate-x-0" : "translate-x-full"
+          className={`absolute inset-y-0 right-0 flex h-full max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${cartOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
           <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -1056,7 +1136,7 @@ export default function StoreHeader() {
 
         <aside
           data-lenis-prevent="true"
-          className={`absolute inset-y-0 right-0 flex h-full h-dvh max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${wishlistOpen ? "translate-x-0" : "translate-x-full"
+          className={`absolute inset-y-0 right-0 flex h-full max-h-dvh w-[85vw] max-w-sm flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out overscroll-contain ${wishlistOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
           <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">

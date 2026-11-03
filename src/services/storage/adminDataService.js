@@ -1,4 +1,5 @@
 import { normalizeBotInstructions } from "../../data/productInstructions";
+import { CANONICAL_CATEGORIES } from "../../data/categories";
 import {
   hydrateProductList,
   hydrateProductPriceTiers,
@@ -92,6 +93,7 @@ function writeLocalCoupons(data) {
 }
 
 export const DELETED_CATEGORIES_KEY = "wasooli_admin_deleted_categories_v1";
+export const ARCHIVED_CATEGORIES_KEY = "wasooli_admin_archived_categories_v1";
 
 export function readDeletedCategoryKeys() {
   if (typeof window === "undefined") return [];
@@ -112,13 +114,54 @@ export function writeDeletedCategoryKeys(keys) {
   }
 }
 
+export function readArchivedCategoryKeys() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(ARCHIVED_CATEGORIES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeArchivedCategoryKeys(keys) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ARCHIVED_CATEGORIES_KEY, JSON.stringify(keys));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
 export function isCategoryDeleted(category, deletedKeys = readDeletedCategoryKeys()) {
   if (!category) return false;
   const set = new Set(deletedKeys.map((k) => String(k).trim().toLowerCase()));
+  if (typeof category === "string") {
+    return set.has(category.trim().toLowerCase());
+  }
   const id = category.id != null ? String(category.id).trim().toLowerCase() : "";
   const name = category.name ? String(category.name).trim().toLowerCase() : "";
   const slug = category.slug ? String(category.slug).trim().toLowerCase() : "";
   return Boolean((id && set.has(id)) || (name && set.has(name)) || (slug && set.has(slug)));
+}
+
+export function isCategoryArchived(category, archivedKeys = readArchivedCategoryKeys()) {
+  if (!category) return false;
+  if (typeof category === "object" && category !== null && category.status === "archived") {
+    return true;
+  }
+  const set = new Set(archivedKeys.map((k) => String(k).trim().toLowerCase()));
+  if (typeof category === "string") {
+    return set.has(category.trim().toLowerCase());
+  }
+  const id = category.id != null ? String(category.id).trim().toLowerCase() : "";
+  const name = category.name ? String(category.name).trim().toLowerCase() : "";
+  const slug = category.slug ? String(category.slug).trim().toLowerCase() : "";
+  return Boolean((id && set.has(id)) || (name && set.has(name)) || (slug && set.has(slug)));
+}
+
+export function isCategoryHidden(category) {
+  return isCategoryDeleted(category) || isCategoryArchived(category);
 }
 
 export function readLocalCategories() {
@@ -205,7 +248,23 @@ export async function refreshAdminData() {
   ]);
   cache.products = hydrateProductList(Array.isArray(products) ? products : []);
   const incomingCategories = Array.isArray(categories) && categories.length > 0 ? categories : readLocalCategories();
-  cache.categories = filterActiveCategories(incomingCategories);
+  const archivedKeys = new Set(readArchivedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
+  const mergedCategories = incomingCategories.map((c) => {
+    const isArch =
+      c.status === "archived" ||
+      isCategoryArchived(c, Array.from(archivedKeys));
+    if (isArch) {
+      if (c.name) archivedKeys.add(String(c.name).toLowerCase());
+      if (c.id != null) archivedKeys.add(String(c.id).toLowerCase());
+      if (c.slug) archivedKeys.add(String(c.slug).toLowerCase());
+    }
+    return {
+      ...c,
+      status: isArch ? "archived" : (c.status || "active"),
+    };
+  });
+  writeArchivedCategoryKeys(Array.from(archivedKeys));
+  cache.categories = filterActiveCategories(mergedCategories);
   writeLocalCategories(cache.categories);
   cache.orders = Array.isArray(orders) ? orders : [];
   cache.customers = Array.isArray(customers) ? customers : [];
@@ -216,6 +275,7 @@ export async function refreshAdminData() {
   cache.loaded = true;
   emit(STORAGE_KEYS.products);
   emit(STORAGE_KEYS.categories);
+  emit(ARCHIVED_CATEGORIES_KEY);
   emit(STORAGE_KEYS.coupons);
   return snapshot();
 }
@@ -236,6 +296,50 @@ export async function refreshStorefrontProducts() {
   cache.storefront = hydrateProductList(items);
   emit(STORAGE_KEYS.products);
   return cache.storefront;
+}
+
+export async function refreshStorefrontCategories() {
+  try {
+    const list = await apiRequest("/api/categories");
+    if (Array.isArray(list) && list.length > 0) {
+      const archivedKeys = new Set(readArchivedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
+      const merged = list.map((c) => {
+        const isArch = c.status === "archived" || isCategoryArchived(c, Array.from(archivedKeys));
+        return {
+          ...c,
+          status: isArch ? "archived" : (c.status || "active"),
+        };
+      });
+      cache.categories = filterActiveCategories(merged);
+      writeLocalCategories(cache.categories);
+      emit(STORAGE_KEYS.categories);
+      return cache.categories;
+    }
+  } catch (error) {
+    console.warn("Could not fetch storefront categories:", error);
+  }
+  return getStorefrontCategories();
+}
+
+export function getStorefrontCategories() {
+  const local = readLocalCategories();
+  const list =
+    Array.isArray(cache.categories) && cache.categories.length > 0
+      ? cache.categories
+      : Array.isArray(local) && local.length > 0
+      ? local
+      : [];
+
+  const active = filterActiveCategories(list).filter((c) => !isCategoryHidden(c));
+  if (active.length > 0) {
+    return active;
+  }
+
+  return CANONICAL_CATEGORIES.filter((cat) => !isCategoryHidden(cat)).map((name) => ({
+    name,
+    slug: slugify(name),
+    status: "active",
+  }));
 }
 
 function snapshot() {
@@ -275,6 +379,7 @@ export function getProduct(id) {
 export function listCategories() {
   return filterActiveCategories(cache.categories).map((category) => ({
     ...category,
+    status: isCategoryArchived(category) ? "archived" : (category.status || "active"),
     productCount:
       category.productCount ??
       listProducts().filter((product) => product.category === category.name && product.status !== "archived").length,
@@ -758,6 +863,7 @@ export async function deleteProduct(id) {
 
 export async function saveCategory(input) {
   try {
+    const isArchived = input.status === "archived";
     const body = {
       name: input.name,
       slug: input.slug,
@@ -779,6 +885,49 @@ export async function saveCategory(input) {
         writeDeletedCategoryKeys(nextKeys);
       }
     }
+
+    // Handle archived status tracking
+    const currentArchived = readArchivedCategoryKeys();
+    const archivedSet = new Set(currentArchived.map((k) => String(k).trim().toLowerCase()));
+    const categoryIdentifiers = [
+      input.id != null ? String(input.id) : null,
+      input.slug,
+      input.name,
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).trim().toLowerCase());
+
+    if (isArchived) {
+      categoryIdentifiers.forEach((id) => archivedSet.add(id));
+    } else {
+      categoryIdentifiers.forEach((id) => archivedSet.delete(id));
+    }
+    writeArchivedCategoryKeys(Array.from(archivedSet));
+
+    // Instantly update in local cache & localStorage
+    const targetId = input.id;
+    const foundIndex = cache.categories.findIndex(
+      (c) =>
+        (targetId != null && String(c.id) === String(targetId)) ||
+        (c.slug && input.slug && String(c.slug) === String(input.slug)) ||
+        (c.name && input.name && String(c.name).toLowerCase() === String(input.name).toLowerCase())
+    );
+
+    if (foundIndex >= 0) {
+      cache.categories[foundIndex] = {
+        ...cache.categories[foundIndex],
+        ...body,
+        id: cache.categories[foundIndex].id ?? targetId,
+      };
+    } else {
+      cache.categories.push({
+        id: targetId || Date.now(),
+        ...body,
+      });
+    }
+    writeLocalCategories(cache.categories);
+    emit(STORAGE_KEYS.categories);
+    emit(ARCHIVED_CATEGORIES_KEY);
 
     if (input.id && Number.isFinite(Number(input.id))) {
       await apiRequest(`/api/admin/categories/${input.id}`, { method: "PUT", kind: "admin", body });
@@ -817,10 +966,18 @@ export async function deleteCategory(idOrCategory) {
   keysToAdd.forEach((k) => deletedSet.add(k));
   writeDeletedCategoryKeys(Array.from(deletedSet));
 
+  // Remove from archived keys as well
+  const currentArchived = readArchivedCategoryKeys();
+  const nextArchived = currentArchived.filter((k) => !keysToAdd.includes(String(k).trim().toLowerCase()));
+  if (nextArchived.length !== currentArchived.length) {
+    writeArchivedCategoryKeys(nextArchived);
+  }
+
   // Instantly remove from local cache and localStorage
   cache.categories = cache.categories.filter((cat) => !isCategoryDeleted(cat, Array.from(deletedSet)));
   writeLocalCategories(cache.categories);
   emit(STORAGE_KEYS.categories);
+  emit(ARCHIVED_CATEGORIES_KEY);
 
   try {
     if (targetId && Number.isFinite(Number(targetId))) {

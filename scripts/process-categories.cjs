@@ -16,7 +16,7 @@ const files = [
   { file: 'PoE.jpg', name: 'PoE.png', cat: 'PoE' },
   { file: 'power & Racks.jpg', name: 'power-racks.png', cat: 'Power & Racks' },
   { file: 'router.jpg', name: 'router.png', cat: 'Routing' },
-  { file: 'switch.jpg', name: 'switch.png', cat: 'Switching' },
+  { file: 'switch.jpg', name: 'switch.png', cat: 'Network Switches' },
   { file: 'tools.jpg', name: 'tools.png', cat: 'Tools & Accessories' },
   { file: 'wireless.jpg', name: 'wireless.png', cat: 'Wireless' },
 ];

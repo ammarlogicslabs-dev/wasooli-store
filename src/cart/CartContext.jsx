@@ -7,7 +7,9 @@ import {
   fetchCartApi,
   fetchNotificationsApi,
   fetchWishlistApi,
+  getStorefrontCategories,
   getStorefrontProducts,
+  refreshStorefrontCategories,
   markAllNotificationsReadApi,
   refreshStorefrontProducts,
   removeWishlistApi,
@@ -30,6 +32,7 @@ export function CartProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [catalogTick, setCatalogTick] = useState(0);
   const [apiProducts, setApiProducts] = useState([]);
+  const [categories, setCategories] = useState(() => getStorefrontCategories());
   const [ready, setReady] = useState(false);
   const cartListeners = useRef(new Set());
   const syncingRef = useRef(false);
@@ -61,6 +64,10 @@ export function CartProvider({ children }) {
       })
       .catch(() => {
         if (!cancelled) setApiProducts([]);
+      });
+    refreshStorefrontCategories()
+      .then((cats) => {
+        if (!cancelled && Array.isArray(cats)) setCategories(cats);
       });
     return () => {
       cancelled = true;
@@ -116,6 +123,10 @@ export function CartProvider({ children }) {
       const key = event.key || event.detail?.key;
       if (!key || key === "wasooli_admin_products_v1") {
         setApiProducts(getStorefrontProducts());
+        setCatalogTick((tick) => tick + 1);
+      }
+      if (!key || key === "wasooli_admin_categories_v1" || key === "wasooli_admin_archived_categories_v1" || key === "wasooli_admin_deleted_categories_v1") {
+        setCategories(getStorefrontCategories());
         setCatalogTick((tick) => tick + 1);
       }
     }
@@ -334,6 +345,9 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       products,
+      categories,
+      refreshCategories: refreshStorefrontCategories,
+
       items: pricedItems,
       cartCount,
       ready,
@@ -356,6 +370,7 @@ export function CartProvider({ children }) {
     }),
     [
       products,
+      categories,
       pricedItems,
       cartCount,
       ready,

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Cable,
@@ -22,6 +22,40 @@ import {
   FaXTwitter,
   FaYoutube,
 } from "react-icons/fa6";
+import {
+  ARCHIVED_CATEGORIES_KEY,
+  DELETED_CATEGORIES_KEY,
+  getStorefrontCategories,
+  isCategoryHidden,
+} from "../services/storage/adminDataService";
+import { DATA_EVENT } from "../services/storage/storageService";
+
+const FOOTER_CATEGORIES = [
+  { Icon: Router, label: "Routers", cat: "Routing" },
+  { Icon: Network, label: "Switches", cat: "Switching" },
+  { Icon: Wifi, label: "Access Points", cat: "Wireless" },
+  { Icon: Cable, label: "Cables", cat: "Cabling & Connectivity" },
+  { Icon: ShieldCheck, label: "Accessories", cat: "Tools & Accessories" },
+];
+
+const FOOTER_ICON_LOOKUP = [
+  { keywords: ["routing", "router"], icon: Router },
+  { keywords: ["switching", "switch"], icon: Network },
+  { keywords: ["wireless", "wifi", "access point"], icon: Wifi },
+  { keywords: ["cabling", "cable"], icon: Cable },
+  { keywords: ["tool", "accessory", "accessories"], icon: ShieldCheck },
+  { keywords: ["security", "firewall"], icon: ShieldCheck },
+];
+
+function getFooterCategoryIcon(name) {
+  const norm = String(name || "").toLowerCase();
+  for (const entry of FOOTER_ICON_LOOKUP) {
+    if (entry.keywords.some((kw) => norm.includes(kw))) {
+      return entry.icon;
+    }
+  }
+  return Network;
+}
 
 
 const TICKER_ANNOUNCEMENTS = [
@@ -94,6 +128,38 @@ function FooterSection({
 
 export default function StoreFooter() {
   const [openSection, setOpenSection] = useState(null);
+  const [categoryTick, setCategoryTick] = useState(0);
+
+  useEffect(() => {
+    function handleStorage(event) {
+      const key = event.key || event.detail?.key;
+      if (!key || key === "wasooli_admin_categories_v1" || key === ARCHIVED_CATEGORIES_KEY || key === DELETED_CATEGORIES_KEY) {
+        setCategoryTick((t) => t + 1);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(DATA_EVENT, handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DATA_EVENT, handleStorage);
+    };
+  }, []);
+
+  const visibleFooterCategories = useMemo(() => {
+    void categoryTick;
+    const catList = getStorefrontCategories().filter((c) => !isCategoryHidden(c));
+    if (!catList.length) {
+      return FOOTER_CATEGORIES.filter((item) => !isCategoryHidden(item.cat));
+    }
+    return catList.slice(0, 7).map((c) => {
+      const name = typeof c === "string" ? c : c.name;
+      return {
+        Icon: getFooterCategoryIcon(name),
+        label: name,
+        cat: name,
+      };
+    });
+  }, [categoryTick]);
 
   const toggleSection = (sectionKey) => {
     setOpenSection((prev) => (prev === sectionKey ? null : sectionKey));
@@ -231,14 +297,7 @@ export default function StoreFooter() {
             onToggle={() => toggleSection("categories")}
           >
             <ul className="space-y-0 pb-4 text-xs sm:mt-4 sm:space-y-2.5 sm:pb-0 sm:text-[13px]">
-              {[
-                { Icon: Router, label: "Routers", cat: "Routing" },
-                { Icon: Network, label: "Switches", cat: "Switching" },
-                { Icon: Wifi, label: "Access Points", cat: "Wireless" },
-                { Icon: Cable, label: "Cables", cat: "Cabling & Connectivity" },
-                { Icon: ShieldCheck, label: "Accessories", cat: "Tools & Accessories" },
-                // { Icon: Wrench, label: "Tools", cat: "Tools & Accessories" },
-              ].map(({ Icon, label, cat }) => (
+              {visibleFooterCategories.map(({ Icon, label, cat }) => (
                 <li key={label}>
                   <Link
                     to={`/shop?category=${encodeURIComponent(cat)}`}

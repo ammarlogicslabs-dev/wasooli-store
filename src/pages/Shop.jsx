@@ -24,7 +24,13 @@ import {
   CATEGORY_SUBCATEGORIES,
   normalizeCategory,
 } from "../data/categories";
-import { readDeletedCategoryKeys } from "../services/storage/adminDataService";
+import {
+  ARCHIVED_CATEGORIES_KEY,
+  DELETED_CATEGORIES_KEY,
+  getStorefrontCategories,
+  isCategoryHidden,
+} from "../services/storage/adminDataService";
+import { DATA_EVENT } from "../services/storage/storageService";
 import ProductCard from "../components/ProductCard";
 import { Link, useSearchParams } from "react-router-dom";
 import StoreHeader from "../components/StoreHeader";
@@ -71,11 +77,7 @@ function FilterGroup({
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
 
-  const selected = multiple
-    ? Array.isArray(value)
-      ? value
-      : []
-    : value;
+  const selected = multiple ? Array.isArray(value) ? value : [] : value;
 
   const listOptions = useMemo(() => {
     if (!multiple) return options;
@@ -805,7 +807,7 @@ function FilterPanel({
 }
 
 export default function Shop() {
-  const { products, ready } = useCart();
+  const { products, categories: storeCategories = [], ready } = useCart();
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -894,10 +896,37 @@ export default function Shop() {
   }
 
 
-  const visibleCanonicalCategories = useMemo(() => {
-    const deletedCategoryKeys = new Set(readDeletedCategoryKeys().map((k) => String(k).trim().toLowerCase()));
-    return CANONICAL_CATEGORIES.filter((cat) => !deletedCategoryKeys.has(cat.toLowerCase()));
+  const [categoryTick, setCategoryTick] = useState(0);
+
+  useEffect(() => {
+    function handleStorage(event) {
+      const key = event.key || event.detail?.key;
+      if (!key || key === "wasooli_admin_categories_v1" || key === ARCHIVED_CATEGORIES_KEY || key === DELETED_CATEGORIES_KEY) {
+        setCategoryTick((t) => t + 1);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(DATA_EVENT, handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DATA_EVENT, handleStorage);
+    };
   }, []);
+
+  const visibleCanonicalCategories = useMemo(() => {
+    void categoryTick;
+    const catList = Array.isArray(storeCategories) && storeCategories.length > 0
+      ? storeCategories
+      : getStorefrontCategories();
+
+    const active = catList
+      .filter((c) => !isCategoryHidden(c))
+      .map((c) => (typeof c === "string" ? c : c.name));
+
+    return active.length > 0
+      ? active
+      : CANONICAL_CATEGORIES.filter((cat) => !isCategoryHidden(cat));
+  }, [storeCategories, categoryTick]);
 
   // Faceted pool: apply every filter except the one being counted.
   const facetPool = useMemo(() => {
@@ -981,7 +1010,7 @@ export default function Shop() {
     const categoryCounts = { All: forCategory.length };
     visibleCanonicalCategories.forEach((cat) => {
       categoryCounts[cat] = forCategory.filter(
-        (p) => normalizeCategory(p.category) === cat
+        (p) => normalizeCategory(p.category) === normalizeCategory(cat) || String(p.category || "").toLowerCase() === String(cat || "").toLowerCase()
       ).length;
     });
     const poeCount = forCategory.filter(
@@ -1061,7 +1090,8 @@ export default function Shop() {
   if (
     category !== "All" &&
     !categories.includes(category) &&
-    !visibleCanonicalCategories.includes(normCurrentCat)
+    !visibleCanonicalCategories.includes(normCurrentCat) &&
+    !visibleCanonicalCategories.some((c) => c.toLowerCase() === category.toLowerCase())
   ) {
     setCategory("All");
   }
@@ -1507,7 +1537,7 @@ export default function Shop() {
             {TRUST.map(({ icon: Icon, title, text }) => (
               <div
                 key={title}
-                className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-3 shadow-xs transition-all duration-200 hover:border-brand-200 hover:shadow-sm"
+                className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-linear-to-br from-slate-50 to-white p-3 shadow-xs transition-all duration-200 hover:border-brand-200 hover:shadow-sm"
               >
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-[0_12px_24px_-12px_rgba(44,154,255,0.9)]">
                   <Icon size={18} />
@@ -1527,7 +1557,7 @@ export default function Shop() {
         id="shop-browse"
         className="mx-auto max-w-8xl scroll-mt-24 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 2xl:max-w-384"
       >
-        <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-10">
+        <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-4 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-6">
           <aside className="hidden lg:block lg:self-start">
             <div className="sticky top-[calc(var(--store-header-height,72px)+1rem)] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">

@@ -35,18 +35,48 @@ import { normalizeCategory } from "../data/categories";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import { smoothScrollTo } from "../utils/smoothScroll";
 import ScrollProduct from "../components/ScrollProduct";
+import {
+  ARCHIVED_CATEGORIES_KEY,
+  DELETED_CATEGORIES_KEY,
+  getStorefrontCategories,
+  isCategoryHidden,
+} from "../services/storage/adminDataService";
+import { DATA_EVENT } from "../services/storage/storageService";
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 
 const EASE = [0.22, 1, 0.36, 1];
 
 
+const CATEGORY_IMAGE_LOOKUP = [
+  { keywords: ["tool", "accessory", "accessories"], image: "/categories/transparent/tools.png" },
+  { keywords: ["cabling", "cable", "connectivity"], image: "/categories/transparent/cable.png" },
+  { keywords: ["wireless", "wifi", "wi-fi", "access point"], image: "/categories/transparent/wireless.png" },
+  { keywords: ["optical", "fiber"], image: "/categories/transparent/optical.png" },
+  { keywords: ["switching", "switch"], image: "/categories/transparent/switch.png" },
+  { keywords: ["security", "firewall"], image: "/categories/transparent/network.png" },
+  { keywords: ["poe"], image: "/categories/transparent/PoE.png" },
+  { keywords: ["routing", "router"], image: "/categories/transparent/router.png" },
+  { keywords: ["adapter", "nic"], image: "/categories/transparent/adapter.png" },
+  { keywords: ["power", "rack"], image: "/categories/transparent/power-racks.png" },
+];
+
+function getCategoryFallbackImage(name) {
+  const norm = String(name || "").toLowerCase();
+  for (const entry of CATEGORY_IMAGE_LOOKUP) {
+    if (entry.keywords.some((kw) => norm.includes(kw))) {
+      return entry.image;
+    }
+  }
+  return "/categories/transparent/network.png";
+}
+
 const CATEGORY_FALLBACK = [
   { name: "Tools & Accessories", image: "/categories/transparent/tools.png", fallbackCount: 12 },
   { name: "Cabling & Connectivity", image: "/categories/transparent/cable.png", fallbackCount: 11 },
   { name: "Wireless", image: "/categories/transparent/wireless.png", fallbackCount: 6 },
   { name: "Optical & Fiber", image: "/categories/transparent/optical.png", fallbackCount: 6 },
-  { name: "Switching", image: "/categories/transparent/switch.png", fallbackCount: 10 },
+  { name: "Network Switches", image: "/categories/transparent/switch.png", fallbackCount: 10 },
   { name: "Network Security", image: "/categories/transparent/network.png", fallbackCount: 7 },
   { name: "PoE", image: "/categories/transparent/PoE.png", fallbackCount: 8 },
   { name: "Routing", image: "/categories/transparent/router.png", fallbackCount: 15 },
@@ -251,59 +281,64 @@ function HeroSection() {
         className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-size-[56px_56px] mask-[radial-gradient(ellipse_at_65%_35%,black,transparent_65%)]"
       />
 
-      {/* Glows */}
+      {/* Ambient Lighting & High-Tech Blooms */}
       <motion.div aria-hidden="true" style={reduce ? undefined : { x: glowX, y: glowY }}
-        className="pointer-events-none absolute -right-20 -top-8 h-88 w-88 rounded-full bg-brand-500/18 blur-3xl"
+        className="pointer-events-none absolute -right-20 -top-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl"
       />
       <motion.div aria-hidden="true" style={reduce ? undefined : { x: glowY, y: glowX }}
-        className="pointer-events-none absolute bottom-0 left-1/4 h-52 w-52 rounded-full bg-sky-400/8 blur-3xl"
+        className="pointer-events-none absolute bottom-0 left-1/4 h-64 w-64 rounded-full bg-sky-400/12 blur-3xl"
       />
+      <div aria-hidden="true" className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-90 sm:size-130 rounded-full bg-sky-500/10 blur-[100px]" />
 
       <motion.div
         style={reduce ? undefined : { y: contentY, opacity: fade }}
-        className="relative mx-auto grid w-full max-w-8xl flex-1 min-h-0 items-center gap-4 px-4 py-2 sm:px-6 sm:py-3 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:px-8 2xl:max-w-[1536px]"
+        className="relative mx-auto grid w-full max-w-8xl flex-1 min-h-0 items-center gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:px-8 2xl:max-w-384"
       >
         {/* Left: copy */}
-        <div className="py-1">
-          {/* Top tag: CONNECTING YOUR WORLD */}
-          <motion.p
-            {...fadeUp(0.1, reduce)}
-            className="mb-3 text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-sky-400"
-          >
-            CONNECTING YOUR WORLD
-          </motion.p>
+        <div className="py-1 max-w-2xl">
+          {/* Top Pill Beacon */}
+          
+            
+            <span className="mb-3 text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-sky-400">CONNECTING YOUR WORLD</span>
 
           {/* Main Headline */}
           <motion.h1
             {...fadeUp(0.18, reduce)}
-            className="max-w-xl text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[3.2rem] xl:text-[3.6rem]"
+            className="max-w-xl text-[2.2rem] font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[3.25rem] xl:text-[3.65rem]"
           >
-            <span className="block">Your Networking</span>
+            <span className="block bg-linear-to-b from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+              Your Networking
+            </span>
             <span className="block mt-1 sm:mt-1.5">
-              Products <span className="text-[#0088ff]">HQ.</span>
+              <span className="bg-linear-to-r from-sky-400 via-blue-500 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(56,189,248,0.4)]">
+                Products HQ
+              </span>
+              <span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">.</span>
             </span>
           </motion.h1>
 
           {/* Subtitle paragraph */}
           <motion.p
             {...fadeUp(0.28, reduce)}
-            className="mt-3.5 max-w-lg text-xs leading-relaxed text-slate-300 sm:text-sm sm:leading-relaxed"
+            className="mt-3.5 max-w-lg text-xs leading-relaxed text-slate-300/90 sm:text-sm sm:leading-relaxed font-normal"
           >
-            Routers, switches, fiber cables and ISP essentials — all in one
-            place. Trusted by professionals across Pakistan.
+            Enterprise routers, managed switches, fiber cables and ISP essentials genuine quality hardware with warranty, trusted by network engineers across Pakistan.
           </motion.p>
 
           {/* Action Buttons */}
           <motion.div
             {...fadeUp(0.38, reduce)}
-            className="mt-5 flex flex-wrap items-center gap-3 sm:mt-6 sm:gap-3.5"
+            className="mt-5 flex items-center gap-3 sm:mt-6 sm:gap-3.5"
           >
             <Link
               to="/shop"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#0084ff] px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition duration-150 hover:bg-[#0073e6] hover:-translate-y-0.5 active:translate-y-0"
+              className="group relative inline-flex h-11 items-center gap-2.5 overflow-hidden rounded-xl bg-linear-to-r from-[#0072ff] via-[#0084ff] to-[#00c6ff] px-6 text-sm font-bold text-white shadow-[0_4px_22px_rgba(0,114,255,0.45)] transition-all duration-200 hover:shadow-[0_6px_28px_rgba(0,198,255,0.65)] hover:-translate-y-0.5 active:translate-y-0"
             >
-              Shop Now
-              <ArrowRight size={17} aria-hidden="true" />
+              <span className="relative z-10 flex items-center gap-2">
+                Shop Now
+                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+              </span>
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
             </Link>
             <a
               href="#categories"
@@ -311,49 +346,81 @@ function HeroSection() {
                 event.preventDefault();
                 smoothScrollTo("categories", { reduce });
               }}
-              className="inline-flex h-11 items-center rounded-xl border border-slate-700/80 bg-slate-900/60 px-5 text-sm font-semibold text-white backdrop-blur-sm transition duration-150 hover:border-slate-500 hover:bg-slate-800/80 hover:-translate-y-0.5 active:translate-y-0"
+              className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/6 px-5 text-sm font-semibold text-white/95 backdrop-blur-md transition-all duration-200 hover:border-sky-400/50 hover:bg-white/12 hover:text-white hover:-translate-y-0.5 active:translate-y-0"
             >
               Explore Categories
             </a>
           </motion.div>
 
-          {/* Bottom Features Bar: 3 Circular Badges with Glowing Cyan Gradient Dividers (same as footer) */}
+          {/* Bottom Features Bar: 3 Circular Badges with Glowing Cyan Gradient Dividers */}
           <motion.div
             {...fadeUp(0.48, reduce)}
-            className="mt-7 sm:mt-9 pt-4 sm:pt-5 flex flex-wrap items-center gap-5 sm:gap-7 lg:gap-8"
+            className="mt-6 sm:mt-9 pt-3 sm:pt-5"
             aria-label="Store highlights"
           >
-            {HERO_FEATURES.map(({ icon: Icon, title, text }, idx) => (
-              <div key={title} className="flex items-center gap-5 sm:gap-7 lg:gap-8">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-full border border-sky-400/60 bg-sky-950/40 text-sky-400">
-                    <Icon size={18} aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-white leading-tight">
-                      {title}
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-slate-400 leading-tight mt-0.5">
-                      {text}
-                    </p>
+            {/* Desktop / Tablet view: EXACT original free-flowing layout with circular badges & glowing cyan dividers */}
+            <div className="hidden sm:flex flex-wrap items-center gap-5 sm:gap-7 lg:gap-8">
+              {HERO_FEATURES.map(({ icon: Icon, title, text }, idx) => (
+                <div key={title} className="flex items-center gap-5 sm:gap-7 lg:gap-8">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-full border border-sky-400/60 bg-sky-950/40 text-sky-400">
+                      <Icon size={18} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-white leading-tight">
+                        {title}
+                      </p>
+                      <p className="text-[11px] sm:text-xs text-slate-400 leading-tight mt-0.5">
+                        {text}
+                      </p>
+                    </div>
                   </div>
+                  {idx < HERO_FEATURES.length - 1 && (
+                    <div
+                      className="h-8 w-px bg-linear-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)]"
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
-                {idx < HERO_FEATURES.length - 1 && (
-                  <div
-                    className="hidden sm:block h-8 w-px bg-gradient-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)]"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Mobile view: 3-item row with the exact glowing vertical divider lines */}
+            <div className="flex items-center justify-between sm:hidden">
+              {HERO_FEATURES.map(({ icon: Icon, title, text }, idx) => (
+                <div key={title} className="contents">
+                  <div className="flex flex-1 flex-col items-center text-center px-1">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-sky-400/60 bg-sky-950/40 text-sky-400">
+                      <Icon size={16} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 mt-1.5">
+                      <p className="text-[11px] font-bold text-white leading-tight">
+                        {title}
+                      </p>
+                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
+                        {text}
+                      </p>
+                    </div>
+                  </div>
+                  {idx < HERO_FEATURES.length - 1 && (
+                    <div
+                      className="h-9 w-px shrink-0 bg-linear-to-b from-transparent via-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.35)]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
 
         {/* Right: Interactive 3D Cybernetic Network Animation */}
         <motion.div
           {...fadeUp(0.25, reduce)}
-          className="relative flex h-full w-full min-h-0 items-center justify-center overflow-hidden"
+          className="relative flex w-full h-65 sm:h-85 lg:h-full min-h-60 items-center justify-center overflow-hidden -mt-2 sm:mt-0"
         >
+          {/* Ambient Cyber Light Ring */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-radial-[circle_at_center,rgba(56,189,248,0.18)_0%,transparent_70%]" />
           <Hero3DCanvas className="h-full w-full" />
         </motion.div>
       </motion.div>
@@ -419,7 +486,7 @@ function ConnectionBanner() {
             <div className="absolute right-[5%] top-1/2 size-96 -translate-y-1/2 rounded-full border border-sky-200/20" />
 
             {/* Subtle high-tech dot grid */}
-            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(rgba(0,112,243,0.22)_1px,transparent_1px)] bg-[size:14px_14px] mask-[linear-gradient(to_right,black_60%,transparent_95%)]" />
+            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(rgba(0,112,243,0.22)_1px,transparent_1px)] bg-size-[14px_14px] mask-[linear-gradient(to_right,black_60%,transparent_95%)]" />
 
             {/* Glossy top sheen & bottom accent */}
             <div className="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/45 to-transparent" />
@@ -506,7 +573,7 @@ function SectionHeading({
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.18, ease: EASE }}
-          className="mt-2.5 block h-[3px] w-10 origin-left rounded-full bg-linear-to-r from-brand-500 to-brand-300"
+          className="mt-2.5 block h-0.75 w-10 origin-left rounded-full bg-linear-to-r from-brand-500 to-brand-300"
         />
       </motion.div>
       {linkLabel && (
@@ -640,7 +707,7 @@ function CategoryGrid({ items, loading }) {
                 {loopCategories.map((cat, index) => {
                   const productCount = cat.count || cat.fallbackCount || 10;
                   return (
-                    <SwiperSlide key={`${cat.name}-${index}`} className="!h-auto">
+                    <SwiperSlide key={`${cat.name}-${index}`} className="h-auto!">
                       <motion.div
                         initial={reduce ? false : { opacity: 0, scale: 0.92 }}
                         whileInView={{ opacity: 1, scale: 1 }}
@@ -1069,29 +1136,78 @@ function HowItWorks() {
 /* ─── Page root ─────────────────────────────────────────────────────────────── */
 
 export default function Home() {
-  const { products, ready } = useCart();
+  const { products, categories: storeCategories = [], ready } = useCart();
   const catalogLoading = !ready && products.length === 0;
+  const [categoryTick, setCategoryTick] = useState(0);
+
+  useEffect(() => {
+    function handleStorage(event) {
+      const key = event.key || event.detail?.key;
+      if (!key || key === "wasooli_admin_categories_v1" || key === ARCHIVED_CATEGORIES_KEY || key === DELETED_CATEGORIES_KEY) {
+        setCategoryTick((t) => t + 1);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(DATA_EVENT, handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DATA_EVENT, handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     document.title = "Wasooli Store — Networking Products Pakistan";
   }, []);
 
   const { categoryItems } = useMemo(() => {
+    void categoryTick;
     const map = new Map();
-    CATEGORY_FALLBACK.forEach((fb) => {
-      map.set(fb.name, { name: fb.name, count: 0, image: fb.image, fallbackCount: fb.fallbackCount });
+
+    const catList = Array.isArray(storeCategories) && storeCategories.length > 0
+      ? storeCategories
+      : getStorefrontCategories();
+
+    const activeList = catList.filter((c) => !isCategoryHidden(c));
+
+    activeList.forEach((c) => {
+      const name = typeof c === "string" ? c : c.name;
+      const customImg = typeof c === "object" && c.image ? String(c.image) : "";
+      const isCustomTransparentPng =
+        customImg &&
+        customImg.toLowerCase().endsWith(".png") &&
+        !customImg.includes("/products/");
+
+      map.set(name, {
+        name,
+        count: 0,
+        image: isCustomTransparentPng ? resolveMediaUrl(customImg) : getCategoryFallbackImage(name),
+        fallbackCount: typeof c === "object" && c.productCount != null ? c.productCount : 0,
+      });
     });
+
     products.forEach((p) => {
-      const name = normalizeCategory(p.category);
-      if (!name) return;
-      const entry = map.get(name) || { name, count: 0, image: null };
-      entry.count += 1;
-      if (!entry.image && p.image) entry.image = p.image;
-      map.set(name, entry);
+      const pCat = p.category;
+      if (!pCat || isCategoryHidden(pCat)) return;
+      let matchedKey = map.has(pCat) ? pCat : null;
+      if (!matchedKey) {
+        for (const k of map.keys()) {
+          if (
+            normalizeCategory(k) === normalizeCategory(pCat) ||
+            k.toLowerCase() === pCat.toLowerCase()
+          ) {
+            matchedKey = k;
+            break;
+          }
+        }
+      }
+      if (matchedKey) {
+        const entry = map.get(matchedKey);
+        entry.count += 1;
+      }
     });
-    const all = [...map.values()];
-    return { categoryItems: all };
-  }, [products]);
+
+    return { categoryItems: [...map.values()] };
+  }, [storeCategories, products, categoryTick]);
 
   const featuredProducts = useMemo(
     () =>
@@ -1160,7 +1276,7 @@ export default function Home() {
       <StoreHeader />
       <HeroSection />
       <ConnectionBanner />
-      <CategoryGrid items={categoryItems.length ? categoryItems : CATEGORY_FALLBACK} loading={catalogLoading} />
+      <CategoryGrid items={categoryItems.length ? categoryItems : CATEGORY_FALLBACK.filter((fb) => !isCategoryHidden(fb.name))} loading={catalogLoading} />
       <FeaturedGrid products={featuredProducts} loading={catalogLoading} />
       <ShopProductRail subtitle="What people buy" title="Trending now" products={trendingProducts} tone="light" autoplay />
       <PromoBanner />
