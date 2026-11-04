@@ -17,6 +17,7 @@ import {
   BadgePercent,
   UserRound,
   Users,
+  UserPlus,
   X,
 } from "lucide-react";
 import { useAdminData } from "../hooks/useAdminData";
@@ -660,6 +661,29 @@ export default function AdminSidebar({
               <Users size={17} className="shrink-0" />
               {!collapsed && <span className="truncate text-xs">All Users</span>}
             </NavLink>
+
+            {/* Add User */}
+            <NavLink
+              to="/admin/customers?add=true"
+              viewTransition
+              onClick={onClose}
+              className={() =>
+                `group flex items-center rounded-xl text-xs transition-colors duration-150 ${
+                  collapsed
+                    ? "size-9 justify-center mx-auto"
+                    : "w-full gap-2.5 px-3 py-2.5"
+                } ${
+                  location.pathname === "/admin/customers" && location.search.includes("add=true")
+                    ? "bg-brand-50 text-brand-700 font-semibold border border-brand-200/70"
+                    : "text-slate-600 hover:bg-slate-100/80 font-medium"
+                }`
+              }
+              title="Add User"
+            >
+              <UserPlus size={17} className="shrink-0" />
+              {!collapsed && <span className="truncate text-xs">Add User</span>}
+            </NavLink>
+           
 
             {/* Admin Profile */}
             <NavLink

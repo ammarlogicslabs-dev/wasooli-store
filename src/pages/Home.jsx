@@ -304,13 +304,13 @@ function HeroSection() {
           {/* Main Headline */}
           <motion.h1
             {...fadeUp(0.18, reduce)}
-            className="max-w-xl text-[2.2rem] font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[3.25rem] xl:text-[3.65rem]"
+            className="max-w-xl text-[2.2rem] font-extrabold leading-[1.14] tracking-tight text-white sm:text-5xl lg:text-[3.25rem] xl:text-[3.65rem]"
           >
-            <span className="block bg-linear-to-b from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+            <span className="block bg-linear-to-b from-white via-slate-100 to-slate-300 bg-clip-text text-transparent pb-1.5 sm:pb-2">
               Your Networking
             </span>
-            <span className="block mt-1 sm:mt-1.5">
-              <span className="bg-linear-to-r from-sky-400 via-blue-500 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(56,189,248,0.4)]">
+            <span className="block mt-0.5 sm:mt-1">
+              <span className="bg-linear-to-r from-sky-400 via-blue-500 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(56,189,248,0.4)] pb-0.5">
                 Products HQ
               </span>
               <span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">.</span>
@@ -931,9 +931,22 @@ function FeaturedGrid({ products, loading }) {
 
 /* ─── E. Promo Banner ───────────────────────────────────────────────────────── */
 
+const PROMO_BG_IMAGES = [
+  "/order-save.png",
+  "/order-save2.jpg",
+];
+
 function PromoBanner() {
   const reduce = useReducedMotion();
   const ref = useRef(null);
+  const [activePromoBg, setActivePromoBg] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActivePromoBg((prev) => (prev + 1) % PROMO_BG_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <section
@@ -941,13 +954,23 @@ function PromoBanner() {
       className="relative overflow-hidden border-y border-slate-800/80 bg-[#030c1c] text-white"
       aria-label="Bulk pricing promotion"
     >
-      {/* Background Graphic Asset */}
-      <img
-        src="/order-save.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right select-none"
-      />
+      {/* Background Graphic Asset with smooth crossfade swap */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
+        {PROMO_BG_IMAGES.map((src, index) => (
+          <motion.img
+            key={src}
+            src={src}
+            alt=""
+            fetchPriority={index === 0 ? "high" : "low"}
+            initial={false}
+            animate={{
+              opacity: activePromoBg === index ? 1 : 0,
+            }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0 h-full w-full object-cover object-right"
+          />
+        ))}
+      </div>
 
       {/* Readability Gradient Overlay */}
       <div

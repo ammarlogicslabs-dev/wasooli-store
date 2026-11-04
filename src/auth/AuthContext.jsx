@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { apiRequest, getToken, setToken } from "../services/api/client";
+import { readCreatedUsers } from "../services/storage/adminDataService";
 import { passwordPolicyError } from "../utils/passwordPolicy";
 
 const AuthContext = createContext(null);
@@ -73,8 +74,40 @@ export function AuthProvider({ children }) {
       localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
       setUser(loggedInUser);
       return { success: true, role: "Customer" };
-    } catch (error) {
-      return { success: false, message: error.message || "Invalid username, email, or password." };
+    } catch {
+      // Fallback: check users created by Admin
+      const normIdent = String(identifier || "").trim().toLowerCase();
+      const normPass = String(password || "").trim();
+      const createdUsers = readCreatedUsers();
+      const matched = createdUsers.find(
+        (u) =>
+          (u.email?.toLowerCase() === normIdent ||
+            u.key?.toLowerCase() === normIdent ||
+            (u.phone && u.phone.replace(/[\s-]/g, "") === normIdent.replace(/[\s-]/g, ""))) &&
+          u.password === normPass
+      );
+
+      if (matched) {
+        if (matched.status === "inactive") {
+          return { success: false, message: "This account has been marked inactive. Please contact store admin." };
+        }
+        if (matched.role === "Admin") {
+          return { success: false, role: "Admin" };
+        }
+        const loggedInUser = {
+          id: matched.id,
+          name: matched.name,
+          email: matched.email,
+          phone: matched.phone || "",
+          city: matched.city || "",
+          avatarUrl: matched.avatarUrl || "",
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
+        setUser(loggedInUser);
+        return { success: true, role: "Customer" };
+      }
+
+      return { success: false, message: "Invalid username, email, or password." };
     }
   }, []);
 

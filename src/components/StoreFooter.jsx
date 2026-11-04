@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useCart } from "../cart/CartContext";
 import {
   Cable,
@@ -133,10 +134,24 @@ function FooterSection({
   );
 }
 
+const FOOTER_BG_IMAGES = [
+  "/footer.png",
+  "/footer-2.jpg",
+  "/footer-3.jpg",
+];
+
 export default function StoreFooter() {
   const [openSection, setOpenSection] = useState(null);
   const [categoryTick, setCategoryTick] = useState(0);
+  const [activeFooterBg, setActiveFooterBg] = useState(0);
   const { categories: storeCategories = [] } = useCart();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveFooterBg((prev) => (prev + 1) % FOOTER_BG_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     function handleStorage(event) {
@@ -229,13 +244,23 @@ export default function StoreFooter() {
         </div>
       </div>
 
-      {/* Background Graphic */}
-      <img
-        src="/footer.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
-      />
+      {/* Background Graphic with smooth crossfade swap */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
+        {FOOTER_BG_IMAGES.map((src, index) => (
+          <motion.img
+            key={src}
+            src={src}
+            alt=""
+            fetchPriority={index === 0 ? "high" : "low"}
+            initial={false}
+            animate={{
+              opacity: activeFooterBg === index ? 1 : 0,
+            }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+        ))}
+      </div>
 
       {/* Subtle soft gradient overlay so text stays readable on all devices */}
       <div

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { apiRequest, getToken, setToken } from "../../services/api/client";
+import { readCreatedUsers } from "../../services/storage/adminDataService";
 
 export const ADMIN_SESSION_KEY = "wasooli_demo_admin_session";
 
@@ -87,6 +88,31 @@ export function AdminAuthProvider({ children }) {
       setAdmin(session);
       return { success: true };
     } catch (error) {
+      const normIdent = String(email || "").trim().toLowerCase();
+      const normPass = String(password || "").trim();
+      const createdUsers = readCreatedUsers();
+      const matched = createdUsers.find(
+        (u) =>
+          (u.email?.toLowerCase() === normIdent || u.key?.toLowerCase() === normIdent) &&
+          u.password === normPass &&
+          u.role === "Admin"
+      );
+
+      if (matched) {
+        if (matched.status === "inactive") {
+          return { success: false, message: "Admin account is marked inactive." };
+        }
+        const session = {
+          email: matched.email,
+          name: matched.name,
+          avatarUrl: matched.avatarUrl || "",
+          loggedInAt: new Date().toISOString(),
+        };
+        writeSession(session);
+        setAdmin(session);
+        return { success: true };
+      }
+
       return { success: false, message: error.message || "Invalid admin username, email, or password." };
     }
   }, []);

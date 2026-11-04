@@ -92,6 +92,46 @@ function writeLocalCoupons(data) {
   }
 }
 
+export const CREATED_USERS_KEY = "wasooli_created_users_v1";
+
+export function readCreatedUsers() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CREATED_USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeCreatedUsers(users) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CREATED_USERS_KEY, JSON.stringify(users));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+export function readLocalCustomers() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.customers);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeLocalCustomers(data) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.customers, JSON.stringify(data));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
 export const DELETED_CATEGORIES_KEY = "wasooli_admin_deleted_categories_v1";
 export const ARCHIVED_CATEGORIES_KEY = "wasooli_admin_archived_categories_v1";
 
@@ -195,7 +235,7 @@ const cache = {
   products: [],
   categories: filterActiveCategories(readLocalCategories()),
   orders: [],
-  customers: [],
+  customers: readLocalCustomers(),
   history: [],
   settings: {
     storeName: "Wasooli Store",
@@ -267,7 +307,23 @@ export async function refreshAdminData() {
   cache.categories = filterActiveCategories(mergedCategories);
   writeLocalCategories(cache.categories);
   cache.orders = Array.isArray(orders) ? orders : [];
-  cache.customers = Array.isArray(customers) ? customers : [];
+  const incomingCustomers = Array.isArray(customers) && customers.length > 0 ? customers : readLocalCustomers();
+  const createdUsers = readCreatedUsers();
+  const customerMap = new Map();
+  incomingCustomers.forEach((c) => {
+    if (c?.key) customerMap.set(c.key, c);
+  });
+  createdUsers.forEach((u) => {
+    if (u?.key) {
+      if (!customerMap.has(u.key)) {
+        customerMap.set(u.key, u);
+      } else {
+        customerMap.set(u.key, { ...customerMap.get(u.key), ...u });
+      }
+    }
+  });
+  cache.customers = Array.from(customerMap.values());
+  writeLocalCustomers(cache.customers);
   cache.history = Array.isArray(history) ? history : [];
   cache.coupons = Array.isArray(coupons) ? coupons : [];
   writeLocalCoupons(cache.coupons);
@@ -277,6 +333,7 @@ export async function refreshAdminData() {
   emit(STORAGE_KEYS.categories);
   emit(ARCHIVED_CATEGORIES_KEY);
   emit(STORAGE_KEYS.coupons);
+  emit(STORAGE_KEYS.customers);
   return snapshot();
 }
 
@@ -507,7 +564,111 @@ function isDummyCustomer(customer) {
 }
 
 export function listCustomers() {
-  return cache.customers.filter((customer) => !isDummyCustomer(customer));
+  const list = Array.isArray(cache.customers) && cache.customers.length > 0 ? cache.customers : readLocalCustomers();
+  return list.filter((customer) => !isDummyCustomer(customer));
+}
+
+export async function saveCustomer(input) {
+  const name = String(input.name || "").trim();
+  const email = String(input.email || "").trim().toLowerCase();
+  const phone = String(input.phone || "").trim();
+  const password = String(input.password || "").trim();
+  const city = String(input.city || "").trim();
+  const address = String(input.address || "").trim();
+  const role = input.role || "Customer";
+  const status = input.status || "active";
+
+  if (!name) return { ok: false, message: "Please enter the customer's name." };
+  if (!email && !phone) return { ok: false, message: "Please provide either an email or a phone number." };
+
+  const existingCustomers = listCustomers();
+  const duplicate = existingCustomers.find(
+    (c) => (email && c.email?.toLowerCase() === email) || (phone && c.phone && c.phone === phone)
+  );
+  if (duplicate && duplicate.key !== input.key) {
+    return { ok: false, message: "A user with this email or phone number already exists." };
+  }
+
+  const key =
+    input.key ||
+    (email ? email.split("@")[0].replace(/[^a-z0-9]/g, "-") : phone.replace(/[^0-9]/g, "")) +
+      "-" +
+      Date.now().toString(36);
+  const id = input.id || `cust_${Date.now()}`;
+
+  const customerRecord = {
+    key,
+    id,
+    name,
+    email,
+    phone,
+    city: city || "Karachi",
+    address: address || "",
+    role,
+    status,
+    orders: Number(input.orders) || 0,
+    spent: Number(input.spent) || 0,
+    createdAt: input.createdAt || new Date().toISOString(),
+  };
+
+  // 1. Save in created users store (with password for login)
+  const createdUsers = readCreatedUsers();
+  const userIndex = createdUsers.findIndex((u) => u.key === key || (email && u.email?.toLowerCase() === email));
+  const authRecord = {
+    ...customerRecord,
+    password: password || (userIndex >= 0 ? createdUsers[userIndex].password : "wasooli123"),
+  };
+
+  if (userIndex >= 0) {
+    createdUsers[userIndex] = authRecord;
+  } else {
+    createdUsers.unshift(authRecord);
+  }
+  writeCreatedUsers(createdUsers);
+
+  // 2. Update in cache and local storage
+  const custIndex = cache.customers.findIndex((c) => c.key === key);
+  if (custIndex >= 0) {
+    cache.customers[custIndex] = customerRecord;
+  } else {
+    cache.customers.unshift(customerRecord);
+  }
+  writeLocalCustomers(cache.customers);
+  emit(STORAGE_KEYS.customers);
+
+  // 3. Attempt API request if supported
+  try {
+    await apiRequest("/api/admin/customers", {
+      method: "POST",
+      kind: "admin",
+      body: customerRecord,
+    });
+  } catch {
+    // API 405/404 handled gracefully
+  }
+
+  return { ok: true, customer: customerRecord };
+}
+
+export async function deleteCustomer(key) {
+  cache.customers = cache.customers.filter((c) => c.key !== key);
+  writeLocalCustomers(cache.customers);
+
+  const createdUsers = readCreatedUsers().filter((u) => u.key !== key);
+  writeCreatedUsers(createdUsers);
+
+  emit(STORAGE_KEYS.customers);
+
+  try {
+    await apiRequest(`/api/admin/customers/${encodeURIComponent(key)}`, {
+      method: "DELETE",
+      kind: "admin",
+    });
+  } catch {
+    // handled
+  }
+
+  return { ok: true };
 }
 
 export async function setCustomerStatus(key, status) {
