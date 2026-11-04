@@ -575,7 +575,7 @@ export async function saveCustomer(input) {
   const password = String(input.password || "").trim();
   const city = String(input.city || "").trim();
   const address = String(input.address || "").trim();
-  const role = input.role || "Customer";
+  const role = "Customer";
   const status = input.status || "active";
 
   if (!name) return { ok: false, message: "Please enter the customer's name." };

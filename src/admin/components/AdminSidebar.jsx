@@ -683,7 +683,6 @@ export default function AdminSidebar({
               <UserPlus size={17} className="shrink-0" />
               {!collapsed && <span className="truncate text-xs">Add User</span>}
             </NavLink>
-           
 
             {/* Admin Profile */}
             <NavLink

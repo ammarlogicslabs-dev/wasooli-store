@@ -8,8 +8,11 @@ import {
   Mail,
   MapPin,
   Phone,
+  Activity,
+  Building2,
+  ChevronDown,
   Power,
-  RotateCw,
+  ShieldCheck,
   Trash2,
   User,
   UserPlus,
@@ -40,14 +43,6 @@ const INITIAL_FORM = {
   status: "active",
 };
 
-function generatePassword(length = 8) {
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%";
-  let pass = "";
-  for (let i = 0; i < length; i += 1) {
-    pass += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return pass;
-}
 
 export default function CustomersPage() {
   const { customers } = useAdminData();
@@ -90,7 +85,7 @@ export default function CustomersPage() {
   function handleOpenAddModal() {
     setForm({
       ...INITIAL_FORM,
-      password: generatePassword(8),
+      password: "",
     });
     setFormError("");
     setShowPassword(false);
@@ -126,7 +121,7 @@ export default function CustomersPage() {
       phone: form.phone.trim(),
       city: form.city.trim(),
       address: form.address.trim(),
-      role: form.role,
+      role: form.role || "Customer",
       status: form.status,
     });
     setSaving(false);
@@ -374,7 +369,7 @@ export default function CustomersPage() {
         open={isAddModalOpen}
         title="Add user"
         onClose={handleCloseModal}
-        wide
+        maxWidth="sm:max-w-2xl"
       >
         <form onSubmit={handleCreateUser} className="space-y-4 pt-1">
           {formError && (
@@ -383,7 +378,7 @@ export default function CustomersPage() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3.5 sm:grid-cols-2">
             {/* Full Name */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
@@ -422,19 +417,9 @@ export default function CustomersPage() {
 
             {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, password: generatePassword(8) })}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
-                >
-                  <RotateCw size={11} />
-                  <span>Generate</span>
-                </button>
-              </div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
                 <KeyRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -442,14 +427,14 @@ export default function CustomersPage() {
                   required
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Minimum 4 characters"
+                  placeholder="Enter password (min. 4 characters)"
                   className={`${inputClass} pl-9 pr-9`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -484,7 +469,24 @@ export default function CustomersPage() {
                   type="text"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  placeholder="e.g. Karachi, Lahore, Islamabad"
+                  placeholder="e.g. Karachi"
+                  className={`${inputClass} pl-9`}
+                />
+              </div>
+            </div>
+
+            {/* Full Address */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                Full Address
+              </label>
+              <div className="relative">
+                <Building2 size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Street address, apartment, or shop..."
                   className={`${inputClass} pl-9`}
                 />
               </div>
@@ -495,59 +497,53 @@ export default function CustomersPage() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Role
               </label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className={inputClass}
-              >
-                <option value="Customer">Customer (Storefront access)</option>
-                <option value="Admin">Admin (Full panel access)</option>
-              </select>
+              <div className="relative">
+                <ShieldCheck size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className={`${inputClass} pl-9 pr-9 appearance-none cursor-pointer bg-white`}
+                >
+                  <option value="Customer">User</option>
+                  <option value="Admin">Manager</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
             </div>
 
-            {/* Status */}
+            {/* Account Status */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Account Status
               </label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className={inputClass}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-
-            {/* Shipping Address */}
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                Full Address
-              </label>
-              <textarea
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Street address, apartment, or shop location..."
-                rows={2}
-                className={inputClass}
-              />
+              <div className="relative">
+                <Activity size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className={`${inputClass} pl-9 pr-9 appearance-none cursor-pointer bg-white`}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={handleCloseModal}
               disabled={saving}
-              className="h-10 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="h-10 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className={`${buttonClass} inline-flex items-center gap-2 cursor-pointer`}
+              className={`${buttonClass} inline-flex items-center gap-2 cursor-pointer shadow-xs`}
             >
               {saving ? (
                 <>
