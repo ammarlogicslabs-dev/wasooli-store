@@ -37,6 +37,8 @@ const CouponsPage = lazy(() => import("./admin/pages/CouponsPage"));
 const ProfilePage = lazy(() => import("./admin/pages/ProfilePage"));
 const FaqsPage = lazy(() => import("./admin/pages/FaqsPage"));
 
+import { Analytics } from "@vercel/analytics/react"
+
 
 function RequireAdmin({ children }) {
   const { isAuthenticated } = useAdminAuth();
@@ -52,6 +54,7 @@ function RequireAdmin({ children }) {
 export default function App() {
   return (
     <>
+      <Analytics />
       <ScrollToTop />
       <NavigationProgress />
       <Suspense fallback={<PageLoader />}>
